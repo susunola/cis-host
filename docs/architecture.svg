@@ -1,157 +1,195 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 580" role="img" aria-label="SecX Automation Suite Architecture">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 330">
   <style><![CDATA[
-    .lane-bg { fill: #fafbfc; stroke: #e2e8f0; stroke-width: 1; }
-    .lane-label { fill: #64748b; font-size: 9px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .bg  { fill: #ffffff; }
+    .sep { stroke: #e8ecf0; stroke-width: 1; }
+    .box { fill: #ffffff; stroke-width: 1.2; rx: 3; }
+    .c-cmd  { stroke: #5b6e8a; }
+    .c-py   { stroke: #2563eb; }
+    .c-json { stroke: #7c3aed; }
+    .c-j2   { stroke: #d97706; }
+    .c-html { stroke: #16a34a; }
+    .c-csv  { stroke: #0891b2; }
+    .c-log  { stroke: #dc2626; }
+    .c-file { stroke: #94a3b8; }
 
-    .box-bg { fill: #ffffff; stroke-width: 1.2; }
-    .box-blue { stroke: #3b82f6; }
-    .box-amber { stroke: #d97706; }
-    .box-green { stroke: #16a34a; }
-    .box-slate { stroke: #64748b; }
-    .box-red { stroke: #dc2626; }
+    .t-mb  { fill: #111827; font-family: 'SF Mono','Menlo','Consolas',monospace; font-weight: 700; }
+    .t-m   { fill: #475569; font-family: 'SF Mono','Menlo','Consolas',monospace; }
+    .t-d   { fill: #64748b; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+    .t-h   { fill: #0f172a; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight: 600; }
+    .t-sec { fill: #94a3b8; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
 
-    .box-title { fill: #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .box-desc  { fill: #64748b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .box-tag   { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .tag-blue  { fill: #3b82f6; }
-    .tag-amber { fill: #d97706; }
-    .tag-green { fill: #16a34a; }
-    .tag-slate { fill: #64748b; }
-
-    .arrow { fill: none; stroke: #94a3b8; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-    .arrow-label { fill: #94a3b8; font-size: 7px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .badge { font-size: 8px; font-weight: 600; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+    .arr   { fill: none; stroke: #94a3b8; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+    .arr-l { fill: #94a3b8; font-size: 7px; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
   ]]></style>
 
   <defs>
-    <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
-    </marker>
+    <marker id="a" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/></marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="800" height="580" fill="#ffffff"/>
+  <rect width="960" height="330" class="bg"/>
 
-  <!-- ===== LANES ===== -->
+  <!-- Column separators (subtle) -->
+  <line x1="190" y1="22" x2="190" y2="312" class="sep"/>
+  <line x1="370" y1="22" x2="370" y2="312" class="sep"/>
+  <line x1="550" y1="22" x2="550" y2="312" class="sep"/>
+  <line x1="740" y1="22" x2="740" y2="312" class="sep"/>
 
-  <!-- Lane 1: Control Plane -->
-  <rect x="20" y="16" width="760" height="100" rx="4" class="lane-bg"/>
-  <text x="30" y="30" class="lane-label">Control Plane</text>
+  <!-- Section headers -->
+  <text x="56" y="16" text-anchor="middle" class="t-sec">INPUT</text>
+  <text x="280" y="16" text-anchor="middle" class="t-sec">ENGINE</text>
+  <text x="460" y="16" text-anchor="middle" class="t-sec">DATA</text>
+  <text x="645" y="16" text-anchor="middle" class="t-sec">RENDER</text>
+  <text x="850" y="16" text-anchor="middle" class="t-sec">OUTPUT</text>
 
-  <!-- Lane 2: Transport -->
-  <rect x="20" y="128" width="760" height="80" rx="4" class="lane-bg"/>
-  <text x="30" y="142" class="lane-label">Transport</text>
+  <!-- ══════════════════════════════════════════  -->
+  <!-- COL 1: INPUT                              -->
+  <!-- ══════════════════════════════════════════  -->
 
-  <!-- Lane 3: Execution -->
-  <rect x="20" y="220" width="760" height="90" rx="4" class="lane-bg"/>
-  <text x="30" y="234" class="lane-label">Execution</text>
+  <!-- Ansible -->
+  <rect x="24" y="32" width="146" height="48" class="box c-cmd"/>
+  <text x="36" y="52" class="t-mb" font-size="11">ansible-playbook</text>
+  <text x="36" y="68" class="t-m" font-size="9">scan.yml / apply.yml</text>
 
-  <!-- Lane 4: Audit &amp; Reporting -->
-  <rect x="20" y="322" width="760" height="120" rx="4" class="lane-bg"/>
-  <text x="30" y="336" class="lane-label">Audit &amp; Reporting</text>
+  <!-- CLI -->
+  <rect x="24" y="92" width="146" height="48" class="box c-cmd"/>
+  <text x="36" y="112" class="t-mb" font-size="11">cis_cli.py</text>
+  <text x="36" y="128" class="t-m" font-size="9">scan / apply / info / check</text>
 
-  <!-- Lane 5: Output -->
-  <rect x="20" y="454" width="760" height="106" rx="4" class="lane-bg"/>
-  <text x="30" y="468" class="lane-label">Output</text>
+  <!-- Separator "or" between them -->
+  <text x="97" y="85" text-anchor="middle" class="t-d" font-size="9">or</text>
 
-  <!-- ===== ARROWS ===== -->
+  <!-- Arrow INPUT → ENGINE (under ansible/CLI block, going right) -->
+  <path d="M 170 60 L 200 60" class="arr" marker-end="url(#a)"/>
+  <path d="M 170 116 L 200 116" class="arr" marker-end="url(#a)"/>
+  <text x="185" y="52" text-anchor="middle" class="arr-l">via ssh</text>
 
-  <!-- Operator → Control Machine -->
-  <line x1="176" y1="66" x2="210" y2="66" class="arrow" marker-end="url(#a)"/>
+  <!-- ══════════════════════════════════════════  -->
+  <!-- COL 2: ENGINE                             -->
+  <!-- ══════════════════════════════════════════  -->
 
-  <!-- Control Machine → Inventory -->
-  <line x1="484" y1="66" x2="516" y2="66" class="arrow" marker-end="url(#a)"/>
+  <rect x="200" y="32" width="154" height="108" class="box c-py"/>
 
-  <!-- Control Machine → Transport -->
-  <path d="M 360 96 L 360 156" class="arrow" marker-end="url(#a)"/>
-  <text x="366" y="132" class="arrow-label">deploy</text>
+  <!-- Badge -->
+  <rect x="206" y="27" width="58" height="14" rx="2" fill="#dbeafe" stroke="#bfdbfe" stroke-width="0.7"/>
+  <text x="235" y="38" text-anchor="middle" class="badge" fill="#2563eb">Python 3</text>
 
-  <!-- Transport → Linux Engine -->
-  <path d="M 280 188 L 230 188 Q 220 188 220 198 L 220 248" class="arrow" marker-end="url(#a)"/>
-  <text x="240" y="224" class="arrow-label">SSH</text>
+  <text x="212" y="58" class="t-mb" font-size="11">cis_engine.py</text>
+  <text x="212" y="74" class="t-d" font-size="9">Single-file engine</text>
+  <text x="212" y="90" class="t-m" font-size="8">--catalog rules.json</text>
+  <text x="212" y="104" class="t-m" font-size="8">--mode scan | apply</text>
+  <text x="212" y="120" class="t-m" font-size="8">--profile L1 | L2</text>
+  <text x="212" y="134" class="t-d" font-size="8">Zero deps · stdlib only</text>
 
-  <!-- Transport → Windows Engine -->
-  <path d="M 520 188 L 570 188 Q 580 188 580 198 L 580 248" class="arrow" marker-end="url(#a)"/>
-  <text x="532" y="224" class="arrow-label">WinRM</text>
+  <!-- Arrow ENGINE → DATA (clean horizontal) -->
+  <path d="M 354 56 L 384 56" class="arr" marker-end="url(#a)"/>
+  <path d="M 354 116 L 384 116" class="arr" marker-end="url(#a)"/>
 
-  <!-- Linux Engine → result.json -->
-  <path d="M 220 300 L 220 350" class="arrow" marker-end="url(#a)"/>
+  <!-- ══════════════════════════════════════════  -->
+  <!-- COL 3: DATA                               -->
+  <!-- ══════════════════════════════════════════  -->
 
-  <!-- Linux Engine → audit.log -->
-  <path d="M 220 300 L 220 324 Q 220 334 230 334 L 510 334 Q 520 334 520 324 L 520 350" class="arrow" marker-end="url(#a)"/>
+  <!-- result.json -->
+  <rect x="384" y="32" width="150" height="48" class="box c-json"/>
+  <rect x="390" y="27" width="40" height="14" rx="2" fill="#ede9fe" stroke="#ddd6fe" stroke-width="0.7"/>
+  <text x="410" y="38" text-anchor="middle" class="badge" fill="#7c3aed">JSON</text>
 
-  <!-- Windows Engine → audit.log -->
-  <path d="M 580 300 L 580 350" class="arrow" marker-end="url(#a)"/>
+  <text x="396" y="54" class="t-mb" font-size="11">result.json</text>
+  <text x="396" y="70" class="t-m" font-size="9">pass · fail · manual · N/A</text>
 
-  <!-- Windows Engine → result.json -->
-  <path d="M 580 300 L 580 324 Q 580 334 570 334 L 290 334 Q 280 334 280 324 L 280 350" class="arrow" marker-end="url(#a)"/>
+  <!-- audit.log -->
+  <rect x="384" y="92" width="150" height="48" class="box c-log"/>
+  <rect x="390" y="87" width="36" height="14" rx="2" fill="#fee2e2" stroke="#fecaca" stroke-width="0.7"/>
+  <text x="408" y="98" text-anchor="middle" class="badge" fill="#dc2626">log</text>
 
-  <!-- result.json → Report Engine -->
-  <path d="M 320 398 L 320 432" class="arrow" marker-end="url(#a)"/>
+  <text x="396" y="114" class="t-mb" font-size="11">audit.log</text>
+  <text x="396" y="130" class="t-m" font-size="9">JSON-lines · SIEM</text>
 
-  <!-- audit.log → Report Engine -->
-  <path d="M 480 398 L 480 432" class="arrow" marker-end="url(#a)"/>
+  <!-- Arrows DATA → RENDER (clean horizontal) -->
+  <path d="M 534 56 L 564 56" class="arr" marker-end="url(#a)"/>
+  <path d="M 534 116 L 564 116" class="arr" marker-end="url(#a)"/>
 
-  <!-- Report Engine → Outputs -->
-  <path d="M 280 486 L 200 486 Q 190 486 190 496 L 190 516" class="arrow" marker-end="url(#a)"/>
-  <path d="M 400 486 L 400 516" class="arrow" marker-end="url(#a)"/>
-  <path d="M 520 486 L 600 486 Q 610 486 610 496 L 610 516" class="arrow" marker-end="url(#a)"/>
+  <!-- ══════════════════════════════════════════  -->
+  <!-- COL 4: RENDER                             -->
+  <!-- ══════════════════════════════════════════  -->
 
-  <text x="376" y="502" class="arrow-label">render</text>
+  <!-- Static data -->
+  <rect x="564" y="32" width="160" height="48" class="box c-file"/>
+  <text x="576" y="50" class="t-mb" font-size="10">guidance.json</text>
+  <text x="576" y="64" class="t-m" font-size="9">remediation · rationale</text>
+  <text x="576" y="76" class="t-m" font-size="9">sections.json · chapters</text>
 
-  <!-- ===== BOXES ===== -->
+  <!-- Jinja2 Templates -->
+  <rect x="564" y="92" width="160" height="48" class="box c-j2"/>
+  <rect x="570" y="87" width="44" height="14" rx="2" fill="#fef3c7" stroke="#fde68a" stroke-width="0.7"/>
+  <text x="592" y="98" text-anchor="middle" class="badge" fill="#d97706">Jinja2</text>
 
-  <!-- Row 1: Operator, Control Machine, Inventory -->
-  <rect x="56" y="40" width="120" height="52" rx="3" class="box-bg box-slate"/>
-  <text x="116" y="61" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Operator</text>
-  <text x="116" y="79" class="box-desc" font-size="9" text-anchor="middle">Security / DevOps</text>
+  <text x="576" y="114" class="t-mb" font-size="10">report.html.j2</text>
+  <text x="576" y="128" class="t-m" font-size="9">index.html.j2 · .csv.j2</text>
 
-  <rect x="210" y="40" width="274" height="52" rx="3" class="box-bg box-blue"/>
-  <text x="347" y="61" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Control Machine</text>
-  <text x="347" y="79" class="box-desc" font-size="9" text-anchor="middle">cis_cli.py · ansible-playbook · Inventory · Schedule</text>
+  <!-- Arrows RENDER → OUTPUT -->
+  <path d="M 724 56 L 739 56" class="arr" marker-end="url(#a)"/>
+  <path d="M 724 116 L 739 116" class="arr" marker-end="url(#a)"/>
 
-  <rect x="516" y="40" width="110" height="52" rx="3" class="box-bg box-slate"/>
-  <text x="571" y="61" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Inventory</text>
-  <text x="571" y="79" class="box-desc" font-size="9" text-anchor="middle">hosts · group_vars</text>
+  <!-- ══════════════════════════════════════════  -->
+  <!-- COL 5: OUTPUT (2 rows × 2 cols)           -->
+  <!-- ══════════════════════════════════════════  -->
 
-  <!-- Row 2: Ansible Transport -->
-  <rect x="190" y="164" width="420" height="48" rx="3" class="box-bg box-amber"/>
-  <text x="400" y="185" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Ansible Transport Layer</text>
-  <text x="400" y="201" class="box-desc" font-size="9" text-anchor="middle">SSH (Linux) · WinRM (Windows) — push · run · fetch · render</text>
+  <!-- Per-Host HTML -->
+  <rect x="752" y="32" width="186" height="48" class="box c-html"/>
+  <rect x="758" y="27" width="44" height="14" rx="2" fill="#dcfce7" stroke="#bbf7d0" stroke-width="0.7"/>
+  <text x="780" y="38" text-anchor="middle" class="badge" fill="#16a34a">HTML</text>
 
-  <!-- Row 3: Engines -->
-  <rect x="60" y="256" width="320" height="52" rx="3" class="box-bg box-green"/>
-  <text x="220" y="277" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Linux Compliance Engine</text>
-  <text x="220" y="295" class="box-desc" font-size="9" text-anchor="middle">6 distributions · RHEL / TencentOS / SLES / Ubuntu · Single-file Python</text>
+  <text x="764" y="54" class="t-mb" font-size="10">Per-Host Report</text>
+  <text x="764" y="70" class="t-m" font-size="9">score · findings · steps</text>
 
-  <rect x="420" y="256" width="320" height="52" rx="3" class="box-bg box-green"/>
-  <text x="580" y="277" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Windows Compliance Engine</text>
-  <text x="580" y="295" class="box-desc" font-size="9" text-anchor="middle">Server 2016 / 2019 / 2022 / 2025 · Single-file PowerShell</text>
+  <!-- Fleet Index -->
+  <rect x="752" y="92" width="186" height="48" class="box c-html"/>
+  <rect x="758" y="87" width="44" height="14" rx="2" fill="#dcfce7" stroke="#bbf7d0" stroke-width="0.7"/>
+  <text x="780" y="98" text-anchor="middle" class="badge" fill="#16a34a">HTML</text>
 
-  <!-- Row 4: Data stores -->
-  <rect x="120" y="358" width="200" height="48" rx="3" class="box-bg box-slate"/>
-  <text x="220" y="376" class="box-title" font-size="11" font-weight="600" text-anchor="middle">result.json</text>
-  <text x="220" y="394" class="box-desc" font-size="9" text-anchor="middle">Structured findings · machine-readable</text>
+  <text x="764" y="114" class="t-mb" font-size="10">Fleet Index</text>
+  <text x="764" y="130" class="t-m" font-size="9">multi-host overview</text>
 
-  <rect x="480" y="358" width="200" height="48" rx="3" class="box-bg box-red"/>
-  <text x="580" y="376" class="box-title" font-size="11" font-weight="600" text-anchor="middle">audit.log</text>
-  <text x="580" y="394" class="box-desc" font-size="9" text-anchor="middle">JSON-lines append-only · SIEM-ready</text>
+  <!-- Bottom row outputs -->
+  <!-- Per-Host JSON copy -->
+  <rect x="752" y="160" width="96" height="48" class="box c-json"/>
+  <text x="764" y="180" class="t-mb" font-size="10">JSON copy</text>
+  <text x="764" y="196" class="t-m" font-size="9">per host</text>
 
-  <!-- Row 5: Report Engine -->
-  <rect x="190" y="440" width="420" height="48" rx="3" class="box-bg box-blue"/>
-  <text x="400" y="461" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Jinja2 Report Engine</text>
-  <text x="400" y="477" class="box-desc" font-size="9" text-anchor="middle">Self-contained HTML · Dark / Light theme · EN · 中文 · 日本語 · ไทย</text>
+  <!-- CSV -->
+  <rect x="860" y="160" width="78" height="48" class="box c-csv"/>
+  <text x="872" y="180" class="t-mb" font-size="10">CSV</text>
+  <text x="872" y="196" class="t-m" font-size="9">findings</text>
 
-  <!-- Row 6: Outputs -->
-  <rect x="40" y="524" width="220" height="48" rx="3" class="box-bg box-blue"/>
-  <text x="150" y="545" class="box-title" font-size="11" font-weight="600" text-anchor="middle">Per-Host Report</text>
-  <text x="150" y="561" class="box-desc" font-size="9" text-anchor="middle">Score · Findings · Remediation steps</text>
+  <!-- ══════════════════════════════════════════  -->
+  <!-- BOTTOM: engine notes                      -->
+  <!-- ══════════════════════════════════════════  -->
 
-  <rect x="290" y="524" width="220" height="48" rx="3" class="box-bg box-blue"/>
-  <text x="400" y="545" class="box-title" font-size="11" font-weight="600" text-anchor="middle">CSV Findings</text>
-  <text x="400" y="561" class="box-desc" font-size="9" text-anchor="middle">Excel · Sheets compatible</text>
+  <line x1="20" y1="230" x2="940" y2="230" stroke="#f1f5f9" stroke-width="1"/>
 
-  <rect x="540" y="524" width="220" height="48" rx="3" class="box-bg box-blue"/>
-  <text x="650" y="545" class="box-title" font-size="11" font-weight="600" text-anchor="middle">Fleet Index</text>
-  <text x="650" y="561" class="box-desc" font-size="9" text-anchor="middle">Multi-host compliance overview</text>
+  <rect x="20" y="246" width="170" height="60" class="box c-file"/>
+  <text x="32" y="264" class="t-mb" font-size="10">rules.json</text>
+  <text x="32" y="280" class="t-m" font-size="9">14 OS catalogs</text>
+  <text x="32" y="296" class="t-d" font-size="8">Linux · win — read by engine</text>
+
+  <rect x="210" y="246" width="300" height="60" class="box c-file"/>
+  <text x="222" y="266" class="t-h" font-size="11">Supported OS: 14 targets across 2 platforms</text>
+  <text x="222" y="282" class="t-m" font-size="9">Linux: RHEL 8/9/10 · TencentOS 3/4 · SLES 15/16 · Ubuntu 20.04 / 22.04 / 24.04</text>
+  <text x="222" y="298" class="t-m" font-size="9">Windows: Server 2016 / 2019 / 2022 / 2025</text>
+
+  <rect x="530" y="246" width="200" height="60" class="box c-file"/>
+  <text x="542" y="266" class="t-h" font-size="11">Output writes to:</text>
+  <text x="542" y="282" class="t-m" font-size="9">playbook_dir/reports/</text>
+  <text x="542" y="298" class="t-m" font-size="9">--output ./out/ via cis_cli.py</text>
+
+  <rect x="750" y="246" width="190" height="60" class="box c-file"/>
+  <text x="762" y="266" class="t-h" font-size="11">CI / Cron ready</text>
+  <text x="762" y="282" class="t-m" font-size="9">JSON stdout for pipelines</text>
+  <text x="762" y="298" class="t-m" font-size="9">non-zero exit on findings</text>
+
+  <!-- Arrow rules.json → engine (up, to engine bottom) -->
+  <path d="M 105 246 L 105 150" class="arr" marker-end="url(#a)"/>
+  <text x="78" y="200" text-anchor="end" class="arr-l">read</text>
 
 </svg>
