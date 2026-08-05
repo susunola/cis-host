@@ -322,8 +322,45 @@ def systemd_present():
     return os.path.isdir("/run/systemd/system")
 
 
+def _pkg_manager():
+    """Return the active package manager command, or None if unknown."""
+    for cmd in ("dnf", "yum", "apt-get", "zypper"):
+        if shutil.which(cmd):
+            return cmd
+    return None
+
+
+def _pkg_query_cmd(name):
+    """Return the (cmd, args) tuple used to test whether a package is installed."""
+    mgr = _pkg_manager()
+    if mgr == "apt-get":
+        return ["dpkg", "-s", name]
+    return ["rpm", "-q", name]
+
+
+def _pkg_install_cmd(packages):
+    """Return the install command for the active package manager."""
+    mgr = _pkg_manager()
+    if mgr == "apt-get":
+        return ["apt-get", "install", "-y"] + list(packages)
+    if mgr == "zypper":
+        return ["zypper", "--non-interactive", "install"] + list(packages)
+    # dnf / yum / fallback
+    return [mgr or "dnf", "-y", "install"] + list(packages)
+
+
+def _pkg_remove_cmd(packages):
+    """Return the remove command for the active package manager."""
+    mgr = _pkg_manager()
+    if mgr == "apt-get":
+        return ["apt-get", "remove", "-y"] + list(packages)
+    if mgr == "zypper":
+        return ["zypper", "--non-interactive", "remove"] + list(packages)
+    return [mgr or "dnf", "-y", "remove"] + list(packages)
+
+
 def pkg_installed(name):
-    rc, _, _ = sh(["rpm", "-q", name])
+    rc, _, _ = sh(_pkg_query_cmd(name))
     return rc == 0
 
 
@@ -693,9 +730,9 @@ def f_pkg_absent(ctx, p):
     present = [x for x in p["packages"] if pkg_installed(x)]
     if not present:
         return False, "already absent"
-    rc, o, e = sh(["dnf", "-y", "remove"] + present, 600)
+    rc, o, e = sh(_pkg_remove_cmd(present), 600)
     if rc != 0:
-        return False, "dnf remove failed: %s" % (e or o)[:200]
+        return False, "remove failed: %s" % (e or o)[:200]
     return True, "removed " + ", ".join(present)
 
 
@@ -712,9 +749,9 @@ def f_pkg_present(ctx, p):
     missing = [x for x in p["packages"] if not pkg_installed(x)]
     if not missing:
         return False, "already installed"
-    rc, o, e = sh(["dnf", "-y", "install"] + missing, 900)
+    rc, o, e = sh(_pkg_install_cmd(missing), 900)
     if rc != 0:
-        return False, "dnf install failed: %s" % (e or o)[:200]
+        return False, "install failed: %s" % (e or o)[:200]
     return True, "installed " + ", ".join(missing)
 
 
@@ -731,9 +768,9 @@ def f_pkg_any_present(ctx, p):
     if any(pkg_installed(x) for x in p["packages"]):
         return False, "already satisfied"
     tgt = p.get("install") or p["packages"][0]
-    rc, o, e = sh(["dnf", "-y", "install", tgt], 900)
+    rc, o, e = sh(_pkg_install_cmd([tgt]), 900)
     if rc != 0:
-        return False, "dnf install %s failed: %s" % (tgt, (e or o)[:200])
+        return False, "install %s failed: %s" % (tgt, (e or o)[:200])
     return True, "installed " + tgt
 
 
@@ -810,7 +847,7 @@ def f_svc_enabled(ctx, p):
     pkgs = p.get("packages") or []
     missing = [x for x in pkgs if not pkg_installed(x)]
     if missing:
-        rc, o, e = sh(["dnf", "-y", "install"] + missing, 900)
+        rc, o, e = sh(_pkg_install_cmd(missing), 900)
         if rc != 0:
             return False, "cannot install %s: %s" % (", ".join(missing), (e or o)[:160])
     acts = []
@@ -828,6 +865,8 @@ def f_svc_enabled(ctx, p):
 @check("dnf_flag")
 def c_dnf_flag(ctx, p):
     key, want = p["key"], str(p["value"])
+    if _pkg_manager() not in ("dnf", "yum"):
+        return "notapplicable", "no dnf/yum on this system"
     files = ["/etc/dnf/dnf.conf", "/etc/yum.conf"]
     repos = sorted(globmod.glob("/etc/yum.repos.d/*.repo"))
     bad = []
@@ -849,6 +888,8 @@ def c_dnf_flag(ctx, p):
 @fix("dnf_flag")
 def f_dnf_flag(ctx, p):
     key, want = p["key"], str(p["value"])
+    if _pkg_manager() not in ("dnf", "yum"):
+        return False, "no dnf/yum on this system"
     if exists("/etc/dnf/dnf.conf"):
         set_kv_in_file(ctx, "/etc/dnf/dnf.conf", key, want, sep="=")
     for rp in sorted(globmod.glob("/etc/yum.repos.d/*.repo")):
