@@ -8,57 +8,9 @@ and `apply` (remediate) — and produces a self-contained HTML report per host.
 
 ## Architecture
 
-```
-  controller host                 target host(s)                  local disk
-  ─────────────                   ──────────────                  ──────────
-
-  ansible-playbook
-  scan.yml | apply.yml
-  -i inventory/hosts.ini
-       │
-       │  1. preflight
-       │     validate vars, probe python, confirm root
-       │
-       │  2. push engine files
-       ├───────────────────────────────▶  /tmp/cis-scan/
-       │                                    cis_engine.py
-       │                                    rules.json
-       │                                    guidance.json
-       │                                    sections.json
-       │
-       │  3. run engine
-       │     python3 cis_engine.py
-       │       --mode scan | apply
-       │       --profile L1 | L2
-       │       --include 1.1,5.2
-       │       --exclude 1.5
-       ├───────────────────────────────▶
-       │                                    evaluate N rules
-       │                                      scan : read only
-       │                                      apply: patch config,
-       │                                            back up to
-       │                                            /var/backups/cis-*,
-       │                                            re-verify
-       │                                         │
-       │                                         ▼
-       │                                    result.json
-       │
-       │  4. fetch result.json
-       ◀────────────────────────────────
-       │
-       │  5. render Jinja2
-       │     report.html.j2  (+ index.html.j2 if N>1)
-       │     + findings.csv.j2
-       │
-       │  6. write
-       ├──────────────────────────────────▶  reports/
-       │                                      HOST-L1-scan.html
-       │                                      HOST-L1-apply.html
-       │                                      index.html (fleet view, N>1)
-       │                                      *.json, findings.csv
-       ▼
-  open reports/HOST-L1-scan.html
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="CIS-OS Architecture" width="960">
+</p>
 
 The engine is a single-file script (Python 3 for Linux, PowerShell for Windows) with
 no third-party dependencies. Ansible only handles file copy, command execution, and

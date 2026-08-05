@@ -6,57 +6,9 @@
 
 ## 架构
 
-```
-  控制机                     目标机（每台）                    本地磁盘
-  ──────                     ──────────                       ────────
-
-  ansible-playbook
-  scan.yml | apply.yml
-  -i inventory/hosts.ini
-       │
-       │  1. preflight
-       │     校验变量、探测 Python、确认 root
-       │
-       │  2. 推送引擎文件
-       ├───────────────────────────────▶  /tmp/cis-scan/
-       │                                    cis_engine.py
-       │                                    rules.json
-       │                                    guidance.json
-       │                                    sections.json
-       │
-       │  3. 跑引擎
-       │     python3 cis_engine.py
-       │       --mode scan | apply
-       │       --profile L1 | L2
-       │       --include 1.1,5.2
-       │       --exclude 1.5
-       ├───────────────────────────────▶
-       │                                    评估 N 条规则
-       │                                      scan : 只读
-       │                                      apply: 改配置
-       │                                            备份到
-       │                                            /var/backups/cis-*
-       │                                            再校验
-       │                                         │
-       │                                         ▼
-       │                                    result.json
-       │
-       │  4. 拉回 result.json
-       ◀────────────────────────────────
-       │
-       │  5. 渲染 Jinja2
-       │     report.html.j2  （N>1 时加 index.html.j2）
-       │     + findings.csv.j2
-       │
-       │  6. 写出
-       ├──────────────────────────────────▶  reports/
-       │                                      HOST-L1-scan.html
-       │                                      HOST-L1-apply.html
-       │                                      index.html（N>1）
-       │                                      *.json、findings.csv
-       ▼
-  open reports/HOST-L1-scan.html
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="CIS-OS 架构图" width="960">
+</p>
 
 引擎是单文件脚本（Linux 是 Python 3，Windows 是 PowerShell），无第三方依赖。Ansible 只负责文件拷贝、命令执行、报告渲染。
 
