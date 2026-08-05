@@ -19,10 +19,11 @@ Usage:
       --profile L1 --name "TencentOS Server 3.2" --output output/
 
 Supported --os values:
-  tos3, tos4, windows
+  tos3, tos4
   rhel8, rhel9, rhel10
   sles15, sles16
   ubuntu2004, ubuntu2204, ubuntu2404
+  win2016, win2019, win2022, win2025
 """
 
 import argparse
@@ -54,12 +55,36 @@ OS_PRESETS = {
         "template": "cis-tencentos4-ansible/roles/cis_tencentos4/templates/report.html.j2",
         "name": "CIS TencentOS Server 4 Benchmark",
     },
-    "windows": {
-        "engine": "cis-windows-ansible/roles/cis_windows/files/cis_engine.ps1",
-        "catalog": "cis-windows-ansible/roles/cis_windows/files/rules.json",
-        "guidance": "cis-windows-ansible/roles/cis_windows/files/guidance.json",
-        "sections": "cis-windows-ansible/roles/cis_windows/files/sections.json",
-        "template": "cis-windows-ansible/roles/cis_windows/templates/report.html.j2",
+    "win2016": {
+        "engine": "cis-win2016-ansible/roles/cis_win2016/files/cis_engine.ps1",
+        "catalog": "cis-win2016-ansible/roles/cis_win2016/files/rules.json",
+        "guidance": "cis-win2016-ansible/roles/cis_win2016/files/guidance.json",
+        "sections": "cis-win2016-ansible/roles/cis_win2016/files/sections.json",
+        "template": "cis-win2016-ansible/roles/cis_win2016/templates/report.html.j2",
+        "name": "CIS Microsoft Windows Server 2016 Benchmark",
+    },
+    "win2019": {
+        "engine": "cis-win2019-ansible/roles/cis_win2019/files/cis_engine.ps1",
+        "catalog": "cis-win2019-ansible/roles/cis_win2019/files/rules.json",
+        "guidance": "cis-win2019-ansible/roles/cis_win2019/files/guidance.json",
+        "sections": "cis-win2019-ansible/roles/cis_win2019/files/sections.json",
+        "template": "cis-win2019-ansible/roles/cis_win2019/templates/report.html.j2",
+        "name": "CIS Microsoft Windows Server 2019 Benchmark",
+    },
+    "win2022": {
+        "engine": "cis-win2022-ansible/roles/cis_win2022/files/cis_engine.ps1",
+        "catalog": "cis-win2022-ansible/roles/cis_win2022/files/rules.json",
+        "guidance": "cis-win2022-ansible/roles/cis_win2022/files/guidance.json",
+        "sections": "cis-win2022-ansible/roles/cis_win2022/files/sections.json",
+        "template": "cis-win2022-ansible/roles/cis_win2022/templates/report.html.j2",
+        "name": "CIS Microsoft Windows Server 2022 Benchmark",
+    },
+    "win2025": {
+        "engine": "cis-win2025-ansible/roles/cis_win2025/files/cis_engine.ps1",
+        "catalog": "cis-win2025-ansible/roles/cis_win2025/files/rules.json",
+        "guidance": "cis-win2025-ansible/roles/cis_win2025/files/guidance.json",
+        "sections": "cis-win2025-ansible/roles/cis_win2025/files/sections.json",
+        "template": "cis-win2025-ansible/roles/cis_win2025/templates/report.html.j2",
         "name": "CIS Microsoft Windows Server 2025 Benchmark",
     },
     "rhel8": {
