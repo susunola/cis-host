@@ -609,17 +609,17 @@ footer b{color:var(--ink2)}
       {%- set g = GUID.get(r.id, {}) -%}
       {%- set sinfo = ST.get(r.status, ST['notapplicable']) -%}
       {%- set ainfo = AP.get(r.apply_status, AP['n/a']) -%}
-      {%- set did = 'd' ~ (r.id | replace('.', '_')) -%}
-        <tr class="r" data-id="{{ did }}" data-st="{{ r.status }}" data-risk="{{ r.risk }}"
-            data-ap="{{ 'applied' if r.apply_status in ['applied', 'applied_pending'] else '' }}"
-            data-lv="{{ r.level }}" data-ch="{{ r.id.split('.')[0] }}"
+      {%- set did = 'd' ~ (r.id | replace('.', '_') | replace('/', '_') | e) -%}
+        <tr class="r" data-id="{{ did }}" data-st="{{ r.status | e }}" data-risk="{{ r.risk | e }}"
+            data-ap="{{ 'applied' if r.apply_status in ['applied', 'applied_pending'] else '' | e }}"
+            data-lv="{{ r.level | e }}" data-ch="{{ r.id.split('.')[0] | e }}"
             data-q="{{ (r.id ~ ' ' ~ r.title ~ ' ' ~ r.family ~ ' ' ~ SEC.subsections.get(r.section, '')) | lower | e }}">
           <td class="id">{{ r.id | e }}</td>
        <td class="ti">{{ r.title | e }}
           <span class="fam">{{ SEC.subsections.get(r.section, SEC.chapters.get(r.id.split('.')[0], '')) | e }}
      · {{ r.assessment | e }} · {{ r.family | e }}</span>
     </td>
-          <td class="c"><span class="lvtag l{{ r.level }}">L{{ r.level }}</span></td>
+          <td class="c"><span class="lvtag l{{ r.level | e }}">L{{ r.level | e }}</span></td>
           <td class="c"><span class="pill {{ sinfo.cls }}">{{ sinfo.en }}</span></td>
           <td class="c">
             {%- if IS_APPLY -%}
@@ -629,7 +629,7 @@ footer b{color:var(--ink2)}
             {%- endif -%}
           </td>
         </tr>
-        <tr class="d" id="{{ did }}">
+        <tr class="d" id="{{ did | e }}">
           <td colspan="5">
             <div class="det">
               <h4>{{ 'Finding' }}</h4>
