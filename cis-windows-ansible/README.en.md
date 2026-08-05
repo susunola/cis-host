@@ -1,8 +1,8 @@
-# CIS Windows Server 2022 Benchmark v1.0.0 — Ansible Playbooks
+# CIS Windows Server 2025 Benchmark v2.1.0 — Ansible Playbooks
 
 [English](README.md) | **简体中文**
 
-基于 CIS **Microsoft Windows Server 2022 Benchmark v1.0.0** 的自动化合规扫描与修复 Playbook，属于 [CIS-OS](../) 项目的一部分。
+基于 CIS **Microsoft Windows Server 2025 Benchmark v2.1.0** 的自动化合规扫描与修复 Playbook，属于 [CIS-OS](../) 项目的一部分。
 
 ## 一次运行的流程
 

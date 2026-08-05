@@ -36,7 +36,7 @@
 |------|------|------|--------|
 | `cis-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
 | `cis-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
-| `cis-windows-ansible/`    | CIS Windows Server 2022 v1.0.0 | PowerShell | 30 |
+| `cis-windows-ansible/`    | CIS Windows Server 2025 v2.1.0 | PowerShell | 154 |
 
 每个套件都是独立的 Ansible 工程，自带 inventory、group_vars、`scan.yml`、`apply.yml`、role 树、模板。
 

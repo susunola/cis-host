@@ -1,3 +1,3 @@
 {
-  "remediation_note": "For apply mode, run PowerShell as Administrator. Remediation modifies registry keys, security policy settings, and service configurations."
+  "remediation_note": "For apply mode, run PowerShell as Administrator. Remediation modifies registry keys, Group Policy settings, security policy settings, and service configurations."
 }

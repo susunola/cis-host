@@ -1,9 +1,9 @@
-# CIS Windows Server 2022 Benchmark v1.0.0 — Ansible Playbooks
+# CIS Windows Server 2025 Benchmark v2.1.0 — Ansible Playbooks
 
 **English** | [简体中文](README.en.md)
 
-Ansible playbooks that implement the **CIS Microsoft Windows Server 2022 Benchmark
-v1.0.0** for automated compliance scanning and remediation. Part of [CIS-OS](../).
+Ansible playbooks that implement the **CIS Microsoft Windows Server 2025 Benchmark
+v2.1.0** for automated compliance scanning and remediation. Part of [CIS-OS](../).
 
 ## How a run works
 
@@ -23,7 +23,7 @@ v1.0.0** for automated compliance scanning and remediation. Part of [CIS-OS](../
        │  powershell.exe -File cis_engine.ps1
        │    -Mode scan | apply
        │    -Profile L1 | L2
-       ├──────────────────────────────▶   30 rules
+       ├──────────────────────────────▶   154 rules
        │                                    scan : read only
        │                                    apply: patch + re-verify,
        │                                          backup → C:\cis-backups\
