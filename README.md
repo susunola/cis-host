@@ -1,9 +1,10 @@
-# cis-tencentos-ansible
+# CIS-OS
 
-Ansible playbooks that implement the **CIS TencentOS Linux 3** and **CIS TencentOS Linux 4**
-security benchmarks, with `scan` and `apply` modes and a generated, professional HTML report.
+A collection of Ansible playbooks that implement **CIS security benchmarks** for multiple
+Linux distributions, with `scan` and `apply` modes and a generated, professional HTML report.
 
-This repository contains two independent, self-contained playbook suites:
+Currently ships two independent, self-contained playbook suites (more OS families — e.g.
+RHEL — to be added later under the same layout):
 
 | Suite | Benchmark | Rules | Automated |
 |-------|-----------|-------|-----------|
