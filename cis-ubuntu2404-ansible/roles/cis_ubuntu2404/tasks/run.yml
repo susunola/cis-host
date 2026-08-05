@@ -6,11 +6,14 @@
 - name: Create working directory
   ansible.builtin.tempfile:
     state: directory
+    path: "{{ cis_remote_tmp }}"
     prefix: "cis-{{ cis_os_key }}-"
     suffix: ""
   register: _cis_tmp
+  check_mode: false
 
 - name: Ship engine and rules
+  check_mode: false
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ _cis_tmp.path }}/{{ item }}"
@@ -20,6 +23,7 @@
     - "{{ cis_rules_file }}"
 
 - name: Ensure engine is executable
+  check_mode: false
   ansible.builtin.file:
     path: "{{ _cis_tmp.path }}/{{ cis_engine_file }}"
     mode: "0755"
@@ -29,7 +33,8 @@
     path: "{{ cis_backup_dir }}"
     state: directory
     mode: "0700"
-  when: cis_mode == 'apply'
+  check_mode: false
+  when: cis_mode_effective == 'apply'
 
 - name: Assemble engine command
   ansible.builtin.set_fact:
@@ -44,19 +49,21 @@
       {% if cis_sections | length > 0 %}--sections {{ cis_sections | join(',') }}{% endif %}
       {% if cis_families | length > 0 %}--families {{ cis_families | join(',') }}{% endif %}
       {% if cis_mode == 'apply' %}--backup-dir {{ cis_backup_dir }}{% endif %}
-      {% if cis_allow_disruptive %}--allow-disruptive{% endif %}
+      {% if cis_mode_effective == 'apply' and cis_allow_disruptive %}--allow-disruptive{% endif %}
       --benchmark "{{ cis_benchmark_name }} {{ cis_benchmark_version }}"
       --out {{ _cis_tmp.path }}/result.json
 
 - name: Run benchmark
   ansible.builtin.command: "{{ _cmd }}"
-  register: _cis_run
+  check_mode: false
   changed_when: false
+  register: _cis_run
   timeout: "{{ cis_engine_timeout }}"
   environment:
     LC_ALL: C
 
 - name: Slurp result
+  check_mode: false
   ansible.builtin.slurp:
     src: "{{ _cis_tmp.path }}/result.json"
   register: _cis_result_raw
@@ -66,6 +73,7 @@
     cis_result: "{{ _cis_result_raw.content | b64decode | from_json }}"
 
 - name: Clean up temp directory
+  check_mode: false
   ansible.builtin.file:
     path: "{{ _cis_tmp.path }}"
     state: absent

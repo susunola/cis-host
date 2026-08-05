@@ -72,7 +72,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · {{ cis_host.hostname | e }}</title>
+<title>{{ cis_benchmark_name | e }} {{ cis_benchmark_version | e }} · {{ cis_host.hostname | e }}</title>
 <style>
 :root{
   --bg:#f0f2f8; --card:#ffffff; --ink:#1a2332; --ink2:#4a5f7a; --ink3:#8896aa;
@@ -354,7 +354,7 @@ footer b{color:var(--ink2)}
     <div>
       {% if cis_org_name %}<div class="org">{{ cis_org_name | e }}</div>{% endif %}
       <h1>{{ 'Compliance Report' }}
-        <span style="display:block;font-size:13px;font-weight:500;color:#b0c4e0;margin-top:7px;letter-spacing:0">{{ cis_benchmark_name }} {{ cis_benchmark_version }}</span>
+               <span style="display:block;font-size:13px;font-weight:500;color:#b0c4e0;margin-top:7px;letter-spacing:0">{{ cis_benchmark_name | e }} {{ cis_benchmark_version | e }}</span>
       </h1>
       <div class="sub">
         {{ cis_host.hostname | e }}
@@ -417,10 +417,10 @@ footer b{color:var(--ink2)}
         <tbody>
         {% for dev, d in (cis_host.interfaces | dictsort) %}
           <tr>
-            <td>{{ dev | e }}</td>
-            <td>{{ (d.mac | upper) if d.mac else '—' }}</td>
-            <td>{{ d.ipv4 | join(', ') if d.ipv4 else '—' }}</td>
-            <td>{{ d.ipv6 | join(', ') if d.ipv6 else '—' }}</td>
+      <td>{{ dev | e }}</td>
+            <td>{{ (d.mac | upper | e) if d.mac else '—' }}</td>
+     <td>{{ (d.ipv4 | join(', ') | e) if d.ipv4 else '—' }}</td>
+     <td>{{ (d.ipv6 | join(', ') | e) if d.ipv6 else '—' }}</td>
           </tr>
         {% else %}
           <tr><td colspan="4">{{ 'No interface data — the' }} <code>ip</code> {{ 'command is missing on the target.' }}</td></tr>
@@ -615,17 +615,17 @@ footer b{color:var(--ink2)}
             data-lv="{{ r.level }}" data-ch="{{ r.id.split('.')[0] }}"
             data-q="{{ (r.id ~ ' ' ~ r.title ~ ' ' ~ r.family ~ ' ' ~ SEC.subsections.get(r.section, '')) | lower | e }}">
           <td class="id">{{ r.id | e }}</td>
-          <td class="ti">{{ r.title | e }}
-            <span class="fam">{{ SEC.subsections.get(r.section, SEC.chapters.get(r.id.split('.')[0], '')) | e }}
-              · {{ r.assessment }} · {{ r.family }}</span>
-          </td>
+       <td class="ti">{{ r.title | e }}
+          <span class="fam">{{ SEC.subsections.get(r.section, SEC.chapters.get(r.id.split('.')[0], '')) | e }}
+     · {{ r.assessment | e }} · {{ r.family | e }}</span>
+    </td>
           <td class="c"><span class="lvtag l{{ r.level }}">L{{ r.level }}</span></td>
           <td class="c"><span class="pill {{ sinfo.cls }}">{{ sinfo.en }}</span></td>
           <td class="c">
             {%- if IS_APPLY -%}
             <span class="pill {{ ainfo.cls }}">{{ ainfo.en }}</span>
             {%- else -%}
-            <span class="pill {{ RISK.get(r.risk, {'cls':'na'}).cls }}">{{ RISK.get(r.risk, {'en': r.risk}).en }}</span>
+          <span class="pill {{ RISK.get(r.risk, {'cls':'na'}).cls }}">{{ RISK.get(r.risk, {'en': r.risk | e}).en }}</span>
             {%- endif -%}
           </td>
         </tr>
@@ -646,11 +646,11 @@ footer b{color:var(--ink2)}
               <h4>{{ 'Remediation (CIS)' }}</h4><pre>{{ g.get('remediation') | e }}</pre>
               {% endif %}
               <h4>{{ 'Meta' }}</h4>
-              <p>{{ 'Levels' }} L{{ (r.levels | default([])) | join('/L') }} · {{ 'Method' }} {{ r.assessment }}
-                 · {{ 'Family' }} <code>{{ r.family }}</code>
-                 · {{ 'Risk' }} {{ RISK.get(r.risk, {'en': r.risk}).en }}
-                 {%- if r.page %} · {{ 'PDF p.' }} {{ r.page }} {{ '' }}{% endif %}
-                 · {{ r.duration_ms }} ms</p>
+              <p>{{ 'Levels' }} L{{ (r.levels | default([])) | join('/L') }} · {{ 'Method' }} {{ r.assessment | e }}
+     · {{ 'Family' }} <code>{{ r.family | e }}</code>
+                 · {{ 'Risk' }} {{ RISK.get(r.risk, {'en': r.risk | e}).en }}
+    {%- if r.page %} · {{ 'PDF p.' }} {{ r.page }} {{ '' }}{% endif %}
+       · {{ r.duration_ms }} ms</p>
             </div>
           </td>
         </tr>
@@ -676,7 +676,7 @@ footer b{color:var(--ink2)}
     <div class="blkbody">
       <table class="exl">
         {% for x in R.excluded %}
-        <tr><td>{{ x.id }}</td><td>{{ x.title | e }}</td><td>{{ x.reason | e }}</td></tr>
+      <tr><td>{{ x.id | e }}</td><td>{{ x.title | e }}</td><td>{{ x.reason | e }}</td></tr>
         {% endfor %}
       </table>
     </div>
@@ -691,7 +691,7 @@ footer b{color:var(--ink2)}
   {% endif %}
 
   <footer>
-    <b>{{ cis_benchmark_name }} {{ cis_benchmark_version }}</b> ·
+    <b>{{ cis_benchmark_name | e }} {{ cis_benchmark_version | e }}</b> ·
     {{ 'Target' }} <b>{{ cis_host.hostname | e }}</b> ({{ cis_host.ipv4 | e }} / {{ cis_host.mac | upper | e }}) ·
     {{ 'Mode' }} <b>{{ 'apply' if IS_APPLY else 'scan' }}</b> ·
     {{ 'Profile' }} <b>{{ cis_profile }}</b> · {{ 'Platform' }} <b>{{ cis_platform }}</b><br>

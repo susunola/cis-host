@@ -30,6 +30,7 @@ import argparse
 import html
 import json
 import os
+import random
 import subprocess
 import sys
 import time
@@ -173,7 +174,7 @@ def run_engine(args, mode):
 
     result_file = os.path.join(
         os.path.abspath(args.output),
-        f"result-{mode}-{int(time.time())}.json"
+        f"result-{mode}-{int(time.time())}-{random.randint(0, 9999):04d}.json"
     )
     os.makedirs(os.path.dirname(result_file), exist_ok=True)
 
@@ -234,7 +235,7 @@ def run_engine(args, mode):
     try:
         proc = subprocess.run(
             cmd, capture_output=True, text=True, timeout=600,
-            cwd=engine_dir
+            stdin=subprocess.DEVNULL, cwd=engine_dir
         )
         elapsed = time.time() - started
         print(f"[{mode.upper()}] Exit: {proc.returncode}  Duration: {elapsed:.1f}s")
@@ -246,7 +247,9 @@ def run_engine(args, mode):
         sys.exit(1)
 
     if proc.returncode != 0:
-        print(f"[{mode.upper()}] Engine stderr:\n{proc.stderr[-500:]}", file=sys.stderr)
+        print(f"[{mode.upper()}] Engine stderr:\n{proc.stderr[:1000]}", file=sys.stderr)
+        if len(proc.stderr) > 1000:
+            print(f"[{mode.upper()}] ... (truncated, {len(proc.stderr)} chars total)", file=sys.stderr)
         # For scan mode, engine errors are usually pre-checks (e.g. not root)
         # — still try to read the JSON if it was written.
         if mode == "scan" and not os.path.exists(result_file):
@@ -303,13 +306,17 @@ def collect_host():
     elif sys.platform == "win32":
         info["os"] = platform.platform()
 
-    # IPs
+    # IPs — set a socket timeout so DNS misconfiguration doesn't hang
+    old_timeout = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(10)
     try:
         info["ipv4"] = [addr[4][0] for addr in
                         socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)
                         if not addr[4][0].startswith("127.")]
-    except (OSError, socket.gaierror):
+    except (OSError, socket.gaierror, socket.timeout):
         pass
+    finally:
+        socket.setdefaulttimeout(old_timeout)
 
     # Uptime (Linux)
     if sys.platform.startswith("linux"):
@@ -808,7 +815,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <div class="rule-id">{html.escape(detail['id'])}</div>
 <div class="rule-title">{html.escape(detail['title'])}</div>
 <div class="meta">
-  <span class="meta-item">Benchmark: {detail['benchmark']} v{detail['benchmark_version']}</span>
+  <span class="meta-item">Benchmark: {html.escape(detail['benchmark'])} v{html.escape(detail['benchmark_version'])}</span>
   <span class="meta-item section">Section {detail['section']}</span>
   <span class="meta-item">Family: {detail['family']}</span>
   <span class="meta-item">Level: {', '.join(f'L{x}' for x in detail['levels'])}</span>

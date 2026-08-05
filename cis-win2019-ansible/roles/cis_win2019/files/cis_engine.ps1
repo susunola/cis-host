@@ -16,7 +16,7 @@ Output JSON path (default: result.json)
 param(
     [string]$Catalog = "rules.json",
     [string]$Mode = "scan",
-    [string]$Profile = "L1",
+    [string]$ProfileLevel = "L1",
     [string]$Platform = "server",
     [string]$Out = "result.json",
     [string]$Include = "",
@@ -32,8 +32,8 @@ if ($Mode -notin @("scan", "apply")) {
     Write-Error "Mode must be 'scan' or 'apply'. Got: $Mode"
     exit 1
 }
-if ($Profile -notin @("L1", "L2")) {
-    Write-Error "Profile must be 'L1' or 'L2'. Got: $Profile"
+if ($ProfileLevel -notin @("L1", "L2")) {
+    Write-Error "Profile must be 'L1' or 'L2'. Got: $ProfileLevel"
     exit 1
 }
 
@@ -49,6 +49,16 @@ if ($AuditLog) {
     }
 }
 $hostname = [System.Net.Dns]::GetHostName()
+
+# Ensure the audit StreamWriter handle is always released, even on a terminating
+# error anywhere below (ErrorActionPreference=Stop would otherwise leak it).
+trap {
+    if ($auditWriter) {
+        try { $auditWriter.Flush(); $auditWriter.Dispose() } catch { }
+  $script:auditWriter = $null
+    }
+    break
+}
 
 # ── Helpers ────────────────────────────────────────────────
 function Write-Result {
@@ -69,9 +79,9 @@ function Write-Audit {
         ts = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss.fff") + "Z"
         host = $hostname
         version = "1.1.0-windows"
-        mode = $Mode
-        profile = $Profile
-        rule = $RuleId
+     mode = $Mode
+        profile = $ProfileLevel
+    rule = $RuleId
         title = $Title
         status = $Status
         apply_status = $ApplyStatus
@@ -99,6 +109,27 @@ function Get-SecPol {
         if ($tmp -and (Test-Path $tmp)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
     }
     return $null
+}
+
+# ── Value comparison helpers (culture-invariant, type-tolerant) ──
+function ConvertTo-InvariantInt {
+    param($Value, [ref]$Ok)
+    $parsed = 0
+    $Ok.Value = [int]::TryParse(
+        [string]$Value, [Globalization.NumberStyles]::Integer,
+   [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)
+    return $parsed
+}
+
+function Test-ValueEq {
+    # Registry DWORDs come back as [int]; JSON expected may be int or string.
+    # Compare numerically when both look numeric, otherwise fall back to string.
+    param($Actual, $Expected)
+    $aOk = $false; $eOk = $false
+    $ai = ConvertTo-InvariantInt $Actual   ([ref]$aOk)
+    $ei = ConvertTo-InvariantInt $Expected ([ref]$eOk)
+    if ($aOk -and $eOk) { return ($ai -eq $ei) }
+    return ("$Actual" -eq "$Expected")
 }
 
 # ── Policy name → (secedit key, expected, op) ──
@@ -150,7 +181,7 @@ function Invoke-Check {
                     $m = $PasswordRegMap[$pn]
                     try {
                         $val = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name
-                        $ok = ($val -eq $m.Value)
+                       $ok = (Test-ValueEq $val $m.Value)
                         return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Title)=$val (expected $($m.Value))"}
                     } catch { return @{status="error"; detail="Registry key not found: $($m.Path)\$($m.Name)"} }
                 } else {
@@ -192,7 +223,7 @@ function Invoke-Check {
                     $m = $LockoutRegMap[$pn]
                     try {
                         $val = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name
-                        $ok = ($val -eq $m.Value)
+                       $ok = (Test-ValueEq $val $m.Value)
                         return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Title)=$val (expected $($m.Value))"}
                     } catch { return @{status="error"; detail="Registry key not found: $($m.Path)\$($m.Name)"} }
                 } else {
@@ -206,7 +237,7 @@ function Invoke-Check {
             if ($null -ne $val) {
                 if ($op -eq "le") { $ok = [int]$val -le [int]$expected }
                 elseif ($op -eq "ge") { $ok = [int]$val -ge [int]$expected }
-                else { $ok = ($val -eq $expected) }
+                 else { $ok = (Test-ValueEq $val $expected) }
                 return @{status=if($ok){"pass"}else{"fail"}; detail="$key=$val (expected $op $expected)"}
             }
             return @{status="error"; detail="$key not found"}
@@ -219,8 +250,8 @@ function Invoke-Check {
                 $m = $AuditPolicyRegMap[$policy]
                 try {
                     $val = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name
-                    $ok = ($val -eq $m.Value)
-                    return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Summary): $m.Name=$val (expected $($m.Value))"}
+                   $ok = (Test-ValueEq $val $m.Value)
+                       return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Summary): $($m.Name)=$val (expected $($m.Value))"}
                 } catch { return @{status="error"; detail="Registry key not found: $($m.Path)\$($m.Name)"} }
             }
             return @{status="error"; detail="Unknown audit policy index: $policy"}
@@ -256,7 +287,7 @@ function Invoke-Check {
             $expected = $params.value
             try {
                 $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -eq $expected)
+           $ok = (Test-ValueEq $val $expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="$path\$name = $val (expected $expected)"}
             } catch { return @{status="error"; detail="Registry key not found: $path\$name"} }
         }
@@ -265,9 +296,9 @@ function Invoke-Check {
             $path = $params.path
             $name = $params.name
             try {
-                $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -eq $params.value)
-                return @{status=if($ok){"pass"}else{"fail"}; detail="$path\$name = '$val' (expected '$($params.value)')"}
+        $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
+      $ok = ("$val" -ieq "$($params.value)")
+    return @{status=if($ok){"pass"}else{"fail"}; detail="$path\$name = '$val' (expected '$($params.value)')"}
             } catch { return @{status="error"; detail="Registry key not found: $path\$name"} }
         }
 
@@ -279,34 +310,45 @@ function Invoke-Check {
 
         # ── 6. Windows Firewall ──
         "firewall-profile" {
-            $profile = $params.profile
-            try {
-                $fw = Get-NetFirewallProfile -Name $profile -ErrorAction Stop
-                $enabled = $fw.Enabled
-                $defaultIn = $fw.DefaultInboundAction
+            $fwProfile = $params.profile
+       $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
+     try {
+                $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
+   $enabled = $fw.Enabled
+      $defaultIn = $fw.DefaultInboundAction
                 $defaultOut = $fw.DefaultOutboundAction
-                $ok = ($enabled -eq $true -and $defaultIn -eq "Block" -and $defaultOut -eq "Allow")
-                return @{
-                    status = if($ok){"pass"}else{"fail"}
-                    detail = "${profile}: enabled=$enabled inbound=$defaultIn outbound=$defaultOut"
-                }
+     $ok = ("$enabled" -eq "True" -and "$defaultIn" -eq "Block" -and "$defaultOut" -eq "$expectedOut")
+       return @{
+  status = if($ok){"pass"}else{"fail"}
+        detail = "${fwProfile}: enabled=$enabled inbound=$defaultIn outbound=$defaultOut (expected out=$expectedOut)"
+ }
             } catch {
-                return @{status="error"; detail="Failed to query firewall profile $profile"}
+return @{status="error"; detail="Failed to query firewall profile $fwProfile"}
             }
         }
 
         # ── 7. Service Configuration ──
-        "service-state" {
-            $name = $params.name
-            $expected = $params.state
+"service-state" {
+     $name = $params.name
+    $expected = $params.state
             try {
-                $svc = Get-Service -Name $name -ErrorAction Stop
-                $ok = ($svc.Status -eq $expected -or $svc.StartType -eq $expected)
-                return @{
-                    status = if($ok){"pass"}else{"fail"}
-                    detail = "${name}: status=$($svc.Status) startType=$($svc.StartType) (expected $expected)"
-                }
-            } catch {
+           $svc = Get-Service -Name $name -ErrorAction Stop
+                # Match against the correct dimension: run-state vs start-type,
+       # instead of an -or that passes when EITHER matches (false pass).
+     $startTypes = @("Automatic", "Manual", "Disabled", "Auto", "AutomaticDelayedStart")
+                $runStates  = @("Running", "Stopped", "Paused")
+                if ($startTypes -contains $expected) {
+           $ok = ("$($svc.StartType)" -eq "$expected" -or ("$expected" -eq "Auto" -and "$($svc.StartType)" -eq "Automatic"))
+           } elseif ($runStates -contains $expected) {
+    $ok = ("$($svc.Status)" -eq "$expected")
+        } else {
+           $ok = ("$($svc.Status)" -eq "$expected" -or "$($svc.StartType)" -eq "$expected")
+      }
+            return @{
+      status = if($ok){"pass"}else{"fail"}
+         detail = "${name}: status=$($svc.Status) startType=$($svc.StartType) (expected $expected)"
+           }
+ } catch {
                 if ($expected -eq "NotFound") {
                     return @{status="pass"; detail="${name}: not installed (expected)"}
                 }
@@ -321,7 +363,7 @@ function Invoke-Check {
             $expected = $params.value
             try {
                 $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -eq $expected)
+           $ok = (Test-ValueEq $val $expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="WindowsUpdate\$name = $val (expected $expected)"}
             } catch { return @{status="error"; detail="WU key not found"} }
         }
@@ -333,7 +375,7 @@ function Invoke-Check {
             $expected = $params.value
             try {
                 $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -eq $expected)
+           $ok = (Test-ValueEq $val $expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="UAC\$name = $val (expected $expected)"}
             } catch { return @{status="error"; detail="UAC key not found"} }
         }
@@ -356,7 +398,7 @@ function Invoke-Check {
             $expected = $params.value
             try {
                 $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -eq $expected)
+           $ok = (Test-ValueEq $val $expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="SMB\$name = $val (expected $expected)"}
             } catch { return @{status="error"; detail="SMB key not found"} }
         }
@@ -368,7 +410,7 @@ function Invoke-Check {
             $expected = $params.value
             try {
                 $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -eq $expected)
+           $ok = (Test-ValueEq $val $expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="RDP NLA = $val (expected $expected)"}
             } catch { return @{status="error"; detail="RDP key not found"} }
         }
@@ -401,7 +443,7 @@ function Invoke-Check {
             try {
                 if (Test-Path $path) {
                     $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                    $ok = ($val -eq $expected)
+               $ok = (Test-ValueEq $val $expected)
                     return @{status=if($ok){"pass"}else{"fail"}; detail="PS logging $name=$val"}
                 }
             } catch { Write-Debug "ps-logging check failed: $_" }
@@ -454,12 +496,14 @@ function Invoke-Fix {
                     } else {
                         $c += "`r`n$key = $expected"
                     }
-                    [System.IO.File]::WriteAllText($tmpInf, $c)
-                    secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
-                    Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
-                    Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
-                    return "applied"
-                }
+     [System.IO.File]::WriteAllText($tmpInf, $c)
+        secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+     $rc = $LASTEXITCODE
+        Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
+      Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
+        if ($rc -ne 0) { return "failed: secedit exit code $rc" }
+   return "applied"
+  }
                 Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
                 return "error: secedit export was empty or invalid"
             } catch { return "failed: $($_.Exception.Message)" }
@@ -496,12 +540,14 @@ function Invoke-Fix {
                     } else {
                         $c += "`r`n$key = $expected"
                     }
-                    [System.IO.File]::WriteAllText($tmpInf, $c)
-                    secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
-                    Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
-                    Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
-                    return "applied"
-                }
+     [System.IO.File]::WriteAllText($tmpInf, $c)
+        secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+     $rc = $LASTEXITCODE
+        Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
+      Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
+        if ($rc -ne 0) { return "failed: secedit exit code $rc" }
+   return "applied"
+  }
                 Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
                 return "error: secedit export was empty or invalid"
             } catch { return "failed: $($_.Exception.Message)" }
@@ -520,31 +566,35 @@ function Invoke-Fix {
         "user-right" {
             $privilege = $params.privilege; $expectedSid = $params.expected_sid
             if (-not $expectedSid) { return "skipped: no expected SID defined" }
-            try {
-                $tmp = "$env:TEMP\ur_$([Guid]::NewGuid()).inf"
-                secedit /export /cfg $tmp /areas USER_RIGHTS 2>$null | Out-Null
-                if (Test-Path $tmp) {
-                    $c = Get-Content $tmp -Raw
-                    if ($c -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
-                        if ($Matches[1] -match [regex]::Escape($expectedSid)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue; return "already" }
-                    }
-                }
-                Remove-Item $tmp -Force -ErrorAction SilentlyContinue
-                $tmp2 = "$env:TEMP\ur_fix_$([Guid]::NewGuid()).inf"
-                secedit /export /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
-                $c = Get-Content $tmp2 -Raw
-                if ($c -match "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$") {
-                    $c = $c -replace "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$", "`${1}$expectedSid"
-                } else {
-                    $c += "`r`n$privilege = $expectedSid"
-                }
-                [System.IO.File]::WriteAllText($tmp2, $c)
-                $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
-                secedit /configure /db $seceditDb /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
-                Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
-                Remove-Item $tmp2 -Force -ErrorAction SilentlyContinue
-                return "applied"
-            } catch { return "failed: $($_.Exception.Message)" }
+     try {
+             $tmp = "$env:TEMP\ur_$([Guid]::NewGuid()).inf"
+       secedit /export /cfg $tmp /areas USER_RIGHTS 2>$null | Out-Null
+       if (Test-Path $tmp) {
+            $c = Get-Content $tmp -Raw
+    if ($c -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
+       # Exact token match (split on comma) — avoids substring collisions between SIDs
+        $members = $Matches[1].Trim() -split ',' | ForEach-Object { $_.Trim() }
+   if ($members -contains $expectedSid.Trim()) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue; return "already" }
+    }
+    }
+      Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+       $tmp2 = "$env:TEMP\ur_fix_$([Guid]::NewGuid()).inf"
+   secedit /export /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+     $c = Get-Content $tmp2 -Raw
+     if ($c -match "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$") {
+      $c = $c -replace "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$", "`${1}$expectedSid"
+       } else {
+      $c += "`r`n$privilege = $expectedSid"
+            }
+  [System.IO.File]::WriteAllText($tmp2, $c)
+     $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
+           secedit /configure /db $seceditDb /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+    $rc = $LASTEXITCODE
+     Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
+  Remove-Item $tmp2 -Force -ErrorAction SilentlyContinue
+   if ($rc -ne 0) { return "failed: secedit exit code $rc" }
+     return "applied"
+         } catch { return "failed: $($_.Exception.Message)" }
         }
 
         "reg-dword" {
@@ -561,35 +611,43 @@ function Invoke-Fix {
         }
 
         "firewall-profile" {
-            $profile = $params.profile
-            try {
-                $fw = Get-NetFirewallProfile -Name $profile -ErrorAction Stop
-                if ($fw.Enabled -eq $true -and $fw.DefaultInboundAction -eq "Block" -and $fw.DefaultOutboundAction -eq "Allow") { return "already" }
-                Set-NetFirewallProfile -Name $profile -Enabled True -DefaultInboundAction Block -DefaultOutboundAction Allow
-                return "applied"
-            } catch { return "failed: $($_.Exception.Message)" }
-        }
+   $fwProfile = $params.profile
+     $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
+     try {
+     $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
+     if ("$($fw.Enabled)" -eq "True" -and "$($fw.DefaultInboundAction)" -eq "Block" -and "$($fw.DefaultOutboundAction)" -eq "$expectedOut") { return "already" }
+    Set-NetFirewallProfile -Name $fwProfile -Enabled True -DefaultInboundAction Block -DefaultOutboundAction $expectedOut
+        return "applied"
+ } catch { return "failed: $($_.Exception.Message)" }
+    }
 
-        "service-state" {
-            $name = $params.name; $expected = $params.state
-            try {
-                $svc = Get-Service -Name $name -ErrorAction Stop
-                if ($expected -eq "Stopped" -and $svc.Status -eq "Stopped") { return "already" }
-                if ($expected -eq "Running" -and $svc.Status -eq "Running") { return "already" }
-                if ($expected -eq "Stopped") {
-                    Stop-Service -Name $name -Force -ErrorAction SilentlyContinue
-                    Set-Service -Name $name -StartupType Disabled
-                } elseif ($expected -eq "Running") {
-                    Set-Service -Name $name -StartupType Automatic
-                    Start-Service -Name $name -ErrorAction SilentlyContinue
-                } elseif ($expected -eq "Auto") {
-                    Set-Service -Name $name -StartupType Automatic
-                }
-                return "applied"
-            } catch {
-                if ($expected -eq "NotFound") { return "already" }
-                return "failed: $($_.Exception.Message)"
-            }
+  "service-state" {
+   $name = $params.name; $expected = $params.state
+ try {
+          $svc = Get-Service -Name $name -ErrorAction Stop
+     if ($expected -eq "Stopped" -and "$($svc.Status)" -eq "Stopped" -and "$($svc.StartType)" -eq "Disabled") { return "already" }
+     if ($expected -eq "Disabled" -and "$($svc.StartType)" -eq "Disabled") { return "already" }
+       if ($expected -eq "Running" -and "$($svc.Status)" -eq "Running") { return "already" }
+    if (("$($svc.StartType)" -eq "Automatic") -and ($expected -eq "Auto" -or $expected -eq "Automatic")) { return "already" }
+   if ($expected -eq "Manual" -and "$($svc.StartType)" -eq "Manual") { return "already" }
+ if ($expected -eq "Stopped" -or $expected -eq "Disabled") {
+   Stop-Service -Name $name -Force -ErrorAction SilentlyContinue
+    Set-Service -Name $name -StartupType Disabled
+       } elseif ($expected -eq "Running") {
+     Set-Service -Name $name -StartupType Automatic
+       Start-Service -Name $name -ErrorAction SilentlyContinue
+    } elseif ($expected -eq "Auto" -or $expected -eq "Automatic") {
+     Set-Service -Name $name -StartupType Automatic
+     } elseif ($expected -eq "Manual") {
+     Set-Service -Name $name -StartupType Manual
+       } else {
+              return "skipped: unsupported service state '$expected'"
+   }
+             return "applied"
+     } catch {
+           if ($expected -eq "NotFound") { return "already" }
+       return "failed: $($_.Exception.Message)"
+   }
         }
 
         "smb-signing" {
@@ -684,7 +742,7 @@ $familyList  = if ($Families)  { $Families  -split ',' | % { $_.Trim() } } else 
 $rules = @()
 foreach ($r in $catalog) {
     # Level filter
-    if ($Profile -eq "L1" -and $r.levels -notcontains 1) { continue }
+       if ($ProfileLevel -eq "L1" -and $r.levels -notcontains 1) { continue }
     # Platform filter
     if ($Platform -and $r.platforms -and $r.platforms -notcontains $Platform) { continue }
     # Exclude — must check BEFORE adding to $rules
@@ -799,7 +857,9 @@ function Get-Summary($levelFilter) {
     $applyFailed = ($filtered | Where-Object { $_.apply_status -match "^failed" }).Count
     $skippedRisk = ($filtered | Where-Object { $_.apply_status -eq "skipped_disruptive" }).Count
     $already = ($filtered | Where-Object { $_.apply_status -eq "already" }).Count
-    $appliedPending = 0  # Windows changes take effect immediately (no reboot needed for most)
+        # Windows registry/secedit changes take effect immediately; there is no
+    # reboot-pending queue to track, so applied_pending is always 0 by design.
+    $appliedPending = 0
 
     return @{
         total = $total; pass = $pass; fail = $fail; manual = $manual; error = $error
@@ -835,7 +895,8 @@ $output | ConvertTo-Json -Depth 10 | Out-File -FilePath $Out -Encoding utf8
 Write-Host "CIS scan complete: $($global:Results.Count) rules, score=$overallScore%, pass=$($summary.all.pass), fail=$($summary.all.fail)"
 Write-Host "Result written to: $Out"
 if ($auditWriter) {
-    $auditWriter.Close()
+    try { $auditWriter.Flush(); $auditWriter.Dispose() } catch { }
+    $auditWriter = $null
     Write-Host "Audit log written to: $AuditLog"
 }
 # ── Exit with code based on failures ──

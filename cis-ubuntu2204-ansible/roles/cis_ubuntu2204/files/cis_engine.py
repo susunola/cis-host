@@ -98,7 +98,7 @@ def sh(cmd, timeout=60):
     """Run a command as a list. -> (rc, out, err)"""
     try:
         p = subprocess.run(cmd, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, timeout=timeout)
+                           stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, timeout=timeout)
         return (p.returncode,
                 p.stdout.decode("utf-8", "replace").strip(),
                 p.stderr.decode("utf-8", "replace").strip())
@@ -122,7 +122,8 @@ def read(path):
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as fh:
             return fh.read()
-    except Exception:
+    except Exception as exc:
+        print("cis_engine: read(%s): %s" % (path, exc), file=sys.stderr)
         return None
 
 
@@ -196,8 +197,8 @@ def set_kv_in_file(ctx, path, key, value, sep=" ", comment_re=None,
         fh.write("\n".join(res).rstrip("\n") + "\n")
     try:
         os.chmod(path, mode)
-    except Exception:
-        pass
+    except Exception as exc:
+        ctx.notes.append("set_kv_in_file chmod %s %o: %s" % (path, mode, exc))
     ctx.changed_files.append(path)
 
 

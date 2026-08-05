@@ -1,12 +1,15 @@
 ---
 - name: Pre-flight checks
   ansible.builtin.include_tasks: preflight.yml
+  tags: [cis, always]
 
 - name: Run CIS benchmark
   ansible.builtin.include_tasks: run.yml
+  tags: [cis, scan, apply]
 
 - name: Generate reports
   ansible.builtin.include_tasks: report.yml
+  tags: [cis, report]
 
 - name: Gate on findings
   ansible.builtin.include_tasks: gate.yml

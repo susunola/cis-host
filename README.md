@@ -1,4 +1,4 @@
-# SecX Automation Suite
+# SecX Automation Suite (cis-os)
 
 **Compliance Baseline as Code | Hardening & Drift Automation**
 
