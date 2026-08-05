@@ -1,0 +1,157 @@
+{#- Fleet overview across every host in the play. -#}
+{%- set hosts = [] -%}
+{%- for h in ansible_play_hosts | sort -%}
+  {%- if hostvars[h].cis_result is defined -%}{%- set _ = hosts.append(hostvars[h]) -%}{%- endif -%}
+{%- endfor -%}
+{%- set tot = {'rules': 0, 'pass': 0, 'fail': 0, 'manual': 0, 'error': 0,
+               'l1applied': 0, 'l2applied': 0, 'pending': 0, 'failedfix': 0} -%}
+{%- for hv in hosts -%}
+  {%- set s = hv.cis_result.summary -%}
+  {%- set _ = tot.update({
+        'rules':  tot['rules']  + (s.all.total | int),
+        'pass':   tot['pass']   + (s.all['pass'] | int),
+        'fail':   tot['fail']   + (s.all.fail | int),
+        'manual': tot['manual'] + (s.all.manual | int),
+        'error':  tot['error']  + (s.all.error | int),
+        'l1applied': tot['l1applied'] + (s.L1.applied | int) + (s.L1.applied_pending | int),
+        'l2applied': tot['l2applied'] + (s.L2.applied | int) + (s.L2.applied_pending | int),
+        'pending':   tot['pending']   + (s.all.applied_pending | int),
+        'failedfix': tot['failedfix'] + (s.all.apply_failed | int)}) -%}
+{%- endfor -%}
+{%- set scored = tot['pass'] + tot['fail'] -%}
+{%- set fleetscore = (100.0 * tot['pass'] / scored) | round(1) if scored else 0.0 -%}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · 集群合规总览</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#16202e;--ink2:#475569;--ink3:#7c8a9e;
+  --line:#e2e8f2;--line2:#eef1f7;--brand:#1c3f7c;--brand2:#2f6fd0;
+  --ok:#127a3d;--okbg:#e7f5ec;--bad:#b3261e;--badbg:#fdeceb;
+  --warn:#9a5b00;--warnbg:#fdf3e2;--na:#64748b;--nabg:#eef1f6;
+  --shadow:0 1px 2px rgba(16,32,56,.05),0 8px 24px rgba(16,32,56,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums;
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",
+  "Microsoft YaHei",Roboto,Arial,sans-serif}
+a{color:var(--brand2);text-decoration:none}
+a:hover{text-decoration:underline}
+.mast{background:linear-gradient(135deg,#16305e,#1c3f7c 45%,#2a5ba8);color:#fff}
+.mast-in{max-width:1240px;margin:0 auto;padding:26px 24px 32px}
+.mast h1{margin:0;font-size:21px;font-weight:650}
+.mast .sub{margin-top:6px;font-size:13px;color:#c3d3ec}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px 60px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;
+  margin-top:-18px}
+.st{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 18px;
+  box-shadow:var(--shadow)}
+.st .k{font-size:11px;color:var(--ink3);letter-spacing:.7px;text-transform:uppercase;
+  font-weight:700}
+.st .v{font-size:29px;font-weight:700;line-height:1.25;letter-spacing:-.8px}
+.st .u{font-size:11.5px;color:var(--ink3)}
+h2.sec{font-size:15px;font-weight:650;margin:28px 0 12px;display:flex;align-items:center;gap:9px}
+h2.sec::before{content:"";width:3px;height:15px;background:var(--brand2);border-radius:2px}
+.tblwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:960px}
+th{text-align:left;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);
+  font-weight:700;padding:11px 13px;border-bottom:1px solid var(--line);background:#f8fafd}
+td{padding:11px 13px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fbff}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+.hn{font-weight:650}
+.pill{display:inline-flex;align-items:center;padding:1px 7px;border-radius:5px;font-size:11px;
+  font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.bad{background:var(--badbg);color:var(--bad)}
+.pill.warn{background:var(--warnbg);color:var(--warn)}
+.pill.na{background:var(--nabg);color:var(--na)}
+.sc{display:flex;align-items:center;gap:9px;min-width:132px}
+.sc .n{font-weight:700;width:46px}
+.sc .t{flex:1;height:7px;border-radius:4px;background:var(--nabg);overflow:hidden}
+.sc .t i{display:block;height:100%}
+footer{margin-top:28px;font-size:11.5px;color:var(--ink3);line-height:1.9;
+  border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="mast-in">
+    <h1>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · 集群合规总览</h1>
+    <div class="sub">{{ hosts | length }} 台主机 · 配置档 {{ cis_profile }} ·
+      模式 {{ '修复 apply' if cis_mode_effective == 'apply' else '扫描 scan' }} ·
+      生成于 {{ cis_run_human }}</div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="stats">
+    <div class="st"><div class="k">集群合规分</div>
+      <div class="v" style="color:{{ '#127a3d' if fleetscore >= 90 else ('#9a5b00' if fleetscore >= 70 else '#b3261e') }}">{{ fleetscore }}%</div>
+      <div class="u">{{ tot['pass'] }} / {{ scored }} 项通过</div></div>
+    <div class="st"><div class="k">待修复项</div>
+      <div class="v" style="color:#b3261e">{{ tot['fail'] }}</div>
+      <div class="u">全集群累计</div></div>
+    <div class="st"><div class="k">L1 已修复</div>
+      <div class="v" style="color:#1e4bb8">{{ tot['l1applied'] }}</div>
+      <div class="u">Level 1 规则条数</div></div>
+    <div class="st"><div class="k">L2 已修复</div>
+      <div class="v" style="color:#6d28d9">{{ tot['l2applied'] }}</div>
+      <div class="u">Level 2 规则条数</div></div>
+    <div class="st"><div class="k">人工核查</div>
+      <div class="v" style="color:#475569">{{ tot['manual'] }}</div>
+      <div class="u">需运维确认</div></div>
+    <div class="st"><div class="k">修复失败</div>
+      <div class="v" style="color:{{ '#b3261e' if tot['failedfix'] else '#7c8a9e' }}">{{ tot['failedfix'] }}</div>
+      <div class="u">需人工介入</div></div>
+  </div>
+
+  <h2 class="sec">主机明细</h2>
+  <div class="tblwrap">
+    <table>
+      <thead>
+        <tr>
+          <th>主机名</th><th>IP 地址</th><th>MAC 地址</th><th>操作系统</th>
+          <th>合规分</th><th>通过 / 未通过</th><th>L1 修复</th><th>L2 修复</th><th>报告</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for hv in hosts %}
+      {%- set s = hv.cis_result.summary -%}
+      {%- set sc = s.all.score | float -%}
+      {%- set col = '#127a3d' if sc >= 90 else ('#c98a12' if sc >= 70 else '#b3261e') -%}
+        <tr>
+          <td class="hn">{{ hv.cis_host.hostname | e }}</td>
+          <td class="mono">{{ hv.cis_host.ipv4 | e if hv.cis_host.ipv4 else '—' }}</td>
+          <td class="mono">{{ hv.cis_host.mac | upper | e if hv.cis_host.mac else '—' }}</td>
+          <td>{{ hv.cis_host.os | e }}</td>
+          <td>
+            <div class="sc">
+              <span class="n" style="color:{{ col }}">{{ sc }}%</span>
+              <span class="t"><i style="background:{{ col }};width:{{ sc }}%"></i></span>
+            </div>
+          </td>
+          <td><span class="pill ok">{{ s.all['pass'] }}</span> /
+              <span class="pill {{ 'bad' if (s.all.fail | int) else 'na' }}">{{ s.all.fail }}</span></td>
+          <td><span class="pill {{ 'ok' if (s.L1.applied | int) else 'na' }}">{{ s.L1.applied }}</span>
+              {%- if s.L1.applied_pending | int %} <span class="pill warn">+{{ s.L1.applied_pending }} 待生效</span>{% endif %}</td>
+          <td><span class="pill {{ 'ok' if (s.L2.applied | int) else 'na' }}">{{ s.L2.applied }}</span>
+              {%- if s.L2.applied_pending | int %} <span class="pill warn">+{{ s.L2.applied_pending }} 待生效</span>{% endif %}</td>
+          <td><a href="{{ hv.cis_report_slug }}.html">打开 &rsaquo;</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    {{ cis_benchmark_name }} {{ cis_benchmark_version }} ·
+    共 {{ hosts | length }} 台主机 · 累计评估 {{ tot['rules'] }} 条规则 ·
+    引擎 v{{ hosts[0].cis_result.engine_version if hosts else '-' }} ·
+    生成于 {{ cis_run_human }}（控制节点时间）
+  </footer>
+</div>
+</body>
+</html>

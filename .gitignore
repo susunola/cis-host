@@ -1,0 +1,9 @@
+# Generated at runtime — excluded
+*/reports/
+.facts_cache/
+*.pyc
+__pycache__/
+.DS_Store
+
+# Local inventory overrides (keep sample only)
+*/inventory/hosts.local.ini
