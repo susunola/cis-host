@@ -3,7 +3,44 @@
 **English** | [简体中文](README.en.md)
 
 Ansible playbooks that implement the **CIS TencentOS Linux 3 Benchmark v1.0.0** for
-automated compliance scanning and remediation.
+automated compliance scanning and remediation. Part of [CIS-OS](../).
+
+## How a run works
+
+```
+  controller                     target host                       disk
+  ──────────                     ──────────                        ────
+
+  ansible-playbook
+       │
+       │  preflight: vars, python3 ≥ 3.6, root
+       │  push 4 files  ────────────────▶  /tmp/cis-scan/
+       │                                    cis_engine.py
+       │                                    rules.json
+       │                                    guidance.json
+       │                                    sections.json
+       │
+       │  python3 cis_engine.py
+       │    --mode scan | apply
+       │    --profile L1 | L2
+       ├──────────────────────────────▶   322 rules
+       │                                    scan : read only
+       │                                    apply: patch + re-verify,
+       │                                          backup → /var/backups/cis-tencentos3/
+       │                                         │
+       │                                         ▼
+       │                                    result.json
+       ◀────────────────────────────────
+       │
+       │  render Jinja2  ────────────▶  reports/HOST-L1-scan.html
+       │  (report.html.j2)                 reports/HOST-L1-apply.html
+       │                                   reports/index.html  (N>1)
+       ▼
+  open reports/*-L1-scan.html
+```
+
+See the [root README](../#how-a-run-works) for the full lifecycle and the engine's
+internals.
 
 ## Quick Start
 
@@ -33,10 +70,11 @@ ansible-playbook -i inventory/hosts.ini apply.yml -e cis_profile=L2 \
 | **scan** | Read-only assessment; never modifies the target |
 | **apply** | Auto-remediates failing rules, then re-verifies |
 | **L1 / L2** | `cis_profile=L1` (baseline) or `cis_profile=L2` (defense-in-depth) |
-| **HTML report** | Self-contained file: hostname / IP / MAC, score, chapters, searchable table; **中文 / English switch** and **risk filter** |
+| **HTML report** | Self-contained file: hostname / IP / MAC, score, chapters, searchable table |
 | **CSV export** | Flattened findings for SIEM / BI import |
 | **Fleet overview** | Auto index page summarising all hosts |
 | **Risk tiers** | Disruptive fixes skipped unless explicitly allowed |
+| **Fine-grained filters** | `--include`, `--exclude`, `--sections`, `--families` |
 
 ## Report contents
 
@@ -65,6 +103,8 @@ keyword; click any row to expand the evidence and the CIS remediation text.
 | `cis_allow_disruptive` | `false` | Allow reboot / remount etc. |
 | `cis_include` | `[]` | Run only matching rule-id prefixes |
 | `cis_exclude` | `[]` | Exclude given rules |
+| `cis_sections` | `[]` | Run only rules whose ID starts with one of these |
+| `cis_families` | `[]` | Run only rules in these remediation families |
 | `cis_fail_on_findings` | `false` | Fail the play on findings |
 | `cis_min_score` | `0` | Fail below this score |
 

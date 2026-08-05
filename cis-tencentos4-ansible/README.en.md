@@ -2,7 +2,43 @@
 
 [English](README.md) | **简体中文**
 
-基于 CIS **TencentOS Linux 4 Benchmark v1.0.0** 的自动化合规扫描与修复 Playbook。
+基于 CIS **TencentOS Linux 4 Benchmark v1.0.0** 的自动化合规扫描与修复 Playbook，属于 [CIS-OS](../) 项目的一部分。
+
+## 一次运行的流程
+
+```
+  控制机                     目标机                          磁盘
+  ──────                     ──────                          ────
+
+  ansible-playbook
+       │
+       │  preflight：变量、python3 ≥ 3.6、root
+       │  推 4 个文件  ──────────────▶  /tmp/cis-scan/
+       │                                cis_engine.py
+       │                                rules.json
+       │                                guidance.json
+       │                                sections.json
+       │
+       │  python3 cis_engine.py
+       │    --mode scan | apply
+       │    --profile L1 | L2
+       ├────────────────────────────▶   275 条规则
+       │                                scan ：只读
+       │                                apply：改配置 + 再校验
+       │                                      备份到 /var/backups/cis-tencentos4/
+       │                                   │
+       │                                   ▼
+       │                              result.json
+       ◀────────────────────────────────
+       │
+       │  渲染 Jinja2  ────────────▶  reports/HOST-L1-scan.html
+       │  (report.html.j2)             reports/HOST-L1-apply.html
+       │                               reports/index.html（N>1）
+       ▼
+  open reports/*-L1-scan.html
+```
+
+完整生命周期和引擎内部细节见 [根目录 README](../#一次运行的流程)。
 
 ## 快速开始
 
@@ -32,10 +68,11 @@ ansible-playbook -i inventory/hosts.ini apply.yml -e cis_profile=L2 \
 | **scan** | 只读评估，不修改目标机任何文件或配置 |
 | **apply** | 自动修复未通过规则，修复后重新验证 |
 | **L1 / L2 选择** | `cis_profile=L1`（基线防护）或 `cis_profile=L2`（纵深防御）|
-| **HTML 报告** | 自包含单文件，含主机名 / IP / MAC、合规分、章节分布、可搜索明细表；支持 **中文 / English 切换** 与 **按风险过滤** |
+| **HTML 报告** | 自包含单文件，含主机名 / IP / MAC、合规分、章节分布、可搜索明细表 |
 | **CSV 导出** | 平坦化所有检查结果，方便导入 SIEM 或 BI 工具 |
 | **集群总览** | 多主机时自动生成 index 页面汇总各节点状态 |
 | **风险分级** | 高风险修复默认跳过，需显式放行 |
+| **细粒度过滤** | `--include`、`--exclude`、`--sections`、`--families` |
 
 ## 报告内容
 
@@ -63,6 +100,8 @@ ansible-playbook -i inventory/hosts.ini apply.yml -e cis_profile=L2 \
 | `cis_allow_disruptive` | `false` | 是否允许重启 / 分区变更等高风险修复 |
 | `cis_include` | `[]` | 仅运行指定规则 ID 前缀 |
 | `cis_exclude` | `[]` | 排除指定规则 |
+| `cis_sections` | `[]` | 仅运行 ID 以这些前缀开头的规则 |
+| `cis_families` | `[]` | 仅运行这些修复家族的规则 |
 | `cis_fail_on_findings` | `false` | 有未通过项时让 play 失败 |
 | `cis_min_score` | `0` | 合规分低于此值时失败 |
 
@@ -102,7 +141,7 @@ cis-tencentos4-ansible/
 
 ## 引擎说明
 
-评估引擎 (`cis_engine.py`) 是一个纯 Python 3 脚本（无第三方依赖），在目标机上以 root 身份运行。它实现了 **61 个检查族**和 **55 个自动修复族**，覆盖 CIS 基准中约 **88%** 的自动化判定规则。
+评估引擎 (`cis_engine.py`) 是一个纯 Python 3 脚本（无第三方依赖），在目标机上以 root 身份运行。它实现了一批 **检查 + 修复家族**，覆盖 CIS 基准中约 **88%** 的自动化判定规则。
 
 引擎输出 JSON 文档，包含：
 

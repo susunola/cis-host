@@ -1,32 +1,32 @@
-# CIS TencentOS Linux 4 Benchmark v1.0.0 — Ansible Playbooks
+# CIS Windows Server 2022 Benchmark v1.0.0 — Ansible Playbooks
 
 **English** | [简体中文](README.en.md)
 
-Ansible playbooks that implement the **CIS TencentOS Linux 4 Benchmark v1.0.0** for
-automated compliance scanning and remediation. Part of [CIS-OS](../).
+Ansible playbooks that implement the **CIS Microsoft Windows Server 2022 Benchmark
+v1.0.0** for automated compliance scanning and remediation. Part of [CIS-OS](../).
 
 ## How a run works
 
 ```
-  controller                     target host                       disk
-  ──────────                     ──────────                        ────
+  controller                     Windows host                        disk
+  ──────────                     ───────────                         ────
 
   ansible-playbook
        │
-       │  preflight: vars, python3 ≥ 3.6, root
-       │  push 4 files  ────────────────▶  /tmp/cis-scan/
-       │                                    cis_engine.py
+       │  preflight: vars, PowerShell ≥ 5.1, Administrator
+       │  push 4 files  ────────────────▶  C:\Windows\Temp\cis-scan\
+       │                                    cis_engine.ps1
        │                                    rules.json
        │                                    guidance.json
        │                                    sections.json
        │
-       │  python3 cis_engine.py
-       │    --mode scan | apply
-       │    --profile L1 | L2
-       ├──────────────────────────────▶   275 rules
+       │  powershell.exe -File cis_engine.ps1
+       │    -Mode scan | apply
+       │    -Profile L1 | L2
+       ├──────────────────────────────▶   30 rules
        │                                    scan : read only
        │                                    apply: patch + re-verify,
-       │                                          backup → /var/backups/cis-tencentos4/
+       │                                          backup → C:\cis-backups\
        │                                         │
        │                                         ▼
        │                                    result.json
@@ -70,28 +70,11 @@ ansible-playbook -i inventory/hosts.ini apply.yml -e cis_profile=L2 \
 | **scan** | Read-only assessment; never modifies the target |
 | **apply** | Auto-remediates failing rules, then re-verifies |
 | **L1 / L2** | `cis_profile=L1` (baseline) or `cis_profile=L2` (defense-in-depth) |
-| **HTML report** | Self-contained file: hostname / IP / MAC, score, chapters, searchable table |
+| **HTML report** | Self-contained file: hostname / IP / OS, score, chapters, searchable table |
 | **CSV export** | Flattened findings for SIEM / BI import |
 | **Fleet overview** | Auto index page summarising all hosts |
 | **Risk tiers** | Disruptive fixes skipped unless explicitly allowed |
-| **Fine-grained filters** | `--include`, `--exclude`, `--sections`, `--families` |
-
-## Report contents
-
-At the top of the report:
-
-- **Hostname, IP address, MAC address**
-- OS / kernel / arch / virtualization
-- Network interfaces (expandable)
-
-Below, two cards — **Level 1** and **Level 2** — each show:
-
-- Rules **fixed** (apply) or **to fix** (scan)
-- A compliance bar (green=pass red=fail blue=manual purple=error)
-- fixed / pending / failed / skipped-disruptive / unsupported / already-compliant
-
-The toolbar filters by **result status, risk tier (low / high / N/A), level, chapter** and
-keyword; click any row to expand the evidence and the CIS remediation text.
+| **Fine-grained filters** | `-Include`, `-Exclude`, `-Sections`, `-Families` |
 
 ## Key variables
 
@@ -100,7 +83,7 @@ keyword; click any row to expand the evidence and the CIS remediation text.
 | `cis_mode` | `scan` | `scan` or `apply` |
 | `cis_profile` | `L1` | `L1` or `L2` |
 | `cis_platform` | `server` | `server` / `workstation` / `all` |
-| `cis_allow_disruptive` | `false` | Allow reboot / remount etc. |
+| `cis_allow_disruptive` | `false` | Allow reboot / service restart etc. |
 | `cis_include` | `[]` | Run only matching rule-id prefixes |
 | `cis_exclude` | `[]` | Exclude given rules |
 | `cis_sections` | `[]` | Run only rules whose ID starts with one of these |
@@ -111,9 +94,7 @@ keyword; click any row to expand the evidence and the CIS remediation text.
 ## Directory layout
 
 ```
-cis-tencentos4-ansible/
-├── ansible.cfg                    # Ansible config
-├── site.yml                       # main entry
+cis-windows-ansible/
 ├── scan.yml                       # scan shortcut
 ├── apply.yml                      # apply shortcut
 ├── inventory/
@@ -121,18 +102,18 @@ cis-tencentos4-ansible/
 ├── group_vars/
 │   └── all.yml                    # global overrides
 ├── reports/                       # HTML/JSON/CSV output
-└── roles/cis_tencentos4/
+└── roles/cis_windows/
     ├── defaults/main.yml          # role defaults
     ├── vars/main.yml              # internal vars
     ├── meta/main.yml              # metadata
     ├── files/
-    │   ├── cis_engine.py          # assessment engine (Python 3)
+    │   ├── cis_engine.ps1         # assessment engine (PowerShell)
     │   ├── rules.json             # rule catalog
     │   ├── guidance.json          # remediation text
     │   └── sections.json          # chapter titles
     ├── tasks/
     │   ├── main.yml               # entry: preflight → run → report → gate
-    │   ├── preflight.yml          # validation + python probe + perms
+    │   ├── preflight.yml          # validation + PowerShell probe + perms
     │   ├── run.yml                # deploy → run → collect
     │   ├── report.yml             # render HTML/JSON/CSV + index
     │   └── gate.yml               # compliance gate (optional)
@@ -144,20 +125,19 @@ cis-tencentos4-ansible/
 
 ## Engine notes
 
-The assessment engine (`cis_engine.py`) is a pure-Python 3 script (no third-party deps)
-run as root on the target. It implements **check + remediation families** for
-approximately **88%** of the benchmark's automatable rules.
+The assessment engine (`cis_engine.ps1`) is a single-file PowerShell script with no
+third-party dependencies. It runs as Administrator on the target via WinRM.
 
 The engine emits a JSON document with:
 
-- Host info (hostname / IP / MAC / OS / kernel)
+- Host info (hostname / IP / OS)
 - L1/L2 grouped summary stats (pass / fail / manual / error / applied …)
 - Per-rule detail (status, evidence, fix, time)
 
 ## Notes
 
-1. Target needs **Python 3.6+** and **root**
-2. `apply` edits configs (backups in `/var/backups/cis-tencentos4/`)
-3. Reboot fixes skipped by default; add the flag in a change window
+1. Target needs **PowerShell 5.1+** and **Administrator** (WinRM configured)
+2. `apply` edits registry / GPO / local policy; originals are backed up to `C:\cis-backups\`
+3. Reboot / service-restart fixes skipped by default; add `-e cis_allow_disruptive=true`
 4. Run `scan` in staging and review before `apply` in prod
 5. This automation does not replace a manual security audit
