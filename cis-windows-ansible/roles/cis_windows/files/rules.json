@@ -11,7 +11,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "PasswordHistorySize",
+      "expected": 24,
+      "op": "ge"
+    },
     "risk": "safe",
     "page": 37
   },
@@ -27,7 +31,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "MaximumPasswordAge",
+      "expected": 365,
+      "op": "le"
+    },
     "risk": "safe",
     "page": 40
   },
@@ -43,7 +51,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "MinimumPasswordAge",
+      "expected": 1,
+      "op": "ge"
+    },
     "risk": "safe",
     "page": 42
   },
@@ -59,7 +71,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "MinimumPasswordLength",
+      "expected": 14,
+      "op": "ge"
+    },
     "risk": "safe",
     "page": 45
   },
@@ -75,7 +91,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "PasswordComplexity",
+      "expected": "1",
+      "op": "eq"
+    },
     "risk": "safe",
     "page": 48
   },
@@ -91,7 +111,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "RelaxMinimumPasswordLengthLimits",
+      "expected": "1",
+      "op": "eq"
+    },
     "risk": "safe",
     "page": 51
   },
@@ -107,7 +131,11 @@
     ],
     "assessment": "Automated",
     "family": "password-policy",
-    "params": {},
+    "params": {
+      "key": "ClearTextPassword",
+      "expected": "0",
+      "op": "eq"
+    },
     "risk": "safe",
     "page": 53
   },
@@ -123,7 +151,11 @@
     ],
     "assessment": "Automated",
     "family": "lockout-policy",
-    "params": {},
+    "params": {
+      "key": "LockoutDuration",
+      "expected": 15,
+      "op": "ge"
+    },
     "risk": "safe",
     "page": 56
   },
@@ -139,7 +171,11 @@
     ],
     "assessment": "Automated",
     "family": "lockout-policy",
-    "params": {},
+    "params": {
+      "key": "LockoutBadCount",
+      "expected": 5,
+      "op": "le"
+    },
     "risk": "safe",
     "page": 58
   },
@@ -155,7 +191,11 @@
     ],
     "assessment": "Manual",
     "family": "lockout-policy",
-    "params": {},
+    "params": {
+      "key": "LockoutDuration",
+      "expected": 15,
+      "op": "ge"
+    },
     "risk": "safe",
     "page": 60
   },
@@ -171,7 +211,11 @@
     ],
     "assessment": "Automated",
     "family": "lockout-policy",
-    "params": {},
+    "params": {
+      "key": "ResetLockoutCount",
+      "expected": 15,
+      "op": "ge"
+    },
     "risk": "safe",
     "page": 62
   },
@@ -186,8 +230,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeTrustedCredManAccessPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 65
   },
@@ -202,8 +249,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeNetworkLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 67
   },
@@ -218,8 +268,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeNetworkLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 70
   },
@@ -234,8 +287,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeTcbPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 72
   },
@@ -250,8 +306,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeMachineAccountPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 74
   },
@@ -266,8 +325,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeIncreaseQuotaPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 76
   },
@@ -282,8 +344,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 78
   },
@@ -298,8 +363,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 80
   },
@@ -314,8 +382,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeRemoteInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 82
   },
@@ -330,8 +401,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeRemoteInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 84
   },
@@ -346,8 +420,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeBackupPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 86
   },
@@ -362,8 +439,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeSystemTimePrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 88
   },
@@ -378,8 +458,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeCreatePagefilePrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 91
   },
@@ -394,8 +477,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeCreateTokenPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 93
   },
@@ -410,8 +496,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeCreateGlobalPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 95
   },
@@ -426,8 +515,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeCreatePermanentPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 97
   },
@@ -442,8 +534,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeCreateSymbolicLinkPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 99
   },
@@ -458,8 +553,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeCreateSymbolicLinkPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 101
   },
@@ -474,8 +572,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDebugPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 103
   },
@@ -490,8 +591,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyNetworkLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 106
   },
@@ -506,8 +610,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyNetworkLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 108
   },
@@ -522,8 +629,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyBatchLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 110
   },
@@ -538,8 +648,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyServiceLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 112
   },
@@ -554,8 +667,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 114
   },
@@ -570,8 +686,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyRemoteInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 116
   },
@@ -586,8 +705,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeDenyRemoteInteractiveLogonRight",
+      "expected_sid": "*S-1-5-32-546"
+    },
     "risk": "safe",
     "page": 118
   },
@@ -602,8 +724,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeEnableDelegationPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 120
   },
@@ -618,8 +743,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeEnableDelegationPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 122
   },
@@ -634,8 +762,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeRemoteShutdownPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 124
   },
@@ -650,8 +781,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeAuditPrivilege",
+      "expected_sid": "*S-1-5-19"
+    },
     "risk": "safe",
     "page": 126
   },
@@ -666,8 +800,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeImpersonatePrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 128
   },
@@ -682,8 +819,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeImpersonatePrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 130
   },
@@ -698,8 +838,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeIncreaseBasePriorityPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 132
   },
@@ -714,8 +857,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeLoadDriverPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 134
   },
@@ -730,8 +876,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeLockMemoryPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 136
   },
@@ -746,8 +895,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeBatchLogonRight",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 138
   },
@@ -762,8 +914,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeSecurityPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 140
   },
@@ -778,8 +933,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeSecurityPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 142
   },
@@ -794,8 +952,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeRelabelPrivilege",
+      "expected_sid": ""
+    },
     "risk": "safe",
     "page": 144
   },
@@ -810,8 +971,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "SeSystemEnvironmentPrivilege",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 146
   },
@@ -826,8 +990,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Perform volume maintenance tasks",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 148
   },
@@ -842,8 +1009,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Profile single process",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 150
   },
@@ -858,8 +1028,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Profile system performance",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 152
   },
@@ -874,8 +1047,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Replace a process level token",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 154
   },
@@ -890,8 +1066,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Restore files and directories",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 156
   },
@@ -906,8 +1085,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Shut down the system",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 158
   },
@@ -922,8 +1104,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Synchronize directory service data",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 160
   },
@@ -938,8 +1123,11 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "user-rights",
-    "params": {},
+    "family": "user-right",
+    "params": {
+      "privilege": "Take ownership of files or other objects",
+      "expected_sid": "*S-1-5-32-544"
+    },
     "risk": "safe",
     "page": 162
   },
@@ -955,7 +1143,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 331
   },
@@ -971,7 +1162,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 333
   },
@@ -987,7 +1181,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 335
   },
@@ -1003,7 +1200,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 337
   },
@@ -1019,7 +1219,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 339
   },
@@ -1035,7 +1238,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 341
   },
@@ -1051,7 +1257,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 343
   },
@@ -1067,7 +1276,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 346
   },
@@ -1083,7 +1295,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 348
   },
@@ -1099,7 +1314,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 350
   },
@@ -1115,7 +1333,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 352
   },
@@ -1131,7 +1352,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 354
   },
@@ -1147,7 +1371,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 356
   },
@@ -1163,7 +1390,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 358
   },
@@ -1179,7 +1409,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 361
   },
@@ -1195,7 +1428,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 363
   },
@@ -1211,7 +1447,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 365
   },
@@ -1227,7 +1466,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 367
   },
@@ -1243,7 +1485,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 369
   },
@@ -1259,7 +1504,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 371
   },
@@ -1275,7 +1523,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 373
   },
@@ -1291,7 +1542,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 375
   },
@@ -1307,7 +1561,10 @@
     ],
     "assessment": "Automated",
     "family": "audit-policy",
-    "params": {},
+    "params": {
+      "subcategory": "Unknown",
+      "expected": "Success and Failure"
+    },
     "risk": "safe",
     "page": 377
   },
@@ -1323,7 +1580,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 381
   },
@@ -1339,7 +1599,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 383
   },
@@ -1355,7 +1618,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 385
   },
@@ -1371,7 +1637,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 388
   },
@@ -1387,7 +1656,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 390
   },
@@ -1403,7 +1675,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 392
   },
@@ -1419,7 +1694,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 394
   },
@@ -1435,7 +1713,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 396
   },
@@ -1451,7 +1732,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 398
   },
@@ -1467,7 +1751,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 401
   },
@@ -1483,7 +1770,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 403
   },
@@ -1499,7 +1789,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 406
   },
@@ -1515,7 +1808,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 408
   },
@@ -1531,7 +1827,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 411
   },
@@ -1547,7 +1846,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 413
   },
@@ -1563,7 +1865,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 415
   },
@@ -1579,7 +1884,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 417
   },
@@ -1595,7 +1903,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 419
   },
@@ -1611,7 +1922,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 421
   },
@@ -1627,7 +1941,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 424
   },
@@ -1643,7 +1960,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 426
   },
@@ -1659,7 +1979,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 428
   },
@@ -1675,7 +1998,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 430
   },
@@ -1691,7 +2017,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "auditpol",
+      "state": "configured"
+    },
     "risk": "safe",
     "page": 433
   },
@@ -1707,7 +2036,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 435
   },
@@ -1723,7 +2055,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 437
   },
@@ -1739,7 +2074,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 439
   },
@@ -1755,7 +2093,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 442
   },
@@ -1771,7 +2112,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 445
   },
@@ -1787,7 +2131,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 448
   },
@@ -1803,7 +2150,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 451
   },
@@ -1819,7 +2169,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 453
   },
@@ -1835,7 +2188,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 455
   },
@@ -1851,7 +2207,10 @@
     ],
     "assessment": "Automated",
     "family": "service-state",
-    "params": {},
+    "params": {
+      "name": "Unknown",
+      "state": "Stopped"
+    },
     "risk": "safe",
     "page": 457
   },
@@ -1866,8 +2225,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 467
   },
@@ -1882,8 +2245,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 470
   },
@@ -1898,8 +2265,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 472
   },
@@ -1914,8 +2285,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 475
   },
@@ -1930,8 +2305,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 477
   },
@@ -1946,8 +2325,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 480
   },
@@ -1962,8 +2345,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 482
   },
@@ -1978,8 +2365,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 486
   },
@@ -1994,8 +2385,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 488
   },
@@ -2010,8 +2405,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 490
   },
@@ -2026,8 +2425,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 492
   },
@@ -2042,8 +2445,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 494
   },
@@ -2058,8 +2465,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 496
   },
@@ -2074,8 +2485,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 498
   },
@@ -2090,8 +2505,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 500
   },
@@ -2106,8 +2525,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 502
   },
@@ -2122,8 +2545,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 504
   },
@@ -2138,8 +2565,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 506
   },
@@ -2154,8 +2585,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 584
   },
@@ -2170,8 +2605,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 586
   },
@@ -2186,8 +2625,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 588
   },
@@ -2202,8 +2645,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 590
   },
@@ -2218,8 +2665,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 592
   },
@@ -2234,8 +2685,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 594
   },
@@ -2250,8 +2705,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 596
   },
@@ -2266,8 +2725,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 598
   },
@@ -2282,8 +2745,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 600
   },
@@ -2298,8 +2765,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 602
   },
@@ -2314,8 +2785,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 604
   },
@@ -2330,8 +2805,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 606
   },
@@ -2346,8 +2825,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 608
   },
@@ -2362,8 +2845,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 610
   },
@@ -2378,8 +2865,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 612
   },
@@ -2394,8 +2885,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 614
   },
@@ -2410,8 +2905,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 616
   },
@@ -2426,8 +2925,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 618
   },
@@ -2442,8 +2945,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 1023
   },
@@ -2458,8 +2965,12 @@
       "Server"
     ],
     "assessment": "Automated",
-    "family": "admin-templates",
-    "params": {},
+    "family": "reg-dword",
+    "params": {
+      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft",
+      "name": "Unknown",
+      "value": 0
+    },
     "risk": "safe",
     "page": 1025
   }

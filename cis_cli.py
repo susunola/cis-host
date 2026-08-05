@@ -3,30 +3,26 @@
 CIS Benchmark CLI — local scan & apply with HTML report generation.
 
 Usage:
-  # Scan only (check compliance, generate report)
+  # Scan with --os auto-detection (recommended)
+  python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+
+  # Apply fixes with --os
+  python3 cis_cli.py apply --os ubuntu2204 --profile L1 --allow-disruptive --output output/
+
+  # Or specify paths manually
   python3 cis_cli.py scan \\
       --engine cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py \\
       --catalog cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json \\
       --guidance cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json \\
       --sections cis-tencentos3-ansible/roles/cis_tencentos3/files/sections.json \\
       --template cis-tencentos3-ansible/roles/cis_tencentos3/templates/report.html.j2 \\
-      --profile L1 --name "TencentOS Server 3.2" \\
-      --output output/
+      --profile L1 --name "TencentOS Server 3.2" --output output/
 
-  # Apply fixes, then re-scan to verify
-  python3 cis_cli.py apply \\
-      --engine cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py \\
-      --catalog cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json \\
-      --guidance cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json \\
-      --sections cis-tencentos3-ansible/roles/cis_tencentos3/files/sections.json \\
-      --template cis-tencentos3-ansible/roles/cis_tencentos3/templates/report.html.j2 \\
-      --profile L1 --name "TencentOS Server 3.2" \\
-      --output output/
-
-  # Filter by rule numbers or families
-  python3 cis_cli.py scan \\
-      --include "1.1.1,1.1.2,5.1.1" \\
-      --families "ssh,firewall"
+Supported --os values:
+  tos3, tos4, windows
+  rhel8, rhel9, rhel10
+  sles15, sles16
+  ubuntu2004, ubuntu2204, ubuntu2404
 """
 
 import argparse
@@ -36,6 +32,101 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+
+# ─── OS Presets ──────────────────────────────────────────────────────
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+OS_PRESETS = {
+    "tos3": {
+        "engine": "cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py",
+        "catalog": "cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json",
+        "guidance": "cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json",
+        "sections": "cis-tencentos3-ansible/roles/cis_tencentos3/files/sections.json",
+        "template": "cis-tencentos3-ansible/roles/cis_tencentos3/templates/report.html.j2",
+        "name": "CIS TencentOS Server 3 Benchmark",
+    },
+    "tos4": {
+        "engine": "cis-tencentos4-ansible/roles/cis_tencentos4/files/cis_engine.py",
+        "catalog": "cis-tencentos4-ansible/roles/cis_tencentos4/files/rules.json",
+        "guidance": "cis-tencentos4-ansible/roles/cis_tencentos4/files/guidance.json",
+        "sections": "cis-tencentos4-ansible/roles/cis_tencentos4/files/sections.json",
+        "template": "cis-tencentos4-ansible/roles/cis_tencentos4/templates/report.html.j2",
+        "name": "CIS TencentOS Server 4 Benchmark",
+    },
+    "windows": {
+        "engine": "cis-windows-ansible/roles/cis_windows/files/cis_engine.ps1",
+        "catalog": "cis-windows-ansible/roles/cis_windows/files/rules.json",
+        "guidance": "cis-windows-ansible/roles/cis_windows/files/guidance.json",
+        "sections": "cis-windows-ansible/roles/cis_windows/files/sections.json",
+        "template": "cis-windows-ansible/roles/cis_windows/templates/report.html.j2",
+        "name": "CIS Microsoft Windows Server 2025 Benchmark",
+    },
+    "rhel8": {
+        "engine": "cis-rhel8-ansible/roles/cis_rhel8/files/cis_engine.py",
+        "catalog": "cis-rhel8-ansible/roles/cis_rhel8/files/rules.json",
+        "guidance": "cis-rhel8-ansible/roles/cis_rhel8/files/guidance.json",
+        "sections": "cis-rhel8-ansible/roles/cis_rhel8/files/sections.json",
+        "template": "cis-rhel8-ansible/roles/cis_rhel8/templates/report.html.j2",
+        "name": "CIS Red Hat Enterprise Linux 8 Benchmark",
+    },
+    "rhel9": {
+        "engine": "cis-rhel9-ansible/roles/cis_rhel9/files/cis_engine.py",
+        "catalog": "cis-rhel9-ansible/roles/cis_rhel9/files/rules.json",
+        "guidance": "cis-rhel9-ansible/roles/cis_rhel9/files/guidance.json",
+        "sections": "cis-rhel9-ansible/roles/cis_rhel9/files/sections.json",
+        "template": "cis-rhel9-ansible/roles/cis_rhel9/templates/report.html.j2",
+        "name": "CIS Red Hat Enterprise Linux 9 Benchmark",
+    },
+    "rhel10": {
+        "engine": "cis-rhel10-ansible/roles/cis_rhel10/files/cis_engine.py",
+        "catalog": "cis-rhel10-ansible/roles/cis_rhel10/files/rules.json",
+        "guidance": "cis-rhel10-ansible/roles/cis_rhel10/files/guidance.json",
+        "sections": "cis-rhel10-ansible/roles/cis_rhel10/files/sections.json",
+        "template": "cis-rhel10-ansible/roles/cis_rhel10/templates/report.html.j2",
+        "name": "CIS Red Hat Enterprise Linux 10 Benchmark",
+    },
+    "sles15": {
+        "engine": "cis-sles15-ansible/roles/cis_sles15/files/cis_engine.py",
+        "catalog": "cis-sles15-ansible/roles/cis_sles15/files/rules.json",
+        "guidance": "cis-sles15-ansible/roles/cis_sles15/files/guidance.json",
+        "sections": "cis-sles15-ansible/roles/cis_sles15/files/sections.json",
+        "template": "cis-sles15-ansible/roles/cis_sles15/templates/report.html.j2",
+        "name": "CIS SUSE Linux Enterprise 15 Benchmark",
+    },
+    "sles16": {
+        "engine": "cis-sles16-ansible/roles/cis_sles16/files/cis_engine.py",
+        "catalog": "cis-sles16-ansible/roles/cis_sles16/files/rules.json",
+        "guidance": "cis-sles16-ansible/roles/cis_sles16/files/guidance.json",
+        "sections": "cis-sles16-ansible/roles/cis_sles16/files/sections.json",
+        "template": "cis-sles16-ansible/roles/cis_sles16/templates/report.html.j2",
+        "name": "CIS SUSE Linux Enterprise 16 Benchmark",
+    },
+    "ubuntu2004": {
+        "engine": "cis-ubuntu2004-ansible/roles/cis_ubuntu2004/files/cis_engine.py",
+        "catalog": "cis-ubuntu2004-ansible/roles/cis_ubuntu2004/files/rules.json",
+        "guidance": "cis-ubuntu2004-ansible/roles/cis_ubuntu2004/files/guidance.json",
+        "sections": "cis-ubuntu2004-ansible/roles/cis_ubuntu2004/files/sections.json",
+        "template": "cis-ubuntu2004-ansible/roles/cis_ubuntu2004/templates/report.html.j2",
+        "name": "CIS Ubuntu Linux 20.04 LTS Benchmark",
+    },
+    "ubuntu2204": {
+        "engine": "cis-ubuntu2204-ansible/roles/cis_ubuntu2204/files/cis_engine.py",
+        "catalog": "cis-ubuntu2204-ansible/roles/cis_ubuntu2204/files/rules.json",
+        "guidance": "cis-ubuntu2204-ansible/roles/cis_ubuntu2204/files/guidance.json",
+        "sections": "cis-ubuntu2204-ansible/roles/cis_ubuntu2204/files/sections.json",
+        "template": "cis-ubuntu2204-ansible/roles/cis_ubuntu2204/templates/report.html.j2",
+        "name": "CIS Ubuntu Linux 22.04 LTS Benchmark",
+    },
+    "ubuntu2404": {
+        "engine": "cis-ubuntu2404-ansible/roles/cis_ubuntu2404/files/cis_engine.py",
+        "catalog": "cis-ubuntu2404-ansible/roles/cis_ubuntu2404/files/rules.json",
+        "guidance": "cis-ubuntu2404-ansible/roles/cis_ubuntu2404/files/guidance.json",
+        "sections": "cis-ubuntu2404-ansible/roles/cis_ubuntu2404/files/sections.json",
+        "template": "cis-ubuntu2404-ansible/roles/cis_ubuntu2404/templates/report.html.j2",
+        "name": "CIS Ubuntu Linux 24.04 LTS Benchmark",
+    },
+}
 
 # ─── Platform detection helpers ───────────────────────────────────────
 
@@ -427,16 +518,18 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Scan with --os (auto-detects paths)
+  python3 cis_cli.py scan --os rhel9 --profile L1 --output ./out/
+
+  # Apply with --os
+  python3 cis_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
+
+  # Manually specify paths
   python3 cis_cli.py scan --engine .../cis_engine.py \\
       --catalog .../rules.json --profile L1 --name "TencentOS 3" --output ./out/
 
-  python3 cis_cli.py apply --engine .../cis_engine.py \\
-      --catalog .../rules.json --profile L1 --allow-disruptive \\
-      --name "TencentOS 3" --output ./out/
-
   # Scan only section 1.1 rules with Level 2
-  python3 cis_cli.py scan ... --profile L2 --sections "1.1" \\
-      --name "TencentOS 3" --output ./out/
+  python3 cis_cli.py scan --os rhel8 --profile L2 --sections "1.1" --output ./out/
         """
     )
 
@@ -445,10 +538,13 @@ Examples:
 
     # ── Common args shared by all commands ──
     def add_common_args(p):
-        p.add_argument("--engine", required=True,
-                       help="Path to cis_engine.py (Linux) or cis_engine.ps1 (Windows)")
-        p.add_argument("--catalog", required=True,
-                       help="Path to rules.json")
+        p.add_argument("--os", default="",
+                       choices=sorted(OS_PRESETS.keys()),
+                       help="OS preset (auto-fills paths): %s" % ", ".join(sorted(OS_PRESETS.keys())))
+        p.add_argument("--engine",
+                       help="Path to cis_engine.py (Linux) or cis_engine.ps1 (Windows). Required if --os not used.")
+        p.add_argument("--catalog",
+                       help="Path to rules.json. Required if --os not used.")
         p.add_argument("--guidance", default="",
                        help="Path to guidance.json (for report rendering)")
         p.add_argument("--sections", default="",
@@ -501,6 +597,22 @@ Examples:
     add_apply_args(p_check)
 
     args = ap.parse_args()
+
+    # ── Resolve --os preset ──
+    if args.os:
+        preset = OS_PRESETS[args.os]
+        args.engine = args.engine or os.path.join(_SCRIPT_DIR, preset["engine"])
+        args.catalog = args.catalog or os.path.join(_SCRIPT_DIR, preset["catalog"])
+        args.guidance = args.guidance or os.path.join(_SCRIPT_DIR, preset["guidance"])
+        args.sections = args.sections or os.path.join(_SCRIPT_DIR, preset["sections"])
+        args.template = args.template or os.path.join(_SCRIPT_DIR, preset["template"])
+        if not args.name or args.name == "CIS Benchmark":
+            args.name = preset["name"]
+
+    # Validate required paths
+    if not args.engine or not args.catalog:
+        print("Error: --engine and --catalog are required (or use --os)", file=sys.stderr)
+        sys.exit(1)
 
     # Validate template exists if specified
     if args.template and not os.path.exists(args.template):

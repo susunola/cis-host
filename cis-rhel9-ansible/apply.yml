@@ -1,0 +1,15 @@
+---
+- name: CIS Benchmark Apply
+  hosts: all
+  become: true
+  gather_facts: true
+  serial: 25%
+  vars:
+    cis_mode: apply
+    cis_allow_disruptive: false
+  pre_tasks:
+    - name: WARNING - Apply mode will make changes
+      ansible.builtin.debug:
+        msg: "⚠️  APPLY MODE: This WILL modify system configuration. Set cis_allow_disruptive=true to include disruptive changes."
+  roles:
+    - cis_rhel9

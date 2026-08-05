@@ -1,0 +1,5 @@
+---
+cis_mode: scan
+cis_profile: L1
+cis_platform: server
+cis_exclude: []

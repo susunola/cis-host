@@ -1,0 +1,7 @@
+---
+- name: CIS Benchmark Assessment
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - cis_rhel10

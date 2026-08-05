@@ -1,0 +1,9 @@
+---
+- name: CIS Benchmark Scan
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    cis_mode: scan
+  roles:
+    - cis_sles16
