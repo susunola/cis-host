@@ -25,14 +25,14 @@
       'applied_pending':    {'en': 'Changed·Pending',  'cls': 'warn'},
       'already':            {'en': 'Already ok',       'cls': 'ok'},
       'failed':             {'en': 'Failed',           'cls': 'bad'},
-      'skipped_disruptive': {'en': 'Skipped·High-risk','cls': 'warn'},
+      'skipped_disruptive': {'en': 'High-risk skip','cls': 'warn'},
       'unsupported':        {'en': 'No auto-fix',      'cls': 'na'},
       'skipped_scan':       {'en': 'Scan-only',        'cls': 'na'},
       'n/a':                {'en': '—',               'cls': 'na'}
    } -%}
 {%- set RISK = {
       'safe':       {'en': 'Low · auto',       'cls': 'ok'},
-      'disruptive': {'en': 'High · needs allow','cls': 'warn'},
+      'disruptive': {'en': 'High risk','cls': 'warn'},
       'none':       {'en': 'N/A',             'cls': 'na'}
    } -%}
 {#- overall scalars -#}
@@ -574,7 +574,7 @@ footer b{color:var(--ink2)}
     <select id="frisk">
       <option value="">{{ 'All risks' }}</option>
       <option value="safe">{{ 'Low · auto' }}</option>
-      <option value="disruptive">{{ 'High · needs allow' }}</option>
+      <option value="disruptive">{{ 'High risk' }}</option>
       <option value="none">{{ 'N/A' }}</option>
     </select>
     <select id="flv">
@@ -601,7 +601,7 @@ footer b{color:var(--ink2)}
           <th>{{ 'Rule' }}</th>
           <th style="width:60px">{{ 'Level' }}</th>
           <th style="width:90px">{{ 'Result' }}</th>
-          <th style="width:120px">{% if IS_APPLY %}{{ 'Action' }}{% else %}{{ 'Risk' }}{% endif %}</th>
+          <th style="width:140px">{% if IS_APPLY %}{{ 'Action' }}{% else %}{{ 'Risk' }}{% endif %}</th>
         </tr>
       </thead>
       <tbody id="tb-body">
