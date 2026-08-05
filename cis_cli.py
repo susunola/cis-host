@@ -4,7 +4,7 @@ CIS Benchmark CLI — local scan & apply with HTML report generation.
 
 Usage:
   # Scan only (check compliance, generate report)
-  python3 cis_cli.py scan --os linux \\
+  python3 cis_cli.py scan \\
       --engine cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py \\
       --catalog cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json \\
       --guidance cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json \\
@@ -14,7 +14,7 @@ Usage:
       --output output/
 
   # Apply fixes, then re-scan to verify
-  python3 cis_cli.py apply --os linux \\
+  python3 cis_cli.py apply \\
       --engine cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py \\
       --catalog cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json \\
       --guidance cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json \\
@@ -24,7 +24,7 @@ Usage:
       --output output/
 
   # Filter by rule numbers or families
-  python3 cis_cli.py scan --os linux ... \\
+  python3 cis_cli.py scan \\
       --include "1.1.1,1.1.2,5.1.1" \\
       --families "ssh,firewall"
 """
@@ -171,7 +171,7 @@ def collect_host():
                     if line.startswith("PRETTY_NAME="):
                         info["os"] = line.split("=", 1)[1].strip().strip('"')
                         break
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             pass
     elif sys.platform == "darwin":
         info["os"] = f"macOS {platform.mac_ver()[0]}"
@@ -183,7 +183,7 @@ def collect_host():
         info["ipv4"] = [addr[4][0] for addr in
                         socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)
                         if not addr[4][0].startswith("127.")]
-    except Exception:
+    except (OSError, socket.gaierror):
         pass
 
     # Uptime (Linux)
@@ -191,7 +191,7 @@ def collect_host():
         try:
             with open("/proc/uptime") as f:
                 info["uptime_seconds"] = int(float(f.read().split()[0]))
-        except Exception:
+        except (OSError, ValueError):
             pass
 
     return info
@@ -427,15 +427,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 cis_cli.py scan --os linux --engine .../cis_engine.py \\
+  python3 cis_cli.py scan --engine .../cis_engine.py \\
       --catalog .../rules.json --profile L1 --name "TencentOS 3" --output ./out/
 
-  python3 cis_cli.py apply --os linux --engine .../cis_engine.py \\
+  python3 cis_cli.py apply --engine .../cis_engine.py \\
       --catalog .../rules.json --profile L1 --allow-disruptive \\
       --name "TencentOS 3" --output ./out/
 
   # Scan only section 1.1 rules with Level 2
-  python3 cis_cli.py scan --os linux ... --profile L2 --sections "1.1" \\
+  python3 cis_cli.py scan ... --profile L2 --sections "1.1" \\
       --name "TencentOS 3" --output ./out/
         """
     )

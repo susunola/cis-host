@@ -18,10 +18,7 @@ param(
     [string]$Mode = "scan",
     [string]$Profile = "L1",
     [string]$Platform = "server",
-    [string]$Benchmark = "CIS Microsoft Windows Server Benchmark",
     [string]$Out = "result.json",
-    [string]$BackupDir = "$env:TEMP\cis-backups",
-    [switch]$AllowDisruptive,
     [string]$Include = "",
     [string]$Exclude = "",
     [string]$Sections = "",
@@ -44,34 +41,22 @@ function Write-Result {
     }
 }
 
-function Test-RegValue {
-    param($Path, $Name, $Expected, $Op = "eq")
-    try {
-        $val = Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop | Select-Object -ExpandProperty $Name
-        switch ($Op) {
-            "eq"  { return $val -eq $Expected }
-            "le"  { return $val -le $Expected }
-            "ge"  { return $val -ge $Expected }
-            "ne"  { return $val -ne $Expected }
-            "in"  { return $val -in $Expected }
-            default { return $false }
-        }
-    } catch { return $false }
-}
-
 function Get-SecPol {
     param($Area, $Key)
+    $tmp = $null
     try {
         $tmp = "$env:TEMP\secpol_$([Guid]::NewGuid()).inf"
         secedit /export /cfg $tmp /areas $Area 2>$null | Out-Null
         if (Test-Path $tmp) {
             $content = Get-Content $tmp -Raw
-            Remove-Item $tmp -Force -ErrorAction SilentlyContinue
             if ($content -match "(?m)^\s*$Key\s*=\s*(.+)$") {
                 return $Matches[1].Trim()
             }
         }
     } catch {}
+    finally {
+        if ($tmp -and (Test-Path $tmp)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+    }
     return $null
 }
 
@@ -90,8 +75,8 @@ function Invoke-Check {
             $key = $params.key
             $expected = $params.expected
             $val = Get-SecPol "SECURITYPOLICY" $key
-            if ($val -ne $null) {
-                $ok = ($val -ge $expected) -or ($params.op -eq "eq" -and $val -eq $expected)
+            if ($null -ne $val) {
+                $ok = ([int]$val -ge [int]$expected) -or ($params.op -eq "eq" -and $val -eq $expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="$key=$val (expected ≥$expected)"}
             }
             return @{status="error"; detail="$key not found in security policy"}
@@ -115,7 +100,7 @@ function Invoke-Check {
             $expected = $params.expected
             $op = if ($params.op) { $params.op } else { "le" }
             $val = Get-SecPol "SECURITYPOLICY" $key
-            if ($val -ne $null) {
+            if ($null -ne $val) {
                 if ($op -eq "le") { $ok = [int]$val -le [int]$expected }
                 elseif ($op -eq "ge") { $ok = [int]$val -ge [int]$expected }
                 else { $ok = ($val -eq $expected) }
@@ -143,12 +128,12 @@ function Invoke-Check {
         "user-right" {
             $privilege = $params.privilege
             $expectedSid = $params.expected_sid
+            $tmp = $null
             try {
                 $tmp = "$env:TEMP\ur_$([Guid]::NewGuid()).inf"
                 secedit /export /cfg $tmp /areas USER_RIGHTS 2>$null | Out-Null
                 if (Test-Path $tmp) {
                     $content = Get-Content $tmp -Raw
-                    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
                     if ($content -match "(?m)^\s*$privilege\s*=\s*(.+)$") {
                         $sids = $Matches[1].Trim() -split ','
                         $ok = ($sids | Where-Object { $_.Trim() -eq $expectedSid })
@@ -156,6 +141,9 @@ function Invoke-Check {
                     }
                 }
             } catch {}
+            finally {
+                if ($tmp -and (Test-Path $tmp)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+            }
             return @{status="error"; detail="Failed to query $privilege"}
         }
 
@@ -255,7 +243,7 @@ function Invoke-Check {
             $expected = $params.value
             try {
                 $val = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
-                $ok = ($val -ge $expected)
+                $ok = ([int]$val -ge [int]$expected)
                 return @{status=if($ok){"pass"}else{"fail"}; detail="LmCompatibilityLevel = $val (expected ≥$expected)"}
             } catch { return @{status="error"; detail="LSA key not found"} }
         }
@@ -325,19 +313,17 @@ function Invoke-Check {
 }
 
 # ── Load Rules ──────────────────────────────────────────────
-Add-Type -AssemblyName System.Web.Extensions -ErrorAction SilentlyContinue
-[Console]::WriteLine("DBG: JSS type available: $([System.Web.Script.Serialization.JavaScriptSerializer].FullName)")
-$jss = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-[Console]::WriteLine("DBG: jss=$($jss.GetType().FullName)")
 try {
     $raw = [System.IO.File]::ReadAllText($Catalog)
-    [Console]::WriteLine("DBG: raw first 50 chars: $($raw.Substring(0, [Math]::Min(50, $raw.Length)))")
-    $catalog = $jss.DeserializeObject($raw)
-    [Console]::WriteLine("DBG: catalog=$($catalog.GetType().FullName) cnt=$($catalog.Count)")
+    $catalog = $raw | ConvertFrom-Json
+    if (-not $catalog -or $catalog.Count -eq 0) {
+        Write-Error "Catalog is empty or failed to parse: $Catalog"
+        exit 1
+    }
 } catch {
-    [Console]::WriteLine("DBG ERROR: $_")
+    Write-Error "Failed to load rules catalog: $_"
+    exit 1
 }
-[Console]::WriteLine("DBG: Profile=[$Profile] Platform=[$Platform]")
 
 $includeList = if ($Include) { $Include -split ',' | % { $_.Trim() } } else { @() }
 $excludeList = if ($Exclude) { $Exclude -split ',' | % { $_.Trim() } } else { @() }
@@ -351,13 +337,16 @@ foreach ($r in $catalog) {
     if ($Profile -eq "L1" -and $r.levels -notcontains 1) { continue }
     # Platform filter
     if ($Platform -and $r.platforms -and $r.platforms -notcontains $Platform) { continue }
-    # Include/Exclude
+    # Exclude — must check BEFORE adding to $rules
+    $excluded = $false
+    foreach ($p in $excludeList) { if ($r.id.StartsWith($p)) { $excluded = $true; break } }
+    if ($excluded) { continue }
+    # Include
     if ($includeList.Count -gt 0) {
         $match = $false
         foreach ($p in $includeList) { if ($r.id.StartsWith($p)) { $match = $true; break } }
         if (-not $match) { continue }
     }
-    foreach ($p in $excludeList) { if ($r.id.StartsWith($p)) { continue } }
     # Section filter
     if ($sectionList.Count -gt 0) {
         $match = $false
@@ -429,7 +418,7 @@ $overallScore = $summary.all.score
 
 $output = @{
     mode = $Mode
-    engine_version = "1.0.0-windows"
+    engine_version = "1.0.1-windows"
     duration_seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)
     started_at = $startedAt
     score = $overallScore
