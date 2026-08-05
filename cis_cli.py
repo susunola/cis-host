@@ -282,7 +282,7 @@ def print_summary(data, mode):
     print(f"  Duration: {data.get('duration_seconds', 0):.1f}s")
 
     if mode == "scan":
-        score = s.get("score", 0)
+        score = s.get("score") or 0
         passed = s.get("pass", 0)
         failed = s.get("fail", 0)
         manual = s.get("manual", 0)
@@ -377,8 +377,8 @@ def cmd_apply(args):
     # Generate report from post-apply scan
     # Inject apply summary for richer reporting
     if pre_scan and not args.no_prescan:
-        pre_score = pre_scan.get("summary", {}).get("all", {}).get("score", 0)
-        post_score = post_data.get("summary", {}).get("all", {}).get("score", 0)
+        pre_score = pre_scan.get("summary", {}).get("all", {}).get("score") or 0
+        post_score = post_data.get("summary", {}).get("all", {}).get("score") or 0
         print(f"\n  Score change: {pre_score:.1f}% → {post_score:.1f}%  "
               f"({post_score - pre_score:+.1f}%)")
 
