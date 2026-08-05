@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-CIS Benchmark CLI — local scan & apply with HTML report generation.
+CIS Benchmark CLI — scan, apply, show rule detail, with HTML + CLI output.
 
 Usage:
-  # Scan with --os auto-detection (recommended)
+  # Scan only (pure check)
   python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
 
-  # Apply fixes with --os
-  python3 cis_cli.py apply --os ubuntu2204 --profile L1 --allow-disruptive --output output/
+  # Apply only (pure fix, no re-scan)
+  python3 cis_cli.py apply --os rhel9 --profile L1 --no-postscan --output output/
 
-  # Or specify paths manually
-  python3 cis_cli.py scan \\
-      --engine cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py \\
-      --catalog cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json \\
-      --guidance cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json \\
-      --sections cis-tencentos3-ansible/roles/cis_tencentos3/files/sections.json \\
-      --template cis-tencentos3-ansible/roles/cis_tencentos3/templates/report.html.j2 \\
-      --profile L1 --name "TencentOS Server 3.2" --output output/
+  # Apply then re-scan (combined)
+  python3 cis_cli.py apply --os rhel9 --profile L1 --output output/
+
+  # Fine-grained: run specific rules by ID
+  python3 cis_cli.py scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
+
+  # View rule detail (CLI)
+  python3 cis_cli.py info --os rhel9 --id 1.1.1.1
+
+  # View rule detail (HTML)
+  python3 cis_cli.py info --os rhel9 --id 1.1.1.1 --format html --output output/
 
 Supported --os values:
   tos3, tos4
@@ -433,10 +436,175 @@ def print_summary(data, mode):
     print(f"{'='*60}\n")
 
 
+def print_result_table(data):
+    """Print per-rule scan results as a color-coded ASCII table."""
+    results = data.get("results", [])
+    if not results:
+        print("  (no results)")
+        return
+
+    STATUS_SYM = {"pass": "✓", "fail": "✗", "manual": "?", "error": "!", "notapplicable": "-"}
+    FAMILY_ABBR = {
+        "kmod": "kmod", "sysctl": "sysctl", "pkg": "pkg", "svc": "svc",
+        "ssh": "ssh", "pam": "pam", "sudo": "sudo", "perm": "perm",
+        "grub": "grub", "auditd": "audit", "rsyslog": "rsyslog",
+        "cron": "cron", "ntp": "ntp", "user": "user", "gdm": "gdm",
+        "firewall": "fw", "modprobe": "modp", "mount": "mnt",
+        "file": "file", "cmd": "cmd", "manual": "man",
+        "password-policy": "passwd", "lockout-policy": "lock",
+        "audit-policy": "audit", "user-right": "uright",
+        "reg-dword": "reg", "adv-audit": "adv",
+    }
+
+    # Determine column widths — ID could be 1.1.1.1 or longer
+    id_lens = [len(r.get("id", "")) for r in results]
+    max_id = max(id_lens) if id_lens else 10
+    fam_lens = [len(FAMILY_ABBR.get(r.get("family", ""), r.get("family", ""))) for r in results]
+    max_fam = min(max(fam_lens) if fam_lens else 6, 8)
+    term_w = 120
+    title_w = term_w - max_id - max_fam - 16  # 16 for status + spacing
+
+    header = f"  {'ID':<{max_id}}  {'S':<2} {'Family':<{max_fam}}  {'Title':<{title_w}}"
+    sep = f"  {'-'*max_id}  {'--':<2} {'-'*max_fam}  {'-'*title_w}"
+    print(header)
+    print(sep)
+
+    for r in results:
+        rid = r.get("id", "?")
+        status = r.get("status", "?")
+        symb = STATUS_SYM.get(status, "?")
+        fam = FAMILY_ABBR.get(r.get("family", ""), r.get("family", ""))[:max_fam]
+        title = (r.get("title", "") or "")[:title_w]
+
+        if status == "fail":
+            line = click_style(f"[{symb}]", "red") + f" {rid:<{max_id}}  "
+        elif status == "pass":
+            line = click_style(f"[{symb}]", "green") + f" {rid:<{max_id}}  "
+        elif status == "manual":
+            line = click_style(f"[{symb}]", "yellow") + f" {rid:<{max_id}}  "
+        elif status == "error":
+            line = click_style(f"[{symb}]", "red") + f" {rid:<{max_id}}  "
+        else:
+            line = f"  [{symb}] {rid:<{max_id}}  "
+
+        line += f"{fam:<{max_fam}}  {title}"
+        print(line)
+
+    print(sep)
+    counts = {}
+    for r in results:
+        s = r.get("status", "?")
+        counts[s] = counts.get(s, 0) + 1
+    parts = []
+    if counts.get("pass"):
+        parts.append(click_style(f"✓ {counts['pass']} pass", "green"))
+    if counts.get("fail"):
+        parts.append(click_style(f"✗ {counts['fail']} fail", "red"))
+    if counts.get("manual"):
+        parts.append(click_style(f"? {counts['manual']} manual", "yellow"))
+    if counts.get("error"):
+        parts.append(click_style(f"! {counts['error']} error", "red"))
+    if counts.get("notapplicable"):
+        parts.append(f"- {counts['notapplicable']} n/a")
+    print(f"  {'  '.join(parts)}  |  total: {len(results)}")
+    print()
+
+
+def click_style(text, color):
+    """Return ANSI-colored text. Works in most terminals."""
+    codes = {"red": "31", "green": "32", "yellow": "33", "blue": "34", "cyan": "36", "bold": "1"}
+    c = codes.get(color, "0")
+    return f"\033[{c}m{text}\033[0m"
+
+
+def find_rule(catalog_path, rule_id):
+    """Find a rule by ID in the catalog JSON."""
+    with open(catalog_path, "r", encoding="utf-8") as fh:
+        rules = json.load(fh)
+    for r in rules:
+        if r.get("id") == rule_id:
+            return r, len(rules)
+    return None, len(rules)
+
+
+def lookup_guidance(guidance_path, rule_id):
+    """Get guidance entry for a rule ID."""
+    if not guidance_path or not os.path.exists(guidance_path):
+        return {}
+    with open(guidance_path, "r", encoding="utf-8") as fh:
+        g = json.load(fh)
+    if isinstance(g, dict):
+        return g.get(rule_id, {})
+    return {}
+
+
+def lookup_section(sections_path, section_id):
+    """Resolve section/chapter names. Handles both dict {chapters, subsections} and list [{id, title}] formats."""
+    if not sections_path or not os.path.exists(sections_path):
+        return "", ""
+    with open(sections_path, "r", encoding="utf-8") as fh:
+        s = json.load(fh)
+
+    if isinstance(s, dict):
+        chapters = s.get("chapters", {})
+        subsections = s.get("subsections", {})
+        chapter_num = section_id.split(".")[0] if "." in section_id else section_id
+        chapter_name = chapters.get(chapter_num, "")
+        subsection_name = subsections.get(section_id, "")
+        return chapter_name, subsection_name
+
+    if isinstance(s, list):
+        # Windows-format: [{id, title, ...}]
+        chapter_num = section_id.split(".")[0] if "." in section_id else section_id
+        chapter_name = ""
+        subsection_name = ""
+        for entry in s:
+            eid = entry.get("id", "")
+            if eid == section_id:
+                subsection_name = entry.get("title", "")
+            elif eid == chapter_num:
+                chapter_name = entry.get("title", "")
+        return chapter_name, subsection_name
+
+    return "", ""
+
+
+def get_rule_detail(args, rule_id):
+    """Build a rich dict of rule detail from catalog + guidance + sections."""
+    rule, total = find_rule(args.catalog, rule_id)
+    if rule is None:
+        return None
+
+    guidance = lookup_guidance(args.guidance, rule_id)
+    chapter, subsection = lookup_section(args.sections, rule.get("section", ""))
+
+    return {
+        "id": rule["id"],
+        "title": rule["title"],
+        "section": rule.get("section", ""),
+        "section_chapter": chapter,
+        "section_subsection": subsection,
+        "family": rule.get("family", ""),
+        "levels": rule.get("levels", [1]),
+        "risk": rule.get("risk", "safe"),
+        "platforms": rule.get("platforms", []),
+        "automated": "Automated" in str(rule.get("assessment", "")),
+        "page": rule.get("page", ""),
+        "assessment": rule.get("assessment", ""),
+        "params": rule.get("params", {}),
+        "description": guidance.get("description", ""),
+        "rationale": guidance.get("rationale", ""),
+        "remediation": guidance.get("remediation", ""),
+        "benchmark": args.name,
+        "benchmark_version": "1.0.0",
+        "total_rules": total,
+    }
+
+
 # ─── Main commands ────────────────────────────────────────────────────
 
 def cmd_scan(args):
-    """SCAN mode: check compliance, generate HTML report."""
+    """SCAN mode: check compliance, generate HTML report and CLI table."""
     print(f"\n╔══ CIS Benchmark — SCAN ══╗")
     print(f"║ Target:  {args.name}")
     print(f"║ Profile: {args.profile}")
@@ -453,14 +621,17 @@ def cmd_scan(args):
 
     result_data, result_file = run_engine(args, "scan")
     print_summary(result_data, "scan")
+    print_result_table(result_data)
 
-    out_path = render_report(result_data, args, "scan", result_file)
-    print(f"\nReport saved: {out_path}")
+    out_path = None
+    if args.format in ("html", "both"):
+        out_path = render_report(result_data, args, "scan", result_file)
+        print(f"Report saved: {out_path}")
     return out_path
 
 
 def cmd_apply(args):
-    """APPLY mode: fix rules, then re-scan, generate HTML report."""
+    """APPLY mode: fix rules, optionally re-scan, generate report."""
     print(f"\n╔══ CIS Benchmark — APPLY ══╗")
     print(f"║ Target:  {args.name}")
     print(f"║ Profile: {args.profile}")
@@ -469,14 +640,17 @@ def cmd_apply(args):
         print(f"║ Include: {args.include}")
     if not args.allow_disruptive:
         print(f"║ Note:    Disruptive rules skipped (use --allow-disruptive)")
+    if args.no_postscan:
+        print(f"║ Mode:    Pure apply (no post-scan)")
     print(f"╚{'═'*26}╝\n")
 
-    # Step 1: Pre-scan (optional baseline)
+    # Step 1: Pre-scan (baseline) — skip with --no-prescan
     pre_scan = None
     if not args.no_prescan:
         print("── Step 1/3: Pre-scan (baseline) ──")
         pre_scan, pre_file = run_engine(args, "scan")
         print_summary(pre_scan, "scan")
+        print_result_table(pre_scan)
     else:
         print("── (Pre-scan skipped) ──")
 
@@ -485,27 +659,38 @@ def cmd_apply(args):
     apply_data, apply_file = run_engine(args, "apply")
     print_summary(apply_data, "apply")
 
+    out_path = None
+
+    if args.no_postscan:
+        # Pure apply — no post-scan, no report
+        print("── (Post-scan skipped: --no-postscan) ──")
+        # Still save the apply result JSON
+        if args.format in ("html", "both"):
+            out_path = render_report(apply_data, args, "apply", apply_file)
+            print(f"Apply result saved: {out_path}")
+        return out_path
+
     # Step 3: Post-apply scan
     print("── Step 3/3: Post-apply scan (verify) ──")
     post_data, post_file = run_engine(args, "scan")
     print_summary(post_data, "scan")
+    print_result_table(post_data)
 
     # Generate report from post-apply scan
-    # Inject apply summary for richer reporting
     if pre_scan and not args.no_prescan:
         pre_score = pre_scan.get("summary", {}).get("all", {}).get("score") or 0
         post_score = post_data.get("summary", {}).get("all", {}).get("score") or 0
         print(f"\n  Score change: {pre_score:.1f}% → {post_score:.1f}%  "
               f"({post_score - pre_score:+.1f}%)")
 
-    # Store apply stats in the post-scan result for the report
     post_data["_apply_stats"] = apply_data.get("summary", {})
     post_data["_apply_changed_files"] = apply_data.get("changed_files", [])
     if pre_scan:
         post_data["_prescan_summary"] = pre_scan.get("summary", {})
 
-    out_path = render_report(post_data, args, "apply", post_file)
-    print(f"\nReport saved: {out_path}")
+    if args.format in ("html", "both"):
+        out_path = render_report(post_data, args, "apply", post_file)
+        print(f"\nReport saved: {out_path}")
     return out_path
 
 
@@ -535,30 +720,160 @@ def cmd_check(args):
     return out_path
 
 
+def cmd_info(args):
+    """INFO mode: show rule detail by ID, CLI or HTML."""
+    rule_id = args.id.strip()
+    detail = get_rule_detail(args, rule_id)
+    if detail is None:
+        print(f"Rule '{rule_id}' not found in catalog.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.format == "html":
+        return _render_info_html(detail, args)
+
+    # CLI output — rich formatted
+    print()
+    print(f"  {click_style('═══ Rule Detail ═══', 'bold')}")
+    print(f"  ID:         {click_style(detail['id'], 'cyan')}")
+    print(f"  Title:      {detail['title']}")
+    print(f"  Benchmark:  {detail['benchmark']}  v{detail['benchmark_version']}")
+    print(f"  Section:    {detail['section']}", end="")
+    if detail["section_chapter"]:
+        print(f" — {detail['section_chapter']}", end="")
+    if detail["section_subsection"]:
+        print(f" / {detail['section_subsection']}", end="")
+    print()
+    print(f"  Family:     {detail['family']}")
+    print(f"  Level(s):   {', '.join(f'L{x}' for x in detail['levels'])}")
+    print(f"  Risk:       {detail['risk']}")
+    print(f"  Automated:  {'Yes' if detail['automated'] else 'No (Manual)'}")
+    if detail.get("page"):
+        print(f"  Page:       {detail['page']}")
+    if detail.get("platforms"):
+        print(f"  Platforms:  {', '.join(detail['platforms'])}")
+
+    if detail.get("description"):
+        print(f"\n  {click_style('Description', 'bold')}")
+        print(f"  {detail['description']}")
+
+    if detail.get("rationale"):
+        print(f"\n  {click_style('Rationale', 'bold')}")
+        print(f"  {detail['rationale']}")
+
+    if detail.get("assessment"):
+        print(f"\n  {click_style('Assessment', 'bold')}")
+        print(f"  {detail['assessment']}")
+
+    if detail.get("params"):
+        print(f"\n  {click_style('Parameters', 'bold')}")
+        for k, v in detail["params"].items():
+            print(f"    {k}: {v}")
+
+    if detail.get("remediation"):
+        print(f"\n  {click_style('Remediation', 'bold')}")
+        for line in detail["remediation"].split("\n"):
+            print(f"  {line}")
+
+    print(f"\n  Total rules in catalog: {detail['total_rules']}")
+    print()
+    return None
+
+
+def _render_info_html(detail, args):
+    """Generate a single-rule detail HTML page."""
+    template_path = os.path.abspath(args.template)
+    template_dir = os.path.dirname(template_path)
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rule {detail['id']} — {detail['benchmark']}</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+       max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; background: #f8f9fa; }}
+.rule-id {{ font-size: 28px; font-weight: 700; color: #0ea5e9; }}
+.rule-title {{ font-size: 20px; margin: 8px 0 24px; color: #334155; }}
+.meta {{ display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }}
+.meta-item {{ background: #e2e8f0; padding: 4px 12px; border-radius: 6px; font-size: 13px; color: #475569; }}
+.section {{ background: #0ea5e9; color: #fff; }}
+.section-title {{ font-size: 16px; font-weight: 600; color: #1e293b; margin: 24px 0 8px;
+                   border-bottom: 2px solid #0ea5e9; padding-bottom: 4px; }}
+.content {{ background: #fff; padding: 16px 20px; border-radius: 8px;
+           line-height: 1.7; color: #475569; white-space: pre-wrap; font-size: 14px; }}
+.params-table {{ width: 100%; border-collapse: collapse; margin-top: 8px; }}
+.params-table td {{ padding: 6px 12px; border: 1px solid #e2e8f0; }}
+.params-table td:first-child {{ font-weight: 600; background: #f1f5f9; width: 200px; }}
+</style>
+</head>
+<body>
+<div class="rule-id">{detail['id']}</div>
+<div class="rule-title">{detail['title']}</div>
+<div class="meta">
+  <span class="meta-item">Benchmark: {detail['benchmark']} v{detail['benchmark_version']}</span>
+  <span class="meta-item section">Section {detail['section']}</span>
+  <span class="meta-item">Family: {detail['family']}</span>
+  <span class="meta-item">Level: {', '.join(f'L{x}' for x in detail['levels'])}</span>
+  <span class="meta-item">Risk: {detail['risk']}</span>
+  <span class="meta-item">{'Automated' if detail['automated'] else 'Manual'}</span>
+</div>
+"""
+
+    for label, key in [("Description", "description"), ("Rationale", "rationale"),
+                        ("Assessment", "assessment"), ("Remediation", "remediation")]:
+        val = detail.get(key, "")
+        if val:
+            html += f'<div class="section-title">{label}</div>\n<div class="content">{val}</div>\n'
+
+    if detail.get("params"):
+        html += '<div class="section-title">Parameters</div>\n<table class="params-table">\n'
+        for k, v in detail["params"].items():
+            html += f'<tr><td>{k}</td><td>{v}</td></tr>\n'
+        html += '</table>\n'
+
+    html += "</body></html>"
+
+    os.makedirs(os.path.abspath(args.output), exist_ok=True)
+    out_path = os.path.join(os.path.abspath(args.output),
+                            f"info-{detail['id'].replace('.', '-')}.html")
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(html)
+    print(f"Info HTML saved: {out_path}")
+    return out_path
+
+
 # ─── CLI definition ───────────────────────────────────────────────────
 
 def main():
     ap = argparse.ArgumentParser(
-        description="CIS Benchmark local CLI — scan, apply, verify",
+        description="CIS Benchmark local CLI — scan, apply, view rules",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Scan with --os (auto-detects paths)
+  # Pure scan
   python3 cis_cli.py scan --os rhel9 --profile L1 --output ./out/
 
-  # Apply with --os
+  # Pure apply (no post-scan)
+  python3 cis_cli.py apply --os rhel9 --profile L1 --no-postscan --output ./out/
+
+  # Apply + auto re-scan (combined)
   python3 cis_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
 
-  # Manually specify paths
-  python3 cis_cli.py scan --engine .../cis_engine.py \\
-      --catalog .../rules.json --profile L1 --name "TencentOS 3" --output ./out/
+  # Fine-grained: only specific rules
+  python3 cis_cli.py scan --os rhel8 --include "1.1.1.1,1.1.1.2,5.1.1" --output ./out/
 
-  # Scan only section 1.1 rules with Level 2
-  python3 cis_cli.py scan --os rhel8 --profile L2 --sections "1.1" --output ./out/
+  # CLI-only output (no HTML)
+  python3 cis_cli.py scan --os rhel9 --format cli
+
+  # View rule detail
+  python3 cis_cli.py info --os rhel9 --id 1.1.1.1
+
+  # View rule detail as HTML page
+  python3 cis_cli.py info --os rhel9 --id 1.1.1.1 --format html --output ./out/
         """
     )
 
-    sub = ap.add_subparsers(dest="command", help="Mode: scan | apply | check")
+    sub = ap.add_subparsers(dest="command", help="Mode: scan | apply | check | info")
     sub.required = True
 
     # ── Common args shared by all commands ──
@@ -595,6 +910,8 @@ Examples:
                        help="Comma-separated rule families to filter")
         p.add_argument("--output", default="./output",
                        help="Output directory for reports (default: ./output)")
+        p.add_argument("--format", default="both", choices=["html", "cli", "both"],
+                       help="Output format: html, cli, or both (default: both)")
         p.add_argument("--copy-json", action="store_true",
                        help="Also save result JSON alongside the HTML report")
         p.add_argument("--no-prescan", action="store_true",
@@ -606,6 +923,8 @@ Examples:
                        help="Allow potentially disruptive rules to be applied")
         p.add_argument("--backup-dir", default="",
                        help="Directory to store backup files before changes")
+        p.add_argument("--no-postscan", action="store_true",
+                       help="Skip post-apply rescan (pure apply mode)")
 
     # ── scan ──
     p_scan = sub.add_parser("scan", help="Check compliance only, generate HTML report")
@@ -620,6 +939,28 @@ Examples:
     p_check = sub.add_parser("check", help="Dry-run: scan + show what would change")
     add_common_args(p_check)
     add_apply_args(p_check)
+
+    # ── info ──
+    p_info = sub.add_parser("info", help="Show rule detail by ID (CLI or HTML)")
+    p_info.add_argument("--os", default="",
+                        choices=sorted(OS_PRESETS.keys()),
+                        help="OS preset (auto-fills paths)")
+    p_info.add_argument("--engine", help="Path to cis_engine.py (Linux) or cis_engine.ps1 (Windows).")
+    p_info.add_argument("--catalog", help="Path to rules.json.")
+    p_info.add_argument("--guidance", default="",
+                        help="Path to guidance.json (for description/remediation)")
+    p_info.add_argument("--sections", default="",
+                        help="Path to sections.json (for chapter names)")
+    p_info.add_argument("--template", default="",
+                        help="Path to report.html.j2 template (for HTML mode)")
+    p_info.add_argument("--name", default="CIS Benchmark",
+                        help="Benchmark display name")
+    p_info.add_argument("--id", required=True, metavar="RULE_ID",
+                        help="Rule ID to view (e.g. 1.1.1.1)")
+    p_info.add_argument("--format", default="cli", choices=["html", "cli"],
+                        help="Output format: cli (default) or html")
+    p_info.add_argument("--output", default="./output",
+                        help="Output directory for HTML (default: ./output)")
 
     args = ap.parse_args()
 
@@ -649,6 +990,7 @@ Examples:
         "scan": cmd_scan,
         "apply": cmd_apply,
         "check": cmd_check,
+        "info": cmd_info,
     }
 
     try:
