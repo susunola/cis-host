@@ -17,7 +17,7 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 ## Architecture
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="cis-os architecture" width="800">
+  <img src="docs/architecture.svg" alt="cis-os architecture" width="800">
 </p>
 
 Engines are single-file scripts with zero third-party dependencies (Python 3 on Linux, PowerShell on Windows). Ansible handles file transfer, command execution, and report rendering only. Each engine produces both a structured `result.json` and an optional `audit.log` (JSON-lines) suitable for compliance review and SIEM ingestion.
@@ -38,7 +38,7 @@ Steps 1, 2, 4, 5 are identical to scan. Step 3 differs:
 
 3. Engine starts in `--mode apply`. For each failing rule in a known remediable family, the engine backs up the original file to `/var/backups/cis-<os>/`, modifies the configuration, then re-checks the rule to confirm the new state. Rules that require a reboot or service restart are skipped by default unless `cis_allow_disruptive=true` is explicitly set. Every action is recorded in the audit log when enabled.
 
-Reports show **before** (from a previous scan) and **after** status with deltas. If an apply introduces new failures on re-scan, the report surfaces them in a "regressions" block.
+Reports show the result of the current assessment. If an apply run introduces new failures on re-scan, the report surfaces them in a "regressions" block.
 
 ## Suites
 
@@ -181,7 +181,7 @@ Scan works as non-Admin with PowerShell execution policy `RemoteSigned` or lower
 ## Directory structure
 
 ```
-secx/
+cis-os/
 ├── README.md
 ├── README.zh.md
 ├── README.ja.md
@@ -214,7 +214,7 @@ secx/
 
 ## Reports
 
-Two distinct HTML reports are produced from every run. Both are static, self-contained, print-ready, and themeable (light / dark). They share the same Jinja2 + vanilla JS stack and load zero third-party assets, so they work fully offline.
+Two distinct HTML reports are produced from every run. Both are static, self-contained, print-ready, and work fully offline. They share the same Jinja2 + vanilla JS stack and load zero third-party assets.
 
 | Report | Template | Output filename | When rendered |
 |--------|----------|-----------------|---------------|
@@ -252,8 +252,8 @@ A single host's complete compliance posture. The default deliverable for any sca
 - **Score banner** — overall pass percentage with traffic-light coloring (green ≥ 90, amber ≥ 70, red otherwise)
 - **System facts** — hostname, IPv4, MAC, OS, kernel, architecture, virtualization, uptime
 - **Findings table** — every rule with status, family, level, evidence, remediation hint, and benchmark page reference
-- **Filters** — by status (pass / fail / manual / error / n/a), family, level, section; persistent in `localStorage`
-- **Before/after diff** — in `apply` mode, pre-scan vs post-scan deltas with a regression block highlighting rules that passed before but failed after
+- **Filters** — by status (pass / fail / manual / error / n/a), family, level, section
+- **Regression block** — in `apply` mode, highlights rules that fail the post-remediation re-check
 
 ### Fleet index
 

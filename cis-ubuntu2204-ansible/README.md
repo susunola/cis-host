@@ -29,5 +29,5 @@ ansible-playbook -i inventory/hosts.ini site.yml \
 
 ## Engine
 
-Powered by the shared `cis_engine.py` which runs on any Linux distribution.
+Powered by a Python 3 engine tailored for this distribution.
 The catalog (`rules.json`) contains CIS Ubuntu Linux 22.04 LTS Benchmark v3.0.0 rules.

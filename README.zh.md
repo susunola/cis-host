@@ -17,7 +17,7 @@
 ## 架构
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="cis-os 架构图" width="800">
+  <img src="docs/architecture.svg" alt="cis-os 架构图" width="800">
 </p>
 
 引擎是单文件脚本（Linux 为 Python 3，Windows 为 PowerShell），无第三方依赖。Ansible 只负责文件拷贝、命令执行、报告渲染。每个引擎产出 `result.json`（结构化结果）和可选的 `audit.log`（JSON-lines 审计日志），便于合规审查与 SIEM 接入。
@@ -38,7 +38,7 @@
 
 3. 引擎以 `--mode apply` 启动。对每条未通过且属于已知可修家族的规则，引擎先备份原文件到 `/var/backups/cis-<os>/`，再修改配置，然后重新跑一次检查确认新状态。需要重启或重启服务的规则默认跳过，除非显式传入 `cis_allow_disruptive=true`。启用审计日志时，每一步操作都会被记录。
 
-报告里会同时展示 **修改前**（如果你事先跑过 scan）和 **修改后** 的状态，并给出 delta。如果 apply 之后跑 scan 发现新引入的失败项，报告会单列一个 "regressions" 区块。
+报告展示当前评估结果。如果 apply 运行后在重新扫描中引入新的失败项，报告会单列一个 "regressions" 区块。
 
 ## 套件
 
@@ -181,7 +181,7 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## 目录结构
 
 ```
-secx/
+cis-os/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
 ├── cis_cli.py                      # 本地 CLI（--os 切换目标）
@@ -212,7 +212,7 @@ secx/
 
 ## 报告
 
-每次执行产出两种不同用途的 HTML 报告。两者都是静态、自包含、可打印、可切换主题（明 / 暗）的单文件。共用一套 Jinja2 + 原生 JS 技术栈，不依赖任何第三方 CDN，**完全离线可用**。
+每次执行产出两种不同用途的 HTML 报告。两者都是静态、自包含、可打印、离线可用的单文件。共用一套 Jinja2 + 原生 JS 技术栈，不依赖任何第三方 CDN。
 
 | 报告 | 模板 | 输出文件名 | 触发条件 |
 |------|------|------------|----------|
@@ -228,8 +228,8 @@ secx/
 - **评分横幅** —— 总通过率，配色按分数段（≥90 绿、≥70 琥珀、其余红）
 - **系统信息** —— 主机名、IPv4、MAC、OS、内核、架构、虚拟化类型、运行时长
 - **检查项表格** —— 每条规则的状态、家族、级别、证据、修复提示、基准页码
-- **筛选器** —— 按状态（通过 / 失败 / 人工 / 错误 / 不适用）、家族、级别、章节筛选；筛选状态写入 `localStorage` 持久化
-- **前后对比** —— apply 模式下，pre-scan 与 post-scan 差异内嵌展示，回归项（修复前通过、修复后失败）单独高亮
+- **筛选器** —— 按状态（通过 / 失败 / 人工 / 错误 / 不适用）、家族、级别、章节筛选
+- **回归项** —— apply 模式下，单独高亮修复后重新检查仍未通过的规则
 
 ### 集群索引
 
