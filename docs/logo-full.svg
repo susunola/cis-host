@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 180">
   <defs>
     <linearGradient id="arc-grad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#006EFF"/>
@@ -9,52 +9,34 @@
       <stop offset="0%" stop-color="#006EFF"/>
       <stop offset="100%" stop-color="#00B4D8"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.68" cy="0.5" r="0.45">
-      <stop offset="0%" stop-color="#006EFF" stop-opacity="0.25"/>
-      <stop offset="60%" stop-color="#006EFF" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#006EFF" stop-opacity="0"/>
-    </radialGradient>
   </defs>
 
-  <!-- Icon area -->
-  <g transform="translate(20,10)">
-    <rect width="140" height="140" rx="22" fill="#0D1117"/>
-    <rect width="140" height="140" rx="22" fill="url(#glow)"/>
+  <!-- Icon area (transparent, 160x160) -->
+  <g transform="translate(10,10)">
+    <path d="M32,42 Q76,18 124,80"
+          fill="none" stroke="url(#arc-grad)" stroke-width="3.4" stroke-linecap="round"
+          stroke-opacity="0.35"/>
+    <path d="M26,80 Q76,28 124,80"
+          fill="none" stroke="url(#arc-grad)" stroke-width="3.4" stroke-linecap="round"
+          stroke-opacity="0.6"/>
+    <path d="M32,118 Q76,36 124,80"
+          fill="none" stroke="url(#arc-grad)" stroke-width="3.6" stroke-linecap="round"
+          stroke-opacity="0.95"/>
 
-    <!-- Arc 1 (top) -->
-    <path d="M28,36 Q67,16 108,70"
-          fill="none" stroke="url(#arc-grad)" stroke-width="3.2" stroke-linecap="round"
-          stroke-opacity="0.28"/>
+    <circle cx="32" cy="42" r="4.2" fill="#006EFF" fill-opacity="0.35"/>
+    <circle cx="26" cy="80" r="4.2" fill="#006EFF" fill-opacity="0.6"/>
+    <circle cx="32" cy="118" r="4.2" fill="#006EFF" fill-opacity="0.95"/>
 
-    <!-- Arc 2 (middle) -->
-    <path d="M22,70 Q67,24 108,70"
-          fill="none" stroke="url(#arc-grad)" stroke-width="3.2" stroke-linecap="round"
-          stroke-opacity="0.55"/>
+    <circle cx="124" cy="80" r="14" fill="#006EFF" fill-opacity="0.08"/>
+    <circle cx="124" cy="80" r="9" fill="#006EFF" fill-opacity="0.15"/>
+    <circle cx="124" cy="80" r="5.5" fill="url(#arc-grad)"/>
 
-    <!-- Arc 3 (bottom) -->
-    <path d="M28,104 Q67,33 108,70"
-          fill="none" stroke="url(#arc-grad)" stroke-width="3.5" stroke-linecap="round"
-          stroke-opacity="0.88"/>
-
-    <!-- Source nodes -->
-    <circle cx="28" cy="36" r="4" fill="#006EFF" fill-opacity="0.3"/>
-    <circle cx="22" cy="70" r="4" fill="#006EFF" fill-opacity="0.55"/>
-    <circle cx="28" cy="104" r="4" fill="#006EFF" fill-opacity="0.85"/>
-
-    <!-- Target node -->
-    <circle cx="108" cy="70" r="10" fill="#006EFF" fill-opacity="0.12"/>
-    <circle cx="108" cy="70" r="5.5" fill="url(#arc-grad)" fill-opacity="0.25"/>
-    <circle cx="108" cy="70" r="4" fill="url(#arc-grad)"/>
-
-    <!-- Checkmark -->
-    <path d="M101,70 L105.5,75 L115,64"
-          fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-
-    <circle cx="108" cy="70" r="17" fill="#00B4D8" fill-opacity="0.06"/>
+    <path d="M121,80 L123.5,82.5 L127.5,78"
+          fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <!-- Text area -->
-  <g transform="translate(180,38)">
+  <g transform="translate(180,32)">
     <!-- SECX SERIES tag -->
     <text x="0" y="24" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
           font-size="13" font-weight="500" letter-spacing="6" fill="#5B7FAF">
@@ -62,13 +44,13 @@
     </text>
 
     <!-- cis-os main wordmark -->
-    <text x="0" y="72" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-          font-size="52" font-weight="800" letter-spacing="-1.5" fill="url(#text-grad)">
+    <text x="0" y="76" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
+          font-size="56" font-weight="800" letter-spacing="-1.5" fill="url(#text-grad)">
       cis-os
     </text>
 
     <!-- Subtitle -->
-    <text x="2" y="104" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
+    <text x="2" y="108" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
           font-size="14" font-weight="400" letter-spacing="3.5" fill="#6B7280">
       COMPLIANCE BASELINE AS CODE
     </text>
