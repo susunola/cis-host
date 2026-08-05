@@ -153,13 +153,14 @@ $PasswordRegMap = @{
     "6" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Sam"; Name = "RelaxMinimumPasswordLengthLimits"; Value = 1; Title = "Relax minimum password length limits" }
 }
 $LockoutRegMap = @{
-    "3" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "LimitBlankPasswordUse"; Value = 1; Title = "Allow Administrator account lockout" }
+    # No registry-based lockout policies are defined; previously a bogus
+    # policy_name "3" entry pointed to LimitBlankPasswordUse which is unrelated.
 }
 
 # Security Options audit policies (registry-based, not auditpol)
 $AuditPolicyRegMap = @{
     "1" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "SCENoApplyLegacyAuditPolicy"; Value = 1; Summary = "Force audit policy subcategory settings" }
-    "2" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "CrashOnAuditFail"; Value = 0; Summary = "Shut down system if unable to log security audits" }
+    "2" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "CrashOnAuditFail"; Value = 1; Summary = "Shut down system if unable to log security audits" }
 }
 
 # ── Checks ─────────────────────────────────────────────────
@@ -336,7 +337,13 @@ function Invoke-Check {
      $startTypes = @("Automatic", "Manual", "Disabled", "Auto", "AutomaticDelayedStart")
                 $runStates  = @("Running", "Stopped", "Paused")
                 if ($startTypes -contains $expected) {
-           $ok = ("$($svc.StartType)" -eq "$expected" -or ("$expected" -eq "Auto" -and "$($svc.StartType)" -eq "Automatic"))
+           $startOk = ("$($svc.StartType)" -eq "$expected" -or ("$expected" -eq "Auto" -and "$($svc.StartType)" -eq "Automatic"))
+           $autoLike = @("Automatic", "Auto", "AutomaticDelayedStart")
+           if ($autoLike -contains $expected) {
+               $ok = $startOk -and ("$($svc.Status)" -eq "Running")
+           } else {
+               $ok = $startOk
+           }
            } elseif ($runStates -contains $expected) {
     $ok = ("$($svc.Status)" -eq "$expected")
         } else {
