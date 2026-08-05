@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 760 958" role="img" aria-label="SecX Automation Suite Architecture — multi-OS compliance · scan / apply · audit-ready · 3 privilege modes">
-  <style>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 958" role="img" aria-label="SecX Automation Suite Architecture — multi-OS compliance · scan / apply · audit-ready · 3 privilege modes">
+  <style><![CDATA[
 /* ==========================================================
        THEME VARIABLES — switch by toggling [data-theme] on <html>
        ========================================================== */
@@ -159,7 +158,7 @@
         stroke-dashoffset: 0;
       }
     }
-  </style>
+  ]]></style>
 
         <!-- Definitions -->
         <defs>
