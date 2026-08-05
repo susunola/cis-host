@@ -172,7 +172,6 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
 cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ```
 
-capabilities と 2 つの sudo コマンドを設定することで、非 root スキャンは約 95% のルールカバレッジを達成します。残りのギャップは apply 専用の操作（chown、chmod、モジュールロード、パーティションリサイズ）に限定されます。
 
 ### Windows
 

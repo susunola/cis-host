@@ -146,7 +146,7 @@ cis-tencentos3-ansible/
 
 The assessment engine (`cis_engine.py`) is a pure-Python 3 script (no third-party deps)
 run as root on the target. It implements **61 check families** and **55 auto-remediation
-families**, covering about **95%** of the benchmark's automatable rules.
+families**.
 
 The engine emits a JSON document with:
 

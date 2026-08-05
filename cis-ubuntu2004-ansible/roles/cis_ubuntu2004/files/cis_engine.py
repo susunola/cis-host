@@ -363,6 +363,40 @@ def pkg_installed(name):
     rc, _, _ = sh(_pkg_query_cmd(name))
     return rc == 0
 
+def _distro_family():
+    """Return 'debian', 'suse', or 'rhel' based on os-release."""
+    try:
+        with open("/etc/os-release") as fh:
+            txt = fh.read().lower()
+    except OSError:
+        return "rhel"
+    if any(d in txt for d in ("debian", "ubuntu")):
+        return "debian"
+    if any(d in txt for d in ("suse", "sles", "opensuse")):
+        return "suse"
+    return "rhel"
+
+
+def _pam_files():
+    """PAM stack files for the current distro family."""
+    family = _distro_family()
+    if family == "debian":
+        return ["/etc/pam.d/common-auth", "/etc/pam.d/common-password"]
+    return ["/etc/pam.d/system-auth", "/etc/pam.d/password-auth"]
+
+
+def _chrony_config():
+    """Return (path, key) for the chrony default/options file."""
+    family = _distro_family()
+    if family == "debian":
+        return "/etc/default/chrony", "DAEMON_OPTS"
+    return "/etc/sysconfig/chronyd", "OPTIONS"
+
+
+def _chrony_user():
+    """Expected chrony user name."""
+    return "_chrony" if _distro_family() == "debian" else "chrony"
+
 
 def unit_exists(unit):
     rc, o, _ = sh(["systemctl", "list-unit-files", unit])
@@ -1163,27 +1197,30 @@ def f_mta_local(ctx, p):
 def c_chrony_user(ctx, p):
     if not pkg_installed("chrony"):
         return "notapplicable", "chrony is not installed"
+    user = _chrony_user()
     running = out(["bash", "-c",
                    "ps -eo user:32,comm 2>/dev/null | awk '$2==\"chronyd\"{print $1}' | "
                    "sort -u"], 30)
-    if running and running.strip() != "chrony":
-        return "fail", "chronyd running as %s (expected chrony)" % running.replace("\n", ",")
-    files = ["/etc/sysconfig/chronyd"]
-    vals = conf_values(files, "OPTIONS", (r"\s*=\s*",))
+    if running and running.strip() != user:
+        return "fail", "chronyd running as %s (expected %s)" % (running.replace("\n", ","), user)
+    cfg_path, cfg_key = _chrony_config()
+    vals = conf_values([cfg_path], cfg_key, (r"\s*=\s*",))
     txt = vals[-1][1] if vals else ""
-    if "-u chrony" not in txt and not running:
-        return "fail", "OPTIONS in /etc/sysconfig/chronyd does not contain -u chrony"
-    return "pass", "chronyd runs as the chrony user"
+    if "-u %s" % user not in txt and not running:
+        return "fail", "%s in %s does not contain -u %s" % (cfg_key, cfg_path, user)
+    return "pass", "chronyd runs as the %s user" % user
 
 
 @fix("chrony_user")
 def f_chrony_user(ctx, p):
     if not pkg_installed("chrony"):
         return False, "chrony is not installed"
-    set_kv_in_file(ctx, "/etc/sysconfig/chronyd", "OPTIONS",
-                   '"-F 2 -u chrony"', sep="=")
+    user = _chrony_user()
+    cfg_path, cfg_key = _chrony_config()
+    set_kv_in_file(ctx, cfg_path, cfg_key,
+                   '"-F 2 -u %s"' % user, sep="=")
     sh(["systemctl", "restart", "chronyd"], 120)
-    return True, "forced -u chrony in /etc/sysconfig/chronyd"
+    return True, "forced -u %s in %s" % (user, cfg_path)
 
 
 @check("shells_nologin")
@@ -1611,20 +1648,21 @@ def f_sshd_config_perm(ctx, p):
 # PAM / authselect
 # ==========================================================================
 
-PAM_FILES = ["/etc/pam.d/system-auth", "/etc/pam.d/password-auth"]
+PAM_FILES = _pam_files()
 
 
 def _pam_paths(ctx):
     def load():
         paths = [f for f in PAM_FILES if exists(f)]
-        rc, o, _ = sh(["authselect", "current"], 30)
-        if rc == 0:
-            m = re.search(r"custom/(\S+)", o)
-            if m:
-                base = "/etc/authselect/custom/%s" % m.group(1)
-                for n in ("system-auth", "password-auth"):
-                    if exists(os.path.join(base, n)):
-                        paths.append(os.path.join(base, n))
+        if have("authselect"):
+            rc, o, _ = sh(["authselect", "current"], 30)
+            if rc == 0:
+                m = re.search(r"custom/(\S+)", o)
+                if m:
+                    base = "/etc/authselect/custom/%s" % m.group(1)
+                    for n in ("system-auth", "password-auth"):
+                        if exists(os.path.join(base, n)):
+                            paths.append(os.path.join(base, n))
         return paths
     return ctx.cached("pam_paths", load)
 
@@ -2640,7 +2678,8 @@ def f_aide_audit_tools(ctx, p):
 def _grub_cfg():
     for c in ("/boot/grub2/grub.cfg", "/boot/efi/EFI/tencentos/grub.cfg",
               "/boot/efi/EFI/centos/grub.cfg", "/boot/efi/EFI/redhat/grub.cfg",
-              "/boot/grub/grub.cfg"):
+              "/boot/efi/EFI/ubuntu/grub.cfg", "/boot/efi/EFI/sles/grub.cfg",
+              "/boot/efi/EFI/opensuse/grub.cfg", "/boot/grub/grub.cfg"):
         if exists(c):
             return c
     hits = out(["bash", "-c", "find /boot -maxdepth 4 -name grub.cfg 2>/dev/null | head -1"], 60)

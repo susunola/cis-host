@@ -172,7 +172,6 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
 cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ```
 
-เมื่อตั้งค่าทั้ง capabilities และคำสั่ง sudo สองรายการ การสแกนแบบไม่ใช่ root จะครอบคลุมกฎประมาณ 95% ส่วนที่เหลือเป็นเฉพาะการดำเนินการ apply (chown, chmod, การโหลดโมดูล, การปรับขนาดพาร์ติชัน)
 
 ### Windows
 

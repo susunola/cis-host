@@ -326,6 +326,43 @@ function Invoke-Check {
             }
         }
 
+
+        "firewall" {
+            # rules.json uses the shorter family name; delegate to firewall-profile logic
+            $fwProfile = $params.profile
+            $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
+            try {
+                $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
+                $ok = ($fw.Enabled -eq $true -and $fw.DefaultInboundAction -eq "Block" -and $fw.DefaultOutboundAction -eq $expectedOut)
+                return @{
+                    status = if($ok){"pass"}else{"fail"}
+                    detail = "${fwProfile}: enabled=$($fw.Enabled) inbound=$($fw.DefaultInboundAction) outbound=$($fw.DefaultOutboundAction) (expected out=$expectedOut)"
+                }
+            } catch {
+                return @{status="error"; detail="Failed to query firewall profile $fwProfile"}
+            }
+        }
+
+        "adv-audit" {
+            $subcategory = $params.subcategory
+            $expected = $params.expected
+            $matchMode = if ($params.match) { $params.match } else { "exact" }
+            if (-not $expected) { return @{status="error"; detail="No expected value for adv-audit $subcategory"} }
+            try {
+                $lines = auditpol /get /subcategory:"$subcategory" 2>$null
+                $line = $lines | Where-Object { $_ -match $subcategory } | Select-Object -Last 1
+                if (-not $line) { return @{status="error"; detail="auditpol did not return subcategory $subcategory"} }
+                $val = ($line -split $subcategory)[-1].Trim()
+                if ($matchMode -eq "include") {
+                    $ok = ($val -like "*$expected*")
+                } else {
+                    $ok = ("$val" -ieq "$expected")
+                }
+                return @{status=if($ok){"pass"}else{"fail"}; detail="$subcategory = $val (expected $matchMode $expected)"}
+            } catch {
+                return @{status="error"; detail="auditpol query failed for $subcategory"}
+            }
+        }
         # ── 7. Service Configuration ──
 "service-state" {
      $name = $params.name
@@ -632,6 +669,47 @@ function Invoke-Fix {
             } catch { return "failed: $($_.Exception.Message)" }
         }
 
+
+        "firewall" {
+            $fwProfile = $params.profile
+            $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
+            try {
+                $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
+                if ($fw.Enabled -eq $true -and $fw.DefaultInboundAction -eq "Block" -and $fw.DefaultOutboundAction -eq $expectedOut) { return "already" }
+                Set-NetFirewallProfile -Name $fwProfile -Enabled True -DefaultInboundAction Block -DefaultOutboundAction $expectedOut
+                return "applied"
+            } catch { return "failed: $($_.Exception.Message)" }
+        }
+
+        "adv-audit" {
+            $subcategory = $params.subcategory
+            $expected = $params.expected
+            $matchMode = if ($params.match) { $params.match } else { "exact" }
+            if (-not $expected) { return "skipped: no expected value for adv-audit $subcategory" }
+            try {
+                $lines = auditpol /get /subcategory:"$subcategory" 2>$null
+                $line = $lines | Where-Object { $_ -match $subcategory } | Select-Object -Last 1
+                $current = if ($line) { ($line -split $subcategory)[-1].Trim() } else { "" }
+                if ($matchMode -eq "include" -and $current -like "*$expected*") { return "already" }
+                if ($matchMode -ne "include" -and "$current" -ieq "$expected") { return "already" }
+                $setting = switch ($expected) {
+                    "Success and Failure" { "SuccessAndFailure" }
+                    "Success"             { "Success" }
+                    "Failure"             { "Failure" }
+                    "No Auditing"         { "NoAuditing" }
+                    default               { $expected }
+                }
+                auditpol /set /subcategory:"$subcategory" /success:enable /failure:enable 2>$null | Out-Null
+                if ($setting -eq "NoAuditing") {
+                    auditpol /set /subcategory:"$subcategory" /success:disable /failure:disable 2>$null | Out-Null
+                } elseif ($setting -eq "Success") {
+                    auditpol /set /subcategory:"$subcategory" /success:enable /failure:disable 2>$null | Out-Null
+                } elseif ($setting -eq "Failure") {
+                    auditpol /set /subcategory:"$subcategory" /success:disable /failure:enable 2>$null | Out-Null
+                }
+                return "applied"
+            } catch { return "failed: $($_.Exception.Message)" }
+        }
   "service-state" {
    $name = $params.name; $expected = $params.state
  try {
@@ -649,6 +727,7 @@ function Invoke-Fix {
        Start-Service -Name $name -ErrorAction SilentlyContinue
     } elseif ($expected -eq "Auto" -or $expected -eq "Automatic") {
      Set-Service -Name $name -StartupType Automatic
+     Start-Service -Name $name -ErrorAction SilentlyContinue
      } elseif ($expected -eq "Manual") {
      Set-Service -Name $name -StartupType Manual
        } else {

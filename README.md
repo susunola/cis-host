@@ -186,7 +186,6 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
 cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ```
 
-With both capabilities and the two sudo commands, a non-root scan hits ~95% rule coverage. Gaps are limited to apply-only behaviors (chown, chmod, module loading, partition resizing).
 
 ### Windows
 
@@ -289,7 +288,7 @@ A single play runs against every host in the inventory. Each host gets its own `
 - `apply` modifies configuration files in place. Originals are backed up to `/var/backups/cis-<os>/`.
 - Rules marked `disruptive` (reboot, remount, service restart) are skipped by default. Pass `-e cis_allow_disruptive=true` to opt in. Run during a maintenance window.
 - Six families are intentionally never auto-remediated — they require human judgment or are environment-specific: `bootloader_password`, `info_only`, `manual`, `partition`, `root_access`, `sshd_access`. The engine reports these items but does not modify them.
-- Linux engines require `rpm`/`dpkg`, `systemctl`, `sshd -T`, `auditctl`, and `/proc`, covering RHEL, Debian, and SUSE families. Windows engine targets Server 2016 / 2019 / 2022 / 2025.
+- Linux engines detect the active package manager (dnf/yum, apt, or zypper) and distro family at runtime, covering RHEL, Debian, and SUSE families. Windows engine targets Server 2016 / 2019 / 2022 / 2025.
 - Before running `apply` in production, run `scan` in a test environment, review the report, then proceed.
 
 ## License
