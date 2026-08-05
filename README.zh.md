@@ -11,7 +11,15 @@
 
 针对 10 种主流 Linux 发行版及 4 个 Windows Server 版本跑 **CIS** 安全基准的 Ansible Playbook 与本地 CLI。每个套件有两种模式 —— `scan`（只读）与 `apply`（修复），按主机生成独立的交互式 HTML 报告，并支持结构化审计日志。
 
-**支持平台：** RHEL 8/9/10 · TencentOS 3/4 · SLES 15/16 · Ubuntu 20.04/22.04/24.04 LTS · Windows Server 2016/2019/2022/2025
+**支持平台：**
+
+| 产品族                           | 操作系统               | 版本                      |
+|---------------------------------|------------------------|---------------------------|
+| Red Hat Enterprise Linux        | RHEL                   | 8, 9, 10                  |
+| TencentOS Server                | TencentOS              | 3, 4                      |
+| SUSE Linux Enterprise Server    | SLES                   | 15, 16                    |
+| Ubuntu LTS                      | Ubuntu                 | 20.04, 22.04, 24.04       |
+| Microsoft Windows Server        | Windows Server         | 2016, 2019, 2022, 2025    |
 
 ## 架构
 

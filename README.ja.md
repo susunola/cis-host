@@ -11,7 +11,15 @@
 
 10 種類の Linux ディストリビューションと 4 バージョンの Windows Server に対して **CIS** セキュリティベンチマークを実行する Ansible Playbook およびローカル CLI です。各スイートは `scan`（読み取り専用）と `apply`（修復）の 2 つのモードで動作し、構造化された監査ログ付きのインタラクティブな HTML レポートをホストごとに生成します。
 
-**サポートプラットフォーム:** RHEL 8/9/10 · TencentOS 3/4 · SLES 15/16 · Ubuntu 20.04/22.04/24.04 LTS · Windows Server 2016/2019/2022/2025
+**サポートプラットフォーム:**
+
+| ファミリー                       | OS                     | バージョン                |
+|---------------------------------|------------------------|---------------------------|
+| Red Hat Enterprise Linux        | RHEL                   | 8, 9, 10                  |
+| TencentOS Server                | TencentOS              | 3, 4                      |
+| SUSE Linux Enterprise Server    | SLES                   | 15, 16                    |
+| Ubuntu LTS                      | Ubuntu                 | 20.04, 22.04, 24.04       |
+| Microsoft Windows Server        | Windows Server         | 2016, 2019, 2022, 2025    |
 
 ## アーキテクチャ
 

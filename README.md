@@ -11,7 +11,15 @@
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Each suite operates in two modes — `scan` (read-only) and `apply` (remediate) — and produces per-host interactive HTML reports with structured audit logs.
 
-**Supported platforms:** RHEL 8/9/10 · TencentOS 3/4 · SLES 15/16 · Ubuntu 20.04/22.04/24.04 LTS · Windows Server 2016/2019/2022/2025
+**Supported platforms:**
+
+| Family                          | OS                     | Versions                  |
+|---------------------------------|------------------------|---------------------------|
+| Red Hat Enterprise Linux        | RHEL                   | 8, 9, 10                  |
+| TencentOS Server                | TencentOS              | 3, 4                      |
+| SUSE Linux Enterprise Server    | SLES                   | 15, 16                    |
+| Ubuntu LTS                      | Ubuntu                 | 20.04, 22.04, 24.04       |
+| Microsoft Windows Server        | Windows Server         | 2016, 2019, 2022, 2025    |
 
 ## Architecture
 
