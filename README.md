@@ -1,6 +1,20 @@
-# cis-os
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/logo-full.png" alt="cis-os — SecX Series" width="600">
+</p>
 
-**English** | [简体中文](README.zh.md) | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
+<p align="center">
+  <b>English</b> | <a href="README.zh.md">简体中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.th.md">ภาษาไทย</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/python-3.6%2B-3776AB?logo=python&logoColor=white" alt="Python 3.6+">
+  <img src="https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+">
+  <img src="https://img.shields.io/badge/platforms-14%20OS-006EFF" alt="14 OS platforms">
+  <img src="https://img.shields.io/badge/engines-zero%20deps-00B4D8" alt="Zero third-party dependencies">
+</p>
+
+# cis-os
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Each suite operates in two modes — `scan` (read-only) and `apply` (remediate) — and produces per-host HTML reports with structured audit logs.
 
