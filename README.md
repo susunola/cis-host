@@ -230,6 +230,20 @@ A `findings.csv.j2` template is also available for Excel/Sheets consumption — 
   <img src="docs/screenshots/fleet-index.png" alt="SecX fleet compliance index" width="900">
 </p>
 
+### CLI mode
+
+A local CLI scanner for hosts where Ansible is overkill — single Python file, zero dependencies, runs straight from a terminal. Same catalog, same engine, same report; just a different front end.
+
+```bash
+python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+```
+
+<p align="center">
+  <img src="docs/screenshots/cli-mode.png" alt="SecX CLI scan output" width="900">
+</p>
+
+The CLI reuses the suite's `cis_engine.py`, `rules.json`, `guidance.json`, and `sections.json` directly. The rendered summary, color-coded status counts, and per-rule table mirror what the engine writes to `result.json` — anything you can do in Ansible, you can do here.
+
 ### Per-host report
 
 A single host's complete compliance posture. The default deliverable for any scan or apply.
