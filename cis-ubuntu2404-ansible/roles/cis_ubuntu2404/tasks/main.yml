@@ -10,4 +10,4 @@
 
 - name: Gate on findings
   ansible.builtin.include_tasks: gate.yml
-  when: cis_fail_on_findings | default(false)
+  when: cis_fail_on_findings | default(false) or (cis_min_score | default(0) | int) > 0

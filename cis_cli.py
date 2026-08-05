@@ -27,6 +27,7 @@ Supported --os values:
 """
 
 import argparse
+import html
 import json
 import os
 import subprocess
@@ -804,8 +805,8 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 </style>
 </head>
 <body>
-<div class="rule-id">{detail['id']}</div>
-<div class="rule-title">{detail['title']}</div>
+<div class="rule-id">{html.escape(detail['id'])}</div>
+<div class="rule-title">{html.escape(detail['title'])}</div>
 <div class="meta">
   <span class="meta-item">Benchmark: {detail['benchmark']} v{detail['benchmark_version']}</span>
   <span class="meta-item section">Section {detail['section']}</span>
@@ -820,12 +821,12 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
                         ("Assessment", "assessment"), ("Remediation", "remediation")]:
         val = detail.get(key, "")
         if val:
-            html += f'<div class="section-title">{label}</div>\n<div class="content">{val}</div>\n'
+            html += f'<div class="section-title">{html.escape(label)}</div>\n<div class="content">{html.escape(val)}</div>\n'
 
     if detail.get("params"):
         html += '<div class="section-title">Parameters</div>\n<table class="params-table">\n'
         for k, v in detail["params"].items():
-            html += f'<tr><td>{k}</td><td>{v}</td></tr>\n'
+            html += f'<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>\n'
         html += '</table>\n'
 
     html += "</body></html>"

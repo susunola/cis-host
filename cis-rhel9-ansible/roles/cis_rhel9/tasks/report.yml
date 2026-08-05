@@ -4,7 +4,7 @@
     cis_guidance: "{{ lookup('file', cis_guidance_file) | from_json }}"
     cis_sections: "{{ lookup('file', cis_sections_file) | from_json }}"
   delegate_to: localhost
-    changed_when: false
+  changed_when: false
   run_once: true
 
 - name: Create report directory
@@ -13,7 +13,7 @@
     state: directory
     mode: "0755"
   delegate_to: localhost
-    changed_when: false
+  changed_when: false
   run_once: true
 
 - name: Set report timestamp
@@ -54,7 +54,7 @@
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.html"
     mode: "0644"
   delegate_to: localhost
-    changed_when: false
+  changed_when: false
 
 - name: Write JSON result
   ansible.builtin.copy:
@@ -62,7 +62,7 @@
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.json"
     mode: "0644"
   delegate_to: localhost
-    changed_when: false
+  changed_when: false
 
 - name: Write CSV findings
   ansible.builtin.template:
@@ -70,7 +70,7 @@
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.csv"
     mode: "0644"
   delegate_to: localhost
-    changed_when: false
+  changed_when: false
   when: cis_report_csv | default(false)
 
 - name: Write fleet index
@@ -79,7 +79,7 @@
     dest: "{{ cis_report_dir }}/index-{{ cis_run_stamp }}.html"
     mode: "0644"
   delegate_to: localhost
-    changed_when: false
+  changed_when: false
   run_once: true
   when: cis_report_index | default(false)
 

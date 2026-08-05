@@ -95,14 +95,10 @@ class Ctx(object):
 # --------------------------------------------------------------------------
 
 def sh(cmd, timeout=60):
-    """Run a command. cmd may be a list or a shell string. -> (rc, out, err)"""
+    """Run a command as a list. -> (rc, out, err)"""
     try:
-        if isinstance(cmd, str):
-            p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, timeout=timeout)
-        else:
-            p = subprocess.run(cmd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, timeout=timeout)
+        p = subprocess.run(cmd, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, timeout=timeout)
         return (p.returncode,
                 p.stdout.decode("utf-8", "replace").strip(),
                 p.stderr.decode("utf-8", "replace").strip())
@@ -316,7 +312,7 @@ def c_kmod(ctx, p):
     mod = p["module"]
     conf = ctx.cached("modprobe_showconfig",
                       lambda: out(["modprobe", "--showconfig"], 120) or "")
-    loaded = ctx.cached("lsmod", lambda: out("lsmod", 30) or "")
+    loaded = ctx.cached("lsmod", lambda: out(["lsmod"], 30) or "")
     bad = []
     blocked = re.search(r"^\s*install\s+%s\s+(/bin/(true|false)|/usr/bin/(true|false))"
                         % re.escape(mod), conf, re.M) is not None
@@ -577,9 +573,10 @@ def f_path_perm_glob(ctx, p):
 
 @check("world_writable")
 def c_world_writable(ctx, p):
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev -type f -perm -0002 "
-           "2>/dev/null; done | head -50")
+           "2>/dev/null; done | head -50"]
     res = out(cmd, 300)
     if res:
         n = len(res.splitlines())
@@ -590,16 +587,17 @@ def c_world_writable(ctx, p):
 
 @fix("world_writable")
 def f_world_writable(ctx, p):
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev -type f -perm -0002 "
-           "-exec chmod o-w {} + 2>/dev/null; done")
+           "-exec chmod o-w {} + 2>/dev/null; done"]
     sh(cmd, 600)
     return True, "removed world-write bit from regular files"
 
 
 @check("logfile_perm")
 def c_logfile_perm(ctx, p):
-    res = out("find /var/log/ -type f -perm /g+wx,o+rwx 2>/dev/null | head -50", 120)
+    res = out(["bash", "-c", "find /var/log/ -type f -perm /g+wx,o+rwx 2>/dev/null | head -50"], 120)
     if res:
         n = len(res.splitlines())
         return "fail", "%d log file(s) too permissive, e.g. %s" % (
@@ -609,8 +607,8 @@ def c_logfile_perm(ctx, p):
 
 @fix("logfile_perm")
 def f_logfile_perm(ctx, p):
-    sh("find /var/log/ -type f -perm /g+wx,o+rwx -exec chmod g-wx,o-rwx {} + "
-       "2>/dev/null", 300)
+    sh(["find", "/var/log/", "-type", "f", "-perm", "/g+wx,o+rwx", "-exec",
+       "chmod", "g-wx,o-rwx", "{}", "+"], 300)
     return True, "applied chmod g-wx,o-rwx under /var/log"
 
 
@@ -645,9 +643,9 @@ def f_journald_fileperm(ctx, p):
                "z /var/log/journal 2640 root systemd-journal - -\n"
                "Z /var/log/journal/%m ~2640 root systemd-journal - -\n"
                "Z /var/log/journal/%m/*.journal* ~0640 root systemd-journal - -\n")
-    sh("systemd-tmpfiles --create /etc/tmpfiles.d/systemd.conf")
-    sh("find /var/log/journal /run/log/journal -type f -name '*.journal*' "
-       "-exec chmod 0640 {} + 2>/dev/null")
+    sh(["systemd-tmpfiles", "--create", "/etc/tmpfiles.d/systemd.conf"])
+    sh(["find", "/var/log/journal", "/run/log/journal", "-type", "f",
+       "-name", "*.journal*", "-exec", "chmod", "0640", "{}", "+"])
     return True, "wrote /etc/tmpfiles.d/systemd.conf and fixed existing journals"
 
 # ==========================================================================
@@ -1066,7 +1064,7 @@ def f_wireless(ctx, p):
 @check("mta_local")
 def c_mta_local(ctx, p):
     if not (pkg_installed("postfix") or exists("/etc/postfix/main.cf")):
-        listening = out("ss -plntu 2>/dev/null | grep -E ':25\\s' || true", 30)
+        listening = out(["bash", "-c", "ss -plntu 2>/dev/null | grep -E ':25\\s' || true"], 30)
         if listening:
             return "fail", "something is listening on port 25: %s" % listening.splitlines()[0]
         return "pass", "no MTA installed and nothing listening on :25"
@@ -1074,8 +1072,9 @@ def c_mta_local(ctx, p):
     cur = vals[-1][1] if vals else "(unset)"
     if cur.lower() in ("loopback-only", "localhost", "127.0.0.1", "127.0.0.1, ::1"):
         return "pass", "postfix inet_interfaces = %s" % cur
-    listening = out("ss -plntu 2>/dev/null | grep -E ':25\\s' | "
-                    "grep -Ev '127\\.0\\.0\\.1|\\[::1\\]' || true", 30)
+    listening = out(["bash", "-c",
+                     "ss -plntu 2>/dev/null | grep -E ':25\\s' | "
+                     "grep -Ev '127\\.0\\.0\\.1|\\[::1\\]' || true"], 30)
     if not listening and vals:
         return "pass", "inet_interfaces=%s but only loopback is bound" % cur
     return "fail", "postfix inet_interfaces = %s (expected loopback-only)" % cur
@@ -1095,8 +1094,9 @@ def f_mta_local(ctx, p):
 def c_chrony_user(ctx, p):
     if not pkg_installed("chrony"):
         return "notapplicable", "chrony is not installed"
-    running = out("ps -eo user:32,comm 2>/dev/null | awk '$2==\"chronyd\"{print $1}' | "
-                  "sort -u", 30)
+    running = out(["bash", "-c",
+                   "ps -eo user:32,comm 2>/dev/null | awk '$2==\"chronyd\"{print $1}' | "
+                   "sort -u"], 30)
     if running and running.strip() != "chrony":
         return "fail", "chronyd running as %s (expected chrony)" % running.replace("\n", ",")
     files = ["/etc/sysconfig/chronyd"]
@@ -1233,8 +1233,10 @@ def c_kv_conf(ctx, p):
                 for ln in readlines(path):
                     if re.match(r"^\s*\*\s+hard\s+core\s+0\s*$", ln):
                         hits.append(path)
-        soft_bad = out("grep -Ers '^\\s*\\*\\s+soft\\s+core\\s+' /etc/security/limits.conf "
-                       "/etc/security/limits.d/ 2>/dev/null | grep -v ' 0$' || true", 30)
+        soft_bad = out(["bash", "-c",
+                        "grep -Ers '^\\s*\\*\\s+soft\\s+core\\s+' "
+                        "/etc/security/limits.conf /etc/security/limits.d/ "
+                        "2>/dev/null | grep -v ' 0$' || true"], 30)
         if hits and not soft_bad:
             return "pass", "'* hard core 0' set in " + ", ".join(sorted(set(hits)))
         why = [] if hits else ["'* hard core 0' not configured"]
@@ -1341,7 +1343,8 @@ def sshd_effective(ctx):
     def load():
         rc, o, _ = sh(["sshd", "-T"], 60)
         if rc != 0:
-            rc, o, _ = sh("sshd -T -C user=root,host=localhost,addr=127.0.0.1", 60)
+            rc, o, _ = sh(["sshd", "-T", "-C",
+                           "user=root,host=localhost,addr=127.0.0.1"], 60)
         if rc != 0:
             return {}
         d = {}
@@ -1806,11 +1809,12 @@ def c_login_defs(ctx, p):
     # also verify existing users
     bad_users = []
     if key == "PASS_MIN_DAYS":
-        bad_users = out("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow 2>/dev/null | "
-                        "while read -r u; do d=$(chage --list \"$u\" 2>/dev/null | "
-                        "awk -F: '/Minimum number/{print $2}'); "
-                        "[ -n \"$d\" ] && [ \"$d\" -lt %s ] && echo \"$u\"; "
-                        "done | head -10" % want, 120).splitlines()
+        bad_users = out(["bash", "-c",
+                         "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow 2>/dev/null | "
+                         "while read -r u; do d=$(chage --list \"$u\" 2>/dev/null | "
+                         "awk -F: '/Minimum number/{print $2}'); "
+                         "[ -n \"$d\" ] && [ \"$d\" -lt %s ] && echo \"$u\"; "
+                         "done | head -10" % want], 120).splitlines()
     if ok and not bad_users:
         return "pass", "%s %s" % (key, cur)
     why = [] if ok else ["%s=%s (expected %s %s)" % (key, cur, op, want)]
@@ -1829,8 +1833,9 @@ def f_login_defs(ctx, p):
         except (ValueError, TypeError):
             pass
         else:
-            sh("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
-               "xargs -r -n1 chage --mindays %s" % want, 180)
+            sh(["bash", "-c",
+               "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
+               "xargs -r -n1 chage --mindays %s" % want], 180)
     return True, "set %s %s in /etc/login.defs" % (key, want)
 
 
@@ -1948,15 +1953,16 @@ def c_root_access(ctx, p):
 @check("useradd_inactive")
 def c_useradd_inactive(ctx, p):
     mx = p.get("max", 30)
-    rc, o, _ = sh("useradd -D | grep INACTIVE", 30)
+    rc, o, _ = sh(["bash", "-c", "useradd -D | grep INACTIVE"], 30)
     cur = as_int(o.split("=")[-1]) if "=" in o else None
     bad = []
     if cur is None or cur < 0 or cur > mx:
         bad.append("useradd default INACTIVE=%s (expected 0..%d)" % (cur, mx))
-    users = out("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow 2>/dev/null | "
-                "while read -r u; do i=$(chage --list \"$u\" 2>/dev/null | "
-                "awk -F: '/Password inactive/{print $2}' | tr -d ' '); "
-                "echo \"$u:$i\"; done", 120)
+    users = out(["bash", "-c",
+                 "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow 2>/dev/null | "
+                 "while read -r u; do i=$(chage --list \"$u\" 2>/dev/null | "
+                 "awk -F: '/Password inactive/{print $2}' | tr -d ' '); "
+                 "echo \"$u:$i\"; done"], 120)
     off = []
     for ln in users.splitlines():
         if ln.endswith(":never") or ln.endswith(":"):
@@ -1976,8 +1982,9 @@ def f_useradd_inactive(ctx, p):
     except (ValueError, TypeError):
         return False, "invalid max value: %s" % mx
     sh(["useradd", "-D", "-f", str(mx)], 30)
-    sh("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
-       "xargs -r -n1 chage --inactive %d" % mx, 180)
+    sh(["bash", "-c",
+       "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
+       "xargs -r -n1 chage --inactive %d" % mx], 180)
     return True, "set default inactivity to %d days and updated existing users" % mx
 
 
@@ -1992,9 +1999,10 @@ def c_selinux(ctx, p):
         cmdline = read("/proc/cmdline") or ""
         hits = [t for t in cmdline.split()
                 if re.match(r"^(selinux=0|enforcing=0)$", t)]
-        grubcfg = out("grep -Prs '^\\s*(GRUB_CMDLINE_LINUX|kernelopts)' "
-                      "/etc/default/grub /boot/grub2/grubenv 2>/dev/null | "
-                      "grep -Eo '(selinux|enforcing)=0' | sort -u", 30)
+        grubcfg = out(["bash", "-c",
+                       "grep -Prs '^\\s*(GRUB_CMDLINE_LINUX|kernelopts)' "
+                       "/etc/default/grub /boot/grub2/grubenv 2>/dev/null | "
+                       "grep -Eo '(selinux|enforcing)=0' | sort -u"], 30)
         if hits or grubcfg:
             return "fail", "SELinux disabled on the kernel command line: %s" % (
                 " ".join(hits) or grubcfg.replace("\n", " "))
@@ -2026,8 +2034,9 @@ def c_selinux(ctx, p):
             return "pass", "runtime=%s config=%s" % (cur, cfg)
         return "fail", "runtime=%s config=%s (expected %s)" % (cur, cfg, exp)
     if kind == "no_unconfined":
-        o = out("ps -eZ 2>/dev/null | grep -E 'unconfined_service_t' | "
-                "awk '{print $NF}' | sort -u | head -20", 60)
+        o = out(["bash", "-c",
+                "ps -eZ 2>/dev/null | grep -E 'unconfined_service_t' | "
+                "awk '{print $NF}' | sort -u | head -20"], 60)
         if o:
             return "fail", "unconfined services: " + ", ".join(o.split())
         return "pass", "no unconfined services running"
@@ -2044,8 +2053,9 @@ def f_selinux(ctx, p):
             new = re.sub(r"\s*\b(selinux|enforcing)=0\b", "", txt)
             if new != txt:
                 write_file(ctx, "/etc/default/grub", new)
-        sh("grub2-mkconfig -o \"$(dirname \"$(find /boot -name grub.cfg "
-           "-print -quit 2>/dev/null)\")/grub.cfg\" >/dev/null 2>&1", 300)
+        sh(["bash", "-c",
+           "grub2-mkconfig -o \"$(dirname \"$(find /boot -name grub.cfg "
+           "-print -quit 2>/dev/null)\")/grub.cfg\" >/dev/null 2>&1"], 300)
         return True, "removed selinux=0/enforcing=0 and regenerated grub.cfg (reboot required)"
     if kind == "policy":
         set_kv_in_file(ctx, "/etc/selinux/config", "SELINUXTYPE",
@@ -2353,9 +2363,10 @@ def c_audit_privileged(ctx, p):
     if not pkg_installed("audit"):
         return "notapplicable", "the audit package is not installed"
     umin = uid_min()
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev \\( -perm -4000 -o -perm -2000 \\) "
-           "-type f 2>/dev/null; done | sort -u")
+           "-type f 2>/dev/null; done | sort -u"]
     binaries = [b for b in out(cmd, 300).splitlines() if b]
     if not binaries:
         return "pass", "no setuid/setgid binaries found"
@@ -2378,9 +2389,10 @@ def f_audit_privileged(ctx, p):
     if not pkg_installed("audit"):
         return False, "the audit package is not installed"
     umin = uid_min()
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev \\( -perm -4000 -o -perm -2000 \\) "
-           "-type f 2>/dev/null; done | sort -u")
+           "-type f 2>/dev/null; done | sort -u"]
     binaries = [b for b in out(cmd, 300).splitlines() if b]
     if not binaries:
         return False, "no setuid/setgid binaries found"
@@ -2548,7 +2560,7 @@ def _grub_cfg():
               "/boot/grub/grub.cfg"):
         if exists(c):
             return c
-    hits = out("find /boot -maxdepth 4 -name grub.cfg 2>/dev/null | head -1", 60)
+    hits = out(["bash", "-c", "find /boot -maxdepth 4 -name grub.cfg 2>/dev/null | head -1"], 60)
     return hits.strip() or None
 
 
@@ -2687,8 +2699,9 @@ def c_firewalld_zone_target(ctx, p):
     rc, o, _ = sh(["firewall-cmd", "--state"], 30)
     if rc != 0:
         return "fail", "firewalld is not running"
-    zones = out("firewall-cmd --get-active-zones 2>/dev/null | "
-                "grep -v '^\\s' | grep -v '^$'", 30).splitlines()
+    zones = out(["bash", "-c",
+                 "firewall-cmd --get-active-zones 2>/dev/null | "
+                 "grep -v '^\\s' | grep -v '^$'"], 30).splitlines()
     bad = []
     for z in zones:
         z = z.strip()
@@ -2709,8 +2722,9 @@ def f_firewalld_zone_target(ctx, p):
     if not pkg_installed("firewalld"):
         return False, "firewalld is not installed"
     zones = [z.strip() for z in
-             out("firewall-cmd --get-active-zones 2>/dev/null | grep -v '^\\s'",
-                 30).splitlines() if z.strip()]
+             out(["bash", "-c",
+                  "firewall-cmd --get-active-zones 2>/dev/null | "
+                  "grep -v '^\\s'"], 30).splitlines() if z.strip()]
     done = []
     for z in zones:
         if out(["firewall-cmd", "--zone=%s" % z, "--get-target"], 30).strip() == "ACCEPT":
@@ -2816,7 +2830,9 @@ def _ua_gid0_group_root(ctx):
 
 
 def _ua_root_path(ctx):
-    rc, o, _ = sh("sudo -Hiu root env 2>/dev/null | grep '^PATH=' || echo \"PATH=$PATH\"", 60)
+    rc, o, _ = sh(["bash", "-c",
+                   "sudo -Hiu root env 2>/dev/null | grep '^PATH=' || "
+                   "echo \"PATH=$PATH\""], 60)
     path = o.split("=", 1)[1] if "=" in o else ""
     bad = []
     parts = path.split(":")
@@ -2884,9 +2900,10 @@ def _ua_world_writable(ctx):
 
 
 def _ua_sticky_bit(ctx):
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev -type d -perm -0002 ! -perm -1000 "
-           "2>/dev/null; done | head -30")
+           "2>/dev/null; done | head -30"]
     res = out(cmd, 300)
     if res:
         return "fail", "%d world-writable dir(s) without the sticky bit, e.g. %s" % (
@@ -2895,9 +2912,10 @@ def _ua_sticky_bit(ctx):
 
 
 def _ua_unowned(ctx):
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev \\( -nouser -o -nogroup \\) "
-           "2>/dev/null; done | head -30")
+           "2>/dev/null; done | head -30"]
     res = out(cmd, 300)
     if res:
         return "fail", "%d unowned/ungrouped path(s), e.g. %s" % (
@@ -2906,8 +2924,9 @@ def _ua_unowned(ctx):
 
 
 def _ua_ungrouped(ctx):
-    cmd = ("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
-           "while read -r m; do find \"$m\" -xdev -nogroup 2>/dev/null; done | head -30")
+    cmd = ["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+           "while read -r m; do find \"$m\" -xdev -nogroup 2>/dev/null; done | head -30"]
     res = out(cmd, 300)
     if res:
         return "fail", "%d ungrouped path(s), e.g. %s" % (
@@ -3085,9 +3104,10 @@ def c_user_audit(ctx, p):
 def f_user_audit(ctx, p):
     kind = p["kind"]
     if kind == "sticky_bit":
-        sh("df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
+        sh(["bash", "-c",
+           "df --local -P 2>/dev/null | awk '{if (NR!=1) print $6}' | "
            "while read -r m; do find \"$m\" -xdev -type d -perm -0002 ! -perm -1000 "
-           "-exec chmod a+t {} + 2>/dev/null; done", 600)
+           "-exec chmod a+t {} + 2>/dev/null; done"], 600)
         return True, "added the sticky bit to world-writable directories"
     if kind == "world_writable":
         return f_world_writable(ctx, p)
@@ -3198,7 +3218,7 @@ def f_user_audit(ctx, p):
 @check("info_only")
 def c_info_only(ctx, p):
     if p.get("kind") == "ipv6":
-        en = out("sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null", 30)
+        en = out(["sysctl", "-n", "net.ipv6.conf.all.disable_ipv6"], 30)
         state = "disabled" if en.strip() == "1" else "enabled"
         return "manual", "IPv6 is %s on this host; confirm it matches site policy" % state
     return "manual", p.get("note") or "informational only; verify against site policy"
@@ -3424,20 +3444,20 @@ def host_facts():
     f = {"hostname": None, "fqdn": None, "ipv4": [], "ipv6": [], "mac": [],
          "default_ipv4": None, "default_mac": None, "os": None, "kernel": None,
          "uptime_seconds": None, "virtualization": None}
-    f["hostname"] = out("hostname -s 2>/dev/null || hostname", 20) or os.uname()[1]
-    f["fqdn"] = out("hostname -f 2>/dev/null", 20) or f["hostname"]
+    f["hostname"] = out(["bash", "-c", "hostname -s 2>/dev/null || hostname"], 20) or os.uname()[1]
+    f["fqdn"] = out(["hostname", "-f"], 20) or f["hostname"]
     f["kernel"] = os.uname().release
     rel = read("/etc/os-release") or ""
     m = re.search(r'^PRETTY_NAME="?([^"\n]+)"?', rel, re.M)
-    f["os"] = m.group(1) if m else out("uname -sr", 20)
+    f["os"] = m.group(1) if m else out(["uname", "-sr"], 20)
     try:
         f["uptime_seconds"] = int(float((read("/proc/uptime") or "0").split()[0]))
     except Exception:
         pass
-    f["virtualization"] = out("systemd-detect-virt 2>/dev/null || echo unknown", 20)
+    f["virtualization"] = out(["bash", "-c", "systemd-detect-virt 2>/dev/null || echo unknown"], 20)
 
     ifaces = {}
-    txt = out("ip -o addr show 2>/dev/null", 30)
+    txt = out(["ip", "-o", "addr", "show"], 30)
     for ln in txt.splitlines():
         p = ln.split()
         if len(p) < 4:
@@ -3450,7 +3470,7 @@ def host_facts():
             d["ipv4"].append(addr)
         elif fam == "inet6" and not addr.startswith("fe80"):
             d["ipv6"].append(addr)
-    for ln in out("ip -o link show 2>/dev/null", 30).splitlines():
+    for ln in out(["ip", "-o", "link", "show"], 30).splitlines():
         m = re.match(r"\d+:\s+(\S+?):.*link/ether\s+([0-9a-f:]{17})", ln)
         if m and m.group(1) != "lo":
             ifaces.setdefault(m.group(1), {"ipv4": [], "ipv6": [], "mac": None})
@@ -3461,7 +3481,7 @@ def host_facts():
         if d["mac"]:
             f["mac"].append({"interface": dev, "address": d["mac"]})
     defdev = None
-    m = re.search(r"dev\s+(\S+)", out("ip route get 1.1.1.1 2>/dev/null", 20))
+    m = re.search(r"dev\s+(\S+)", out(["ip", "route", "get", "1.1.1.1"], 20))
     if m:
         defdev = m.group(1)
     if defdev and defdev in ifaces:
@@ -3672,7 +3692,7 @@ def main():
             audit_fh = open(opts.audit_log, "w", encoding="utf-8")
         except OSError as exc:
             sys.stderr.write("audit-log: cannot open %s: %s\n" % (opts.audit_log, exc))
-    ctx._hostname = out("hostname -s 2>/dev/null || hostname", 20) or os.uname()[1]
+    ctx._hostname = out(["bash", "-c", "hostname -s 2>/dev/null || hostname"], 20) or os.uname()[1]
     started = time.time()
     def _sort_key(r):
         parts = []

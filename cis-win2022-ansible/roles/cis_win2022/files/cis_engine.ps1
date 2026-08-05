@@ -23,10 +23,19 @@ param(
     [string]$Exclude = "",
     [string]$Sections = "",
     [string]$Families = "",
-    [string]$BackupDir = "",
+
     [string]$AuditLog = "",
     [switch]$AllowDisruptive
 )
+
+if ($Mode -notin @("scan", "apply")) {
+    Write-Error "Mode must be 'scan' or 'apply'. Got: $Mode"
+    exit 1
+}
+if ($Profile -notin @("L1", "L2")) {
+    Write-Error "Profile must be 'L1' or 'L2'. Got: $Profile"
+    exit 1
+}
 
 $ErrorActionPreference = "Stop"
 $startedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
@@ -81,11 +90,11 @@ function Get-SecPol {
         secedit /export /cfg $tmp /areas $Area 2>$null | Out-Null
         if (Test-Path $tmp) {
             $content = Get-Content $tmp -Raw
-            if ($content -match "(?m)^\s*$Key\s*=\s*(.+)$") {
+            if ($content -match "(?m)^\s*$([regex]::Escape($Key))\s*=\s*(.+)$") {
                 return $Matches[1].Trim()
             }
         }
-    } catch {}
+    } catch { Write-Debug "Get-SecPol failed: $_" }
     finally {
         if ($tmp -and (Test-Path $tmp)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
     }
@@ -124,9 +133,8 @@ $AuditPolicyRegMap = @{
 
 # ── Checks ─────────────────────────────────────────────────
 function Invoke-Check {
-    param($Rule, $Ctx)
+    param($Rule)
 
-    $id = $Rule.id
     $family = $Rule.family
     $params = $Rule.params
 
@@ -228,13 +236,13 @@ function Invoke-Check {
                 secedit /export /cfg $tmp /areas USER_RIGHTS 2>$null | Out-Null
                 if (Test-Path $tmp) {
                     $content = Get-Content $tmp -Raw
-                    if ($content -match "(?m)^\s*$privilege\s*=\s*(.+)$") {
+                    if ($content -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
                         $sids = $Matches[1].Trim() -split ','
                         $ok = ($sids | Where-Object { $_.Trim() -eq $expectedSid })
                         return @{status=if($ok){"pass"}else{"fail"}; detail="$privilege members: $($Matches[1].Trim())"}
                     }
                 }
-            } catch {}
+            } catch { Write-Debug "user-right check failed: $_" }
             finally {
                 if ($tmp -and (Test-Path $tmp)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
             }
@@ -396,7 +404,7 @@ function Invoke-Check {
                     $ok = ($val -eq $expected)
                     return @{status=if($ok){"pass"}else{"fail"}; detail="PS logging $name=$val"}
                 }
-            } catch {}
+            } catch { Write-Debug "ps-logging check failed: $_" }
             return @{status="fail"; detail="PS logging key not found"}
         }
 
@@ -422,7 +430,7 @@ function Invoke-Fix {
                     $m = $PasswordPolicyMap[$pn]; $key = $m.Key; $expected = $m.Expected; $op = $m.Op
                 } elseif ($PasswordRegMap.ContainsKey($pn)) {
                     $m = $PasswordRegMap[$pn]
-                    try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch {}
+                    try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch { Write-Debug "PasswordRegMap check failed: $_" }
                     try { if (-not (Test-Path $m.Path)) { New-Item -Path $m.Path -Force | Out-Null }; Set-ItemProperty -Path $m.Path -Name $m.Name -Value $m.Value -Type DWord -Force; return "applied" } catch { return "failed: $($_.Exception.Message)" }
                 } else { return "error: unknown policy_name: $pn" }
             } else {
@@ -437,7 +445,7 @@ function Invoke-Fix {
             if ($isOk) { return "already" }
             try {
                 $tmpInf = "$env:TEMP\secpol_fix_$([Guid]::NewGuid()).inf"
-                $seceditDb = "$env:TEMP\cis-secedit-$pid.sdb"
+                $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
                 secedit /export /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
                 $c = Get-Content $tmpInf -Raw
                 if ($c -match "(?m)^(\s*[^\s=]*\s*=\s*).+$") {
@@ -448,6 +456,7 @@ function Invoke-Fix {
                     }
                     [System.IO.File]::WriteAllText($tmpInf, $c)
                     secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+                    Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
                     Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
                     return "applied"
                 }
@@ -463,7 +472,7 @@ function Invoke-Fix {
                     $m = $LockoutPolicyMap[$pn]; $key = $m.Key; $expected = $m.Expected; $op = $m.Op
                 } elseif ($LockoutRegMap.ContainsKey($pn)) {
                     $m = $LockoutRegMap[$pn]
-                    try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch {}
+                    try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch { Write-Debug "LockoutRegMap check failed: $_" }
                     try { if (-not (Test-Path $m.Path)) { New-Item -Path $m.Path -Force | Out-Null }; Set-ItemProperty -Path $m.Path -Name $m.Name -Value $m.Value -Type DWord -Force; return "applied" } catch { return "failed: $($_.Exception.Message)" }
                 } else { return "error: unknown policy_name: $pn" }
             } else {
@@ -478,7 +487,7 @@ function Invoke-Fix {
             if ($isOk) { return "already" }
             try {
                 $tmpInf = "$env:TEMP\secpol_fix_$([Guid]::NewGuid()).inf"
-                $seceditDb = "$env:TEMP\cis-secedit-$pid.sdb"
+                $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
                 secedit /export /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
                 $c = Get-Content $tmpInf -Raw
                 if ($c -match "(?m)^(\s*[^\s=]*\s*=\s*).+$") {
@@ -489,6 +498,7 @@ function Invoke-Fix {
                     }
                     [System.IO.File]::WriteAllText($tmpInf, $c)
                     secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+                    Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
                     Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
                     return "applied"
                 }
@@ -501,7 +511,7 @@ function Invoke-Fix {
             $policy = $params.policy
             if ($AuditPolicyRegMap.ContainsKey($policy)) {
                 $m = $AuditPolicyRegMap[$policy]
-                try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch {}
+                try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch { Write-Debug "AuditPolicyRegMap check failed: $_" }
                 try { if (-not (Test-Path $m.Path)) { New-Item -Path $m.Path -Force | Out-Null }; Set-ItemProperty -Path $m.Path -Name $m.Name -Value $m.Value -Type DWord -Force; return "applied" } catch { return "failed: $($_.Exception.Message)" }
             }
             return "error: unknown audit policy index: $policy"
@@ -516,7 +526,7 @@ function Invoke-Fix {
                 if (Test-Path $tmp) {
                     $c = Get-Content $tmp -Raw
                     if ($c -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
-                        if ($Matches[1] -match [regex]::Escape($expectedSid)) { Remove-Item $tmp -Force; return "already" }
+                        if ($Matches[1] -match [regex]::Escape($expectedSid)) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue; return "already" }
                     }
                 }
                 Remove-Item $tmp -Force -ErrorAction SilentlyContinue
@@ -529,7 +539,9 @@ function Invoke-Fix {
                     $c += "`r`n$privilege = $expectedSid"
                 }
                 [System.IO.File]::WriteAllText($tmp2, $c)
-                secedit /configure /db "$env:TEMP\cis-secedit-$pid.sdb" /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+                $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
+                secedit /configure /db $seceditDb /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+                Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
                 Remove-Item $tmp2 -Force -ErrorAction SilentlyContinue
                 return "applied"
             } catch { return "failed: $($_.Exception.Message)" }
@@ -540,7 +552,7 @@ function Invoke-Fix {
             try {
                 $current = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
                 if ($current -eq $expected) { return "already" }
-            } catch {}
+            } catch { Write-Debug "reg-dword check failed: $_" }
             try {
                 if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
                 Set-ItemProperty -Path $path -Name $name -Value $expected -Type DWord -Force
@@ -552,7 +564,7 @@ function Invoke-Fix {
             $profile = $params.profile
             try {
                 $fw = Get-NetFirewallProfile -Name $profile -ErrorAction Stop
-                if ($fw.Enabled -eq "True" -and $fw.DefaultInboundAction -eq "Block") { return "already" }
+                if ($fw.Enabled -eq $true -and $fw.DefaultInboundAction -eq "Block" -and $fw.DefaultOutboundAction -eq "Allow") { return "already" }
                 Set-NetFirewallProfile -Name $profile -Enabled True -DefaultInboundAction Block -DefaultOutboundAction Allow
                 return "applied"
             } catch { return "failed: $($_.Exception.Message)" }
@@ -585,7 +597,7 @@ function Invoke-Fix {
             try {
                 $current = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
                 if ($current -eq $expected) { return "already" }
-            } catch {}
+            } catch { Write-Debug "smb-signing check failed: $_" }
             try {
                 if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
                 Set-ItemProperty -Path $path -Name $name -Value $expected -Type DWord -Force
@@ -598,7 +610,7 @@ function Invoke-Fix {
             try {
                 $current = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
                 if ($current -eq $expected) { return "already" }
-            } catch {}
+            } catch { Write-Debug "rdp-nla check failed: $_" }
             try {
                 if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
                 Set-ItemProperty -Path $path -Name $name -Value $expected -Type DWord -Force
@@ -636,7 +648,7 @@ function Invoke-Fix {
                     $current = Get-ItemProperty -Path $path -Name $name -ErrorAction Stop | Select-Object -ExpandProperty $name
                     if ($current -eq $expected) { return "already" }
                 }
-            } catch {}
+            } catch { Write-Debug "ps-logging fix check failed: $_" }
             try {
                 if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
                 Set-ItemProperty -Path $path -Name $name -Value $expected -Type DWord -Force
@@ -654,10 +666,12 @@ try {
     $catalog = $raw | ConvertFrom-Json
     if (-not $catalog -or $catalog.Count -eq 0) {
         Write-Error "Catalog is empty or failed to parse: $Catalog"
+        if ($auditWriter) { try { $auditWriter.Close() } catch {} }
         exit 1
     }
 } catch {
     Write-Error "Failed to load rules catalog: $_"
+    if ($auditWriter) { try { $auditWriter.Close() } catch {} }
     exit 1
 }
 
@@ -817,16 +831,16 @@ $output = @{
     engine_notes = @()
 }
 
-$output | ConvertTo-Json -Depth 4 | Out-File -FilePath $Out -Encoding utf8
-Write-Host "CIS scan complete: $total rules, score=$overallScore%, pass=$($summary.all.pass), fail=$($summary.all.fail)"
+$output | ConvertTo-Json -Depth 10 | Out-File -FilePath $Out -Encoding utf8
+Write-Host "CIS scan complete: $($global:Results.Count) rules, score=$overallScore%, pass=$($summary.all.pass), fail=$($summary.all.fail)"
 Write-Host "Result written to: $Out"
 if ($auditWriter) {
     $auditWriter.Close()
     Write-Host "Audit log written to: $AuditLog"
 }
 # ── Exit with code based on failures ──
-$failCount = ($script:results | Where-Object { $_.status -eq "fail" }).Count
-$errorCount = ($script:results | Where-Object { $_.status -eq "error" }).Count
+$failCount = ($global:Results | Where-Object { $_.status -eq "fail" }).Count
+$errorCount = ($global:Results | Where-Object { $_.status -eq "error" }).Count
 if ($errorCount -gt 0) { exit 2 }
 if ($failCount -gt 0) { exit 1 }
 exit 0
