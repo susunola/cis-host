@@ -884,7 +884,7 @@ def c_banner(ctx, p):
     if txt is None:
         return "fail", "%s does not exist" % path
     if not txt.strip():
-        return "pass", "%s is empty" % path
+        return "fail", "%s is empty or whitespace-only" % path
     m = BANNER_BAD.search(txt)
     if m:
         return "fail", "%s contains OS/escape reference: %r" % (path, m.group(0))
