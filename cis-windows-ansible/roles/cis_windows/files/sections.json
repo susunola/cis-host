@@ -1,0 +1,29 @@
+{
+ "chapters": {
+  "1": "Account Policies",
+  "2": "Audit Policy",
+  "4": "Network Security",
+  "5": "Windows Firewall",
+  "6": "Windows Update",
+  "7": "User Account Control",
+  "8": "Remote Desktop Services",
+  "9": "Event Log",
+  "10": "PowerShell Security",
+  "11": "Services",
+  "12": "Domain Member"
+ },
+ "subsections": {
+  "1.1": "Password Policy",
+  "1.2": "Account Lockout Policy",
+  "2.1": "Audit Logon Events",
+  "4.1": "LAN Manager & SMB",
+  "5.1": "Firewall Profiles",
+  "6.1": "Automatic Updates",
+  "7.1": "UAC Settings",
+  "8.1": "RDP Security",
+  "9.1": "Event Log Sizes",
+  "10.1": "PowerShell Logging",
+  "11.1": "Services",
+  "12.1": "Domain Member Security"
+ }
+}

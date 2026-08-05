@@ -1,0 +1,11 @@
+---
+# CIS Windows Server remediation + re-assessment
+- name: "CIS Windows Server Benchmark - apply ({{ cis_profile | default('L1') }})"
+  hosts: "{{ cis_hosts | default('windows') }}"
+  gather_facts: true
+  serial: "{{ cis_serial | default('100%') }}"
+
+  roles:
+    - role: cis_windows
+      vars:
+        cis_mode: apply

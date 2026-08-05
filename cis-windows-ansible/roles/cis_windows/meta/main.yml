@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: cis_windows
+  description: CIS Windows Server Benchmark — assessment & remediation
+  platforms:
+    - name: Windows
+      versions:
+        - 2019
+        - 2022
+        - 2025
+allow_duplicates: false

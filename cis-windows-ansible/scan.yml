@@ -1,0 +1,12 @@
+---
+# Read-only CIS Windows Server assessment
+#   ansible-playbook -i inventory/hosts.ini scan.yml
+- name: "CIS Windows Server Benchmark - scan ({{ cis_profile | default('L1') }})"
+  hosts: "{{ cis_hosts | default('windows') }}"
+  gather_facts: true
+  serial: "{{ cis_serial | default('100%') }}"
+
+  roles:
+    - role: cis_windows
+      vars:
+        cis_mode: scan
