@@ -1,188 +1,130 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
-  <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#f1f5f9"/>
-    </linearGradient>
-    <linearGradient id="ctrlGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#eff6ff"/>
-      <stop offset="100%" stop-color="#dbeafe"/>
-    </linearGradient>
-    <linearGradient id="tgtGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f0fdf4"/>
-      <stop offset="100%" stop-color="#dcfce7"/>
-    </linearGradient>
-    <linearGradient id="diskGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#faf5ff"/>
-      <stop offset="100%" stop-color="#ede9fe"/>
-    </linearGradient>
-    <linearGradient id="stepBlue" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#2563eb"/>
-    </linearGradient>
-    <linearGradient id="stepGreen" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#059669"/>
-    </linearGradient>
-    <linearGradient id="stepPurple" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#8b5cf6"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
-    </linearGradient>
-    <linearGradient id="stepOrange" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f59e0b"/>
-      <stop offset="100%" stop-color="#d97706"/>
-    </linearGradient>
-    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.06"/>
-    </filter>
-    <filter id="shadowLg" x="-4%" y="-6%" width="108%" height="112%">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
-    </filter>
-    <marker id="arrowRight" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
-    </marker>
-    <marker id="arrowLeft" markerWidth="10" markerHeight="7" refX="1" refY="3.5" orient="auto">
-      <polygon points="10 0, 0 3.5, 10 7" fill="#94a3b8"/>
-    </marker>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" font-family="system-ui, -apple-system, sans-serif">
+  <!-- Three-column layout: Controller | Target | Reports -->
 
-  <!-- Background -->
-  <rect width="1000" height="620" rx="12" fill="url(#bgGrad)" stroke="#e2e8f0" stroke-width="1.5"/>
+  <!-- Column backgrounds -->
+  <rect x="10" y="48" width="300" height="520" rx="4" fill="#f0f4ff" stroke="#b0c4de" stroke-width="1"/>
+  <rect x="330" y="48" width="300" height="520" rx="4" fill="#f0fff0" stroke="#b0d4b0" stroke-width="1"/>
+  <rect x="650" y="48" width="300" height="520" rx="4" fill="#faf5ff" stroke="#c4b0d4" stroke-width="1"/>
 
-  <!-- Title -->
-  <text x="500" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#1e293b" letter-spacing="0.5">CIS-OS Runtime Architecture</text>
+  <!-- Column headers -->
+  <text x="160" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#2c3e50">Controller Host</text>
+  <text x="160" y="94" text-anchor="middle" font-size="10" fill="#666">Ansible control node</text>
+  <text x="480" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#2c3e50">Target Host(s)</text>
+  <text x="480" y="94" text-anchor="middle" font-size="10" fill="#666">Remote machine(s)</text>
+  <text x="800" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#2c3e50">Local Disk</text>
+  <text x="800" y="94" text-anchor="middle" font-size="10" fill="#666">Report output</text>
 
-  <!-- Column headers (zone labels) -->
-  <rect x="30" y="54" width="280" height="36" rx="8" fill="url(#ctrlGrad)" stroke="#bfdbfe" stroke-width="1"/>
-  <text x="170" y="77" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af">Controller Host</text>
-  <text x="170" y="102" text-anchor="middle" font-size="10.5" fill="#64748b">Ansible control node</text>
+  <!-- ===== Step 1: preflight ===== -->
+  <rect x="30" y="114" width="260" height="54" rx="2" fill="#fff" stroke="#b0c4de" stroke-width="1"/>
+  <rect x="30" y="114" width="28" height="54" rx="2" fill="#4a90d9"/>
+  <text x="44" y="130" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">1</text>
+  <text x="68" y="130" font-size="11" font-weight="700" fill="#2c3e50">preflight</text>
+  <text x="68" y="148" font-size="9" fill="#666">validate vars, probe python, confirm root</text>
+  <text x="68" y="162" font-size="9" fill="#999">local</text>
 
-  <rect x="340" y="54" width="280" height="36" rx="8" fill="url(#tgtGrad)" stroke="#a7f3d0" stroke-width="1"/>
-  <text x="480" y="77" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Target Host(s)</text>
-  <text x="480" y="102" text-anchor="middle" font-size="10.5" fill="#64748b">Remote machine(s)</text>
+  <!-- Arrow 1→2 -->
+  <line x1="160" y1="168" x2="160" y2="186" stroke="#999" stroke-width="1"/>
 
-  <rect x="690" y="54" width="280" height="36" rx="8" fill="url(#diskGrad)" stroke="#c4b5fd" stroke-width="1"/>
-  <text x="830" y="77" text-anchor="middle" font-size="13" font-weight="700" fill="#5b21b6">Local Disk</text>
-  <text x="830" y="102" text-anchor="middle" font-size="10.5" fill="#64748b">Report output</text>
+  <!-- ===== Step 2: push engine files ===== -->
+  <rect x="30" y="188" width="260" height="54" rx="2" fill="#fff" stroke="#b0c4de" stroke-width="1"/>
+  <rect x="30" y="188" width="28" height="54" rx="2" fill="#4a90d9"/>
+  <text x="44" y="204" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">2</text>
+  <text x="68" y="204" font-size="11" font-weight="700" fill="#2c3e50">push engine files</text>
+  <text x="68" y="222" font-size="9" fill="#666">copy engine script, rules, guides</text>
+  <text x="68" y="236" font-size="9" fill="#999">scp / ansible copy</text>
 
-  <!-- Column divider lines -->
-  <line x1="323" y1="54" x2="323" y2="600" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
-  <line x1="673" y1="54" x2="673" y2="600" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <!-- Arrow 2 → Target (rightward) -->
+  <line x1="290" y1="215" x2="344" y2="215" stroke="#999" stroke-width="1.5"/>
 
-  <!-- ====== Step 1: Preflight (Controller only) ====== -->
-  <rect x="50" y="128" width="240" height="60" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
-  <circle cx="72" cy="148" r="12" fill="url(#stepBlue)"/>
-  <text x="72" y="153" text-anchor="middle" font-size="11" fill="white" font-weight="700">1</text>
-  <text x="92" y="149" font-size="12" font-weight="700" fill="#1e293b">preflight</text>
-  <text x="92" y="167" font-size="10" fill="#64748b">validate vars, probe python, confirm root</text>
+  <!-- ===== Target: received files box ===== -->
+  <rect x="350" y="140" width="260" height="120" rx="2" fill="#fff" stroke="#b0d4b0" stroke-width="1"/>
+  <text x="480" y="158" text-anchor="middle" font-size="11" font-weight="700" fill="#2c3e50">/tmp/cis-scan/</text>
+  <line x1="365" y1="165" x2="595" y2="165" stroke="#e0e0e0" stroke-width="0.5"/>
+  <text x="370" y="183" font-size="10" fill="#444" font-family="monospace">cis_engine.py</text>
+  <text x="370" y="200" font-size="10" fill="#444" font-family="monospace">rules.json</text>
+  <text x="370" y="217" font-size="10" fill="#444" font-family="monospace">guidance.json</text>
+  <text x="370" y="234" font-size="10" fill="#444" font-family="monospace">sections.json</text>
 
-  <!-- Step 1 → 2 arrow (controller internal) -->
-  <line x1="170" y1="188" x2="170" y2="210" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRight)"/>
+  <!-- Arrow files → run -->
+  <line x1="480" y1="260" x2="480" y2="278" stroke="#999" stroke-width="1"/>
 
-  <!-- ====== Step 2: Push engine (Controller → Target) ====== -->
-  <rect x="50" y="214" width="240" height="60" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
-  <circle cx="72" cy="234" r="12" fill="url(#stepGreen)"/>
-  <text x="72" y="239" text-anchor="middle" font-size="11" fill="white" font-weight="700">2</text>
-  <text x="92" y="235" font-size="12" font-weight="700" fill="#1e293b">push engine files</text>
-  <text x="92" y="253" font-size="10" fill="#64748b">copy engine script, rules, guides</text>
+  <!-- ===== Step 3: run engine ===== -->
+  <rect x="350" y="280" width="260" height="100" rx="2" fill="#fff" stroke="#b0d4b0" stroke-width="1"/>
+  <rect x="350" y="280" width="28" height="100" rx="2" fill="#e67e22"/>
+  <text x="364" y="296" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">3</text>
+  <text x="388" y="296" font-size="11" font-weight="700" fill="#2c3e50">run engine</text>
+  <text x="388" y="314" font-size="9" fill="#666">python3 cis_engine.py --mode scan|apply</text>
 
-  <!-- Arrow 2: Controller → Target -->
-  <line x1="290" y1="244" x2="354" y2="244" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRight)"/>
-  <!-- Label on arrow -->
-  <rect x="294" y="226" width="56" height="16" rx="4" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.5"/>
-  <text x="322" y="238" text-anchor="middle" font-size="9" fill="#64748b">scp/push</text>
+  <!-- scan / apply badges -->
+  <rect x="388" y="324" width="98" height="22" rx="2" fill="#e8f4fd"/>
+  <text x="437" y="339" text-anchor="middle" font-size="9" fill="#2563eb">scan: read-only check</text>
+  <rect x="492" y="324" width="98" height="22" rx="2" fill="#e8f4fd"/>
+  <text x="541" y="339" text-anchor="middle" font-size="9" fill="#2563eb">apply: patch + re-verify</text>
 
-  <!-- Target files box -->
-  <rect x="360" y="190" width="240" height="108" rx="8" fill="white" stroke="#a7f3d0" stroke-width="1.5" filter="url(#shadowLg)"/>
-  <text x="480" y="210" text-anchor="middle" font-size="11" font-weight="700" fill="#065f46">/tmp/cis-scan/</text>
-  <rect x="375" y="221" width="210" height="20" rx="4" fill="#f0fdf4"/>
-  <text x="382" y="235" font-size="10" fill="#047857" font-family="'SF Mono','Cascadia Code',Consolas,monospace">cis_engine.py</text>
-  <rect x="375" y="245" width="210" height="20" rx="4" fill="#f0fdf4"/>
-  <text x="382" y="259" font-size="10" fill="#047857" font-family="'SF Mono','Cascadia Code',Consolas,monospace">rules.json</text>
-  <rect x="375" y="269" width="100" height="20" rx="4" fill="#f0fdf4"/>
-  <text x="382" y="283" font-size="10" fill="#047857" font-family="'SF Mono','Cascadia Code',Consolas,monospace">guidance.json</text>  <rect x="483" y="269" width="102" height="20" rx="4" fill="#f0fdf4"/>
-  <text x="490" y="283" font-size="10" fill="#047857" font-family="'SF Mono','Cascadia Code',Consolas,monospace">sections.json</text>
+  <text x="480" y="368" text-anchor="middle" font-size="8" fill="#999">apply writes backup to /var/backups/cis-*</text>
 
-  <!-- Step 2 → 3 arrow (target internal) -->
-  <line x1="480" y1="298" x2="480" y2="322" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRight)"/>
+  <!-- Arrow run → result.json -->
+  <line x1="480" y1="380" x2="480" y2="400" stroke="#999" stroke-width="1"/>
 
-  <!-- ====== Step 3: Run engine (Target) ====== -->
-  <rect x="360" y="326" width="240" height="102" rx="8" fill="white" stroke="#a7f3d0" stroke-width="1.5" filter="url(#shadowLg)"/>
-  <circle cx="382" cy="346" r="12" fill="url(#stepPurple)"/>
-  <text x="382" y="351" text-anchor="middle" font-size="11" fill="white" font-weight="700">3</text>
-  <text x="402" y="347" font-size="12" font-weight="700" fill="#1e293b">run engine</text>
-  <text x="402" y="365" font-size="10" fill="#64748b">evaluate N rules</text>
+  <!-- ===== result.json ===== -->
+  <rect x="390" y="402" width="180" height="26" rx="2" fill="#fffbe6" stroke="#f0d040" stroke-width="1"/>
+  <text x="480" y="419" text-anchor="middle" font-size="10" font-weight="600" fill="#8b6914" font-family="monospace">result.json</text>
 
-  <!-- Sub: scan/apply labels -->
-  <rect x="375" y="376" width="100" height="22" rx="4" fill="#dbeafe"/>
-  <text x="425" y="391" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">scan → read only</text>
-  <rect x="483" y="376" width="102" height="22" rx="4" fill="#dbeafe"/>
-  <text x="534" y="391" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">apply → patch + verify</text>
+  <!-- Arrow result.json → fetch (leftward) -->
+  <line x1="344" y1="415" x2="298" y2="415" stroke="#999" stroke-width="1.5"/>
 
-  <text x="480" y="417" text-anchor="middle" font-size="9" fill="#94a3b8">backups under /var/backups/cis-*</text>
+  <!-- ===== Step 4: fetch ===== -->
+  <rect x="30" y="396" width="260" height="54" rx="2" fill="#fff" stroke="#b0c4de" stroke-width="1"/>
+  <rect x="30" y="396" width="28" height="54" rx="2" fill="#e67e22"/>
+  <text x="44" y="412" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">4</text>
+  <text x="68" y="412" font-size="11" font-weight="700" fill="#2c3e50">fetch result.json</text>
+  <text x="68" y="430" font-size="9" fill="#666">pull scan results back to controller</text>
+  <text x="68" y="444" font-size="9" fill="#999">ansible fetch</text>
 
-  <!-- Step 3 → result.json -->
-  <line x1="480" y1="428" x2="480" y2="448" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRight)"/>
+  <!-- Arrow 4→5 -->
+  <line x1="160" y1="450" x2="160" y2="468" stroke="#999" stroke-width="1"/>
 
-  <!-- result.json box -->
-  <rect x="400" y="450" width="160" height="28" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1" filter="url(#shadow)"/>
-  <text x="480" y="469" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e" font-family="'SF Mono','Cascadia Code',Consolas,monospace">📦 result.json</text>
-
-  <!-- ====== Step 4: Fetch (Target → Controller) ====== -->
-  <!-- Fetch arrow -->
-  <line x1="354" y1="448" x2="300" y2="448" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowLeft)"/>
-  <rect x="308" y="430" width="46" height="16" rx="4" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="0.5"/>
-  <text x="331" y="442" text-anchor="middle" font-size="9" fill="#64748b">fetch</text>
-
-  <!-- Step 4 box -->
-  <rect x="50" y="432" width="240" height="46" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
-  <circle cx="72" cy="455" r="12" fill="url(#stepOrange)"/>
-  <text x="72" y="460" text-anchor="middle" font-size="11" fill="white" font-weight="700">4</text>
-  <text x="92" y="455" font-size="12" font-weight="700" fill="#1e293b">fetch result.json</text>
-  <text x="92" y="471" font-size="10" fill="#64748b">pull scan results back to controller</text>
-
-  <!-- Controller: render container -->
-  <rect x="50" y="506" width="240" height="44" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
-  <circle cx="72" cy="528" r="12" fill="url(#stepPurple)"/>
-  <text x="72" y="533" text-anchor="middle" font-size="11" fill="white" font-weight="700">5</text>
-  <text x="92" y="528" font-size="12" font-weight="700" fill="#1e293b">render Jinja2</text>
-  <text x="92" y="544" font-size="10" fill="#64748b">report.html.j2  (+ index if N&gt;1)</text>
-
-  <!-- Controller: write container -->
-  <rect x="50" y="560" width="240" height="36" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
-  <circle cx="72" cy="578" r="12" fill="url(#stepBlue)"/>
-  <text x="72" y="583" text-anchor="middle" font-size="11" fill="white" font-weight="700">6</text>
-  <text x="92" y="580" font-size="12" font-weight="700" fill="#1e293b">write reports to disk</text>
+  <!-- ===== Step 5: render ===== -->
+  <rect x="30" y="470" width="260" height="54" rx="2" fill="#fff" stroke="#b0c4de" stroke-width="1"/>
+  <rect x="30" y="470" width="28" height="54" rx="2" fill="#9b59b6"/>
+  <text x="44" y="486" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">5</text>
+  <text x="68" y="486" font-size="11" font-weight="700" fill="#2c3e50">render Jinja2</text>
+  <text x="68" y="504" font-size="9" fill="#666">report.html.j2 (+ index.html.j2 if N&gt;1)</text>
+  <text x="68" y="518" font-size="9" fill="#999">+ findings.csv.j2</text>
 
   <!-- Arrow 5→6 -->
-  <line x1="170" y1="550" x2="170" y2="558" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRight)"/>
+  <line x1="160" y1="524" x2="160" y2="534" stroke="#999" stroke-width="1"/>
 
-  <!-- Arrow 6 → Local Disk -->
-  <line x1="290" y1="578" x2="700" y2="578" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRight)"/>
+  <!-- ===== Step 6: write ===== -->
+  <rect x="30" y="534" width="260" height="24" rx="2" fill="#fff" stroke="#b0c4de" stroke-width="1"/>
+  <rect x="30" y="534" width="28" height="24" rx="2" fill="#4a90d9"/>
+  <text x="44" y="550" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">6</text>
+  <text x="68" y="550" font-size="11" font-weight="700" fill="#2c3e50">write reports to disk</text>
 
-  <!-- Local Disk: report directory -->
-  <rect x="710" y="486" width="260" height="96" rx="8" fill="white" stroke="#c4b5fd" stroke-width="1.5" filter="url(#shadowLg)"/>
-  <text x="840" y="506" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">reports/</text>
-  <rect x="725" y="516" width="230" height="18" rx="4" fill="#faf5ff"/>
-  <text x="732" y="529" font-size="10" fill="#6b21a8" font-family="'SF Mono','Cascadia Code',Consolas,monospace">HOST-L1-scan.html</text>
-  <rect x="725" y="538" width="230" height="18" rx="4" fill="#faf5ff"/>
-  <text x="732" y="551" font-size="10" fill="#6b21a8" font-family="'SF Mono','Cascadia Code',Consolas,monospace">HOST-L1-apply.html</text>
-  <rect x="725" y="560" width="230" height="18" rx="4" fill="#faf5ff"/>
-  <text x="732" y="573" font-size="10" fill="#6b21a8" font-family="'SF Mono','Cascadia Code',Consolas,monospace">index.html  *.json  findings.csv</text>
+  <!-- Arrow 6 → reports/ (rightward) -->
+  <line x1="290" y1="546" x2="658" y2="546" stroke="#999" stroke-width="1.5"/>
 
-  <!-- Command hint at bottom -->
-  <rect x="240" y="606" width="520" height="0" rx="0" fill="none" stroke="none"/>
+  <!-- ===== reports/ on disk ===== -->
+  <rect x="670" y="396" width="260" height="170" rx="2" fill="#fff" stroke="#c4b0d4" stroke-width="1"/>
+  <text x="800" y="416" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">reports/</text>
+  <line x1="685" y1="424" x2="915" y2="424" stroke="#e0e0e0" stroke-width="0.5"/>
 
-  <!-- Legend -->
-  <g transform="translate(30, 590)">
-    <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#stepBlue)"/>
-    <text x="17" y="10" font-size="9" fill="#64748b">Controller</text>
-    <rect x="90" y="0" width="12" height="12" rx="3" fill="url(#stepGreen)"/>
-    <text x="107" y="10" font-size="9" fill="#64748b">To Target</text>
-    <rect x="170" y="0" width="12" height="12" rx="3" fill="url(#stepPurple)"/>
-    <text x="187" y="10" font-size="9" fill="#64748b">Process</text>
-    <rect x="245" y="0" width="12" height="12" rx="3" fill="url(#stepOrange)"/>
-    <text x="262" y="10" font-size="9" fill="#64748b">From Target</text>
-    <text x="438" y="10" text-anchor="end" font-size="9" fill="#94a3b8">ansible-playbook scan.yml | apply.yml  →  open reports/HOST-L1-scan.html</text>
-  </g>
+  <rect x="685" y="436" width="230" height="24" rx="2" fill="#f8f0ff"/>
+  <text x="694" y="452" font-size="9" fill="#6b21a8" font-family="monospace">HOST-L1-scan.html</text>
+  <text x="886" y="452" text-anchor="end" font-size="8" fill="#aaa">per-host report</text>
+
+  <rect x="685" y="464" width="230" height="24" rx="2" fill="#f8f0ff"/>
+  <text x="694" y="480" font-size="9" fill="#6b21a8" font-family="monospace">HOST-L1-apply.html</text>
+  <text x="886" y="480" text-anchor="end" font-size="8" fill="#aaa">post-remediation</text>
+
+  <rect x="685" y="492" width="230" height="24" rx="2" fill="#f8f0ff"/>
+  <text x="694" y="508" font-size="9" fill="#6b21a8" font-family="monospace">index.html</text>
+  <text x="886" y="508" text-anchor="end" font-size="8" fill="#aaa">fleet view (N&gt;1)</text>
+
+  <rect x="685" y="520" width="230" height="24" rx="2" fill="#f8f0ff"/>
+  <text x="694" y="536" font-size="9" fill="#6b21a8" font-family="monospace">*.json, findings.csv</text>
+  <text x="886" y="536" text-anchor="end" font-size="8" fill="#aaa">raw data</text>
+
+  <!-- CLI hint at bottom -->
+  <text x="480" y="572" text-anchor="middle" font-size="9" fill="#999">ansible-playbook scan.yml | apply.yml -i inventory/hosts.ini</text>
 </svg>
