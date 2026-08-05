@@ -1,6 +1,7 @@
 {#- ==========================================================================
      CIS compliance report - rendered on the Ansible control node.
      Self-contained: no external CSS, fonts, JS or images.
+     Language switchable (中文 / English) + risk filter + multi-host aware.
      ========================================================================== -#}
 {%- set R = cis_result -%}
 {%- set S = R.summary -%}
@@ -9,25 +10,30 @@
 {%- set IS_APPLY = (MODE == 'apply') -%}
 {%- set GUID = cis_guidance | default({}) -%}
 {%- set SEC = cis_sections | default({'chapters': {}, 'subsections': {}}) -%}
+{%- macro L(zh, en) -%}<span class="zh">{{ zh }}</span><span class="en">{{ en }}</span>{%- endmacro -%}
 {%- set ST = {
-      'pass':          {'zh': '通过',     'cls': 'ok'},
-      'fail':          {'zh': '未通过',   'cls': 'bad'},
-      'manual':        {'zh': '人工核查', 'cls': 'man'},
-      'error':         {'zh': '检查异常', 'cls': 'err'},
-      'notapplicable': {'zh': '不适用',   'cls': 'na'},
-      'skipped':       {'zh': '已跳过',   'cls': 'na'}
+      'pass':          {'zh': '通过',     'en': 'Pass',     'cls': 'ok'},
+      'fail':          {'zh': '未通过',   'en': 'Fail',     'cls': 'bad'},
+      'manual':        {'zh': '人工核查', 'en': 'Manual',   'cls': 'man'},
+      'error':         {'zh': '检查异常', 'en': 'Error',    'cls': 'err'},
+      'notapplicable': {'zh': '不适用',   'en': 'N/A',      'cls': 'na'},
+      'skipped':       {'zh': '已跳过',   'en': 'Skipped',  'cls': 'na'}
    } -%}
 {%- set AP = {
-      'applied':            {'zh': '已修复',      'cls': 'ok'},
-      'applied_pending':    {'zh': '已改·待生效', 'cls': 'warn'},
-      'already':            {'zh': '本就合规',    'cls': 'ok'},
-      'failed':             {'zh': '修复失败',    'cls': 'bad'},
-      'skipped_disruptive': {'zh': '跳过·高风险', 'cls': 'warn'},
-      'unsupported':        {'zh': '无自动修复',  'cls': 'na'},
-      'skipped_scan':       {'zh': '仅扫描',      'cls': 'na'},
-      'n/a':                {'zh': '—',           'cls': 'na'}
+      'applied':            {'zh': '已修复',      'en': 'Fixed',            'cls': 'ok'},
+      'applied_pending':    {'zh': '已改·待生效', 'en': 'Changed·Pending',  'cls': 'warn'},
+      'already':            {'zh': '本就合规',    'en': 'Already ok',       'cls': 'ok'},
+      'failed':             {'zh': '修复失败',    'en': 'Failed',           'cls': 'bad'},
+      'skipped_disruptive': {'zh': '跳过·高风险', 'en': 'Skipped·High-risk','cls': 'warn'},
+      'unsupported':        {'zh': '无自动修复',  'en': 'No auto-fix',      'cls': 'na'},
+      'skipped_scan':       {'zh': '仅扫描',      'en': 'Scan-only',        'cls': 'na'},
+      'n/a':                {'zh': '—',           'en': '—',               'cls': 'na'}
    } -%}
-{%- set RISK = {'safe': '低风险', 'disruptive': '高风险', 'none': '不涉及'} -%}
+{%- set RISK = {
+      'safe':       {'zh': '低风险·可自动', 'en': 'Low · auto',       'cls': 'ok'},
+      'disruptive': {'zh': '高风险·需放行', 'en': 'High · needs allow','cls': 'warn'},
+      'none':       {'zh': '不涉及',        'en': 'N/A',             'cls': 'na'}
+   } -%}
 {#- overall scalars -#}
 {%- set a_total  = SA.total            | default(0) | int -%}
 {%- set a_pass   = SA['pass']          | default(0) | int -%}
@@ -61,7 +67,7 @@
 {%- endfor -%}
 {%- set circ = 439.82 -%}
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-lang="zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -87,9 +93,9 @@ body{
   font-variant-numeric:tabular-nums;
 }
 code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.en{font-size:.84em;font-weight:500;color:var(--ink3);letter-spacing:0;margin-left:5px}
-.sec .en{font-size:.72em}
-.mast .en{color:#9fb6d8;font-weight:500}
+.zh,.en{display:inline}
+html[data-lang="en"] .zh{display:none !important}
+html[data-lang="zh"] .en{display:none !important}
 .wrap{max-width:1280px;margin:0 auto;padding:0 24px 64px}
 
 /* ---------- masthead ---------- */
@@ -106,6 +112,9 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   border:1px solid rgba(255,255,255,.22)}
 .mb.hot{background:#f0b429;border-color:#f0b429;color:#3d2c00}
 .mb.cool{background:rgba(255,255,255,.92);color:#16305e;border-color:transparent}
+.mb.langbtn{cursor:pointer;background:rgba(255,255,255,.92);color:#16305e;border-color:transparent;
+  min-width:54px;justify-content:center;font-weight:700;letter-spacing:.5px}
+.mb.langbtn:hover{background:#fff}
 
 /* ---------- host identity ---------- */
 .idcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
@@ -278,6 +287,11 @@ details.blk>summary .n{margin-left:auto;color:var(--ink3);font-weight:600;font-s
   white-space:nowrap;color:var(--brand);font-weight:600;width:1%}
 .exl td:last-child{color:var(--ink3);white-space:nowrap;width:1%;text-align:right}
 
+.fleetbar{background:#eef4ff;border:1px solid #cfe0ff;color:#16305e;border-radius:10px;
+  padding:9px 14px;font-size:12.5px;margin-top:18px;line-height:1.6}
+.fleetbar a{color:#1c3f7c;font-weight:700}
+.fleetbar code{background:rgba(28,63,124,.08);padding:1px 5px;border-radius:4px;font-size:11.5px}
+
 footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--ink3);line-height:1.95}
 footer b{color:var(--ink2)}
@@ -297,61 +311,68 @@ footer b{color:var(--ink2)}
   <div class="mast-in">
     <div>
       {% if cis_org_name %}<div class="org">{{ cis_org_name | e }}</div>{% endif %}
-      <h1>合规报告 <span class="en">Compliance Report</span>
+      <h1>{{ L('合规报告', 'Compliance Report') }}
         <span style="display:block;font-size:13px;font-weight:500;color:#c3d3ec;margin-top:6px;letter-spacing:0">{{ cis_benchmark_name }} {{ cis_benchmark_version }}</span>
       </h1>
       <div class="sub">
         {{ cis_host.hostname | e }}
         {%- if cis_host.fqdn and cis_host.fqdn != cis_host.hostname %} · {{ cis_host.fqdn | e }}{% endif %}
-        &nbsp;|&nbsp; 生成于 {{ cis_run_human }} &nbsp;|&nbsp; 采集耗时 {{ R.duration_seconds }}s
-        <span class="en">· Generated {{ cis_run_human }}</span>
+        &nbsp;|&nbsp; {{ L('生成于', 'Generated') }} {{ cis_run_human }} &nbsp;|&nbsp; {{ L('采集耗时', 'collection') }} {{ R.duration_seconds }}s
       </div>
     </div>
     <div class="mbadges">
+      <button type="button" class="mb langbtn" id="langBtn">EN</button>
       <span class="mb {{ 'hot' if IS_APPLY else 'cool' }}">{{ '修复模式 APPLY' if IS_APPLY else '扫描模式 SCAN' }}</span>
-      <span class="mb cool">配置档 Profile {{ cis_profile }}</span>
-      <span class="mb">平台 Platform {{ cis_platform }}</span>
-      {% if IS_APPLY %}<span class="mb">高风险修复 Disruptive {{ '已放行 allowed' if cis_allow_disruptive | bool else '已拦截 blocked' }}</span>{% endif %}
-      <span class="mb">引擎 Engine v{{ R.engine_version }}</span>
+      <span class="mb cool">{{ L('配置档', 'Profile') }} {{ cis_profile }}</span>
+      <span class="mb">{{ L('平台', 'Platform') }} {{ cis_platform }}</span>
+      {% if IS_APPLY %}<span class="mb">{{ L('高风险修复', 'Disruptive') }} {{ L('已放行', 'allowed') if cis_allow_disruptive | bool else L('已拦截', 'blocked') }}</span>{% endif %}
+      <span class="mb">{{ L('引擎', 'Engine') }} v{{ R.engine_version }}</span>
     </div>
   </div>
 </header>
 
 <div class="wrap">
 
+  {% if cis_fleet_size is defined and cis_fleet_size | int > 1 %}
+  <div class="fleetbar">
+    {{ L('本报告为本次', 'This report is one of') }} {{ cis_fleet_size }} {{ L('台主机合规评估中的一台。', 'hosts assessed in this run.') }}
+    <a href="index-{{ cis_run_stamp }}.html">{{ L('查看集群总览 →', 'View fleet overview →') }}</a>
+  </div>
+  {% endif %}
+
   <!-- ============ host identity ============ -->
   <section class="idcard">
     <div class="strip"></div>
     <div class="idgrid">
       <div class="idcell hero">
-        <div class="k">主机名 Hostname</div>
+        <div class="k">{{ L('主机名', 'Hostname') }}</div>
         <div class="v">{{ cis_host.hostname | e }}</div>
       </div>
       <div class="idcell hero">
-        <div class="k">IP 地址 IPv4</div>
+        <div class="k">{{ L('IP 地址', 'IPv4') }}</div>
         <div class="v mono">{{ cis_host.ipv4 | e if cis_host.ipv4 else '—' }}</div>
       </div>
       <div class="idcell hero">
-        <div class="k">MAC 地址 MAC</div>
+        <div class="k">{{ L('MAC 地址', 'MAC') }}</div>
         <div class="v mono">{{ cis_host.mac | upper | e if cis_host.mac else '—' }}</div>
       </div>
       <div class="idcell">
-        <div class="k">操作系统 OS</div>
+        <div class="k">{{ L('操作系统', 'OS') }}</div>
         <div class="v sm">{{ cis_host.os | e if cis_host.os else '—' }}</div>
       </div>
       <div class="idcell">
-        <div class="k">内核 / 架构 Kernel / Arch</div>
+        <div class="k">{{ L('内核 / 架构', 'Kernel / Arch') }}</div>
         <div class="v mono" style="font-size:13px">{{ cis_host.kernel | e }}{% if cis_host.arch %} · {{ cis_host.arch | e }}{% endif %}</div>
       </div>
       <div class="idcell">
-        <div class="k">运行环境 Runtime</div>
-        <div class="v sm">{{ cis_host.virtualization | e if cis_host.virtualization else '—' }}{% if cis_host.uptime_seconds | int > 0 %}<span style="color:var(--ink3);font-weight:500"> · 已运行 {{ cis_host.uptime_seconds | int // 86400 }} 天 uptime</span>{% endif %}</div>
+        <div class="k">{{ L('运行环境', 'Runtime') }}</div>
+        <div class="v sm">{{ cis_host.virtualization | e if cis_host.virtualization else '—' }}{% if cis_host.uptime_seconds | int > 0 %}<span style="color:var(--ink3);font-weight:500"> · {{ cis_host.uptime_seconds | int // 86400 }} {{ L('天', 'd') }} uptime</span>{% endif %}</div>
       </div>
     </div>
     <details class="idmore">
-      <summary>网络接口明细 NIC details（{{ cis_host.interfaces | length }} 个接口 · {{ cis_host.all_ipv4 | length }} 个 IPv4 地址） · Ansible 连接 SSH {{ cis_host.ssh_address | e }}</summary>
+      <summary>{{ L('网络接口明细', 'NIC details') }}（{{ cis_host.interfaces | length }} {{ L('个接口', 'interfaces') }} · {{ cis_host.all_ipv4 | length }} {{ L('个 IPv4 地址', 'IPv4 addresses') }}） · Ansible {{ L('连接', 'SSH') }} {{ cis_host.ssh_address | e }}</summary>
       <table class="iftab">
-        <thead><tr><th>接口 Interface</th><th>MAC</th><th>IPv4</th><th>IPv6</th></tr></thead>
+        <thead><tr><th>{{ L('接口', 'Interface') }}</th><th>MAC</th><th>IPv4</th><th>IPv6</th></tr></thead>
         <tbody>
         {% for dev, d in (cis_host.interfaces | dictsort) %}
           <tr>
@@ -361,7 +382,7 @@ footer b{color:var(--ink2)}
             <td>{{ d.ipv6 | join(', ') if d.ipv6 else '—' }}</td>
           </tr>
         {% else %}
-          <tr><td colspan="4">未采集到接口明细（目标机上缺少 <code>ip</code> 命令）<br><span class="en">No interface data — the <code>ip</code> command is missing on the target.</span></td></tr>
+          <tr><td colspan="4">{{ L('未采集到接口明细（目标机上缺少', 'No interface data — the') }} <code>ip</code> {{ L('命令）', 'command is missing on the target.') }}</td></tr>
         {% endfor %}
         </tbody>
       </table>
@@ -369,18 +390,17 @@ footer b{color:var(--ink2)}
   </section>
 
   <!-- ============ score + L1/L2 ============ -->
-  <h2 class="sec">合规概览 <span class="en">Compliance Overview</span>
-    <span class="hint">本次评估 {{ a_total }} 条规则，其中 {{ a_asses }} 条可自动判定{% if a_skip %}；另有 {{ a_skip }} 条因配置档 / 平台筛选未纳入{% endif %}
-      <span class="en">{{ a_total }} rules evaluated, {{ a_asses }} auto-assessable{% if a_skip %}; {{ a_skip }} excluded by profile / platform{% endif %}</span></span>
+  <h2 class="sec">{{ L('合规概览', 'Compliance Overview') }}
+    <span class="hint">{{ L('本次评估', 'Evaluated') }} {{ a_total }} {{ L('条规则，其中', 'rules,') }} {{ a_asses }} {{ L('条可自动判定', 'auto-assessable') }}{% if a_skip %}{{ L('；另有', ';') }} {{ a_skip }} {{ L('条因配置档 / 平台筛选未纳入', 'excluded by profile / platform') }}{% endif %}</span>
   </h2>
 
   <div class="deck">
     <!-- overall score -->
     <div class="card">
-      <h3>整体合规分 <span class="en">Overall Score</span>
+      <h3>{{ L('整体合规分', 'Overall Score') }}
         <span class="pill {{ tone }}">{{ '优秀 Pass' if tone == 'ok' else ('待改进 Fair' if tone == 'warn' else '风险偏高 Risk') }}</span>
       </h3>
-      <div class="cap">通过项 ÷（通过 + 未通过）<span class="en"> Pass ÷ (Pass + Fail)</span></div>
+      <div class="cap">{{ L('通过项 ÷（通过 + 未通过）', 'Pass ÷ (Pass + Fail)') }}</div>
       <div class="ring">
         <svg width="164" height="164" viewBox="0 0 164 164">
           <circle cx="82" cy="82" r="70" fill="none" stroke="#eef1f7" stroke-width="17"></circle>
@@ -394,11 +414,11 @@ footer b{color:var(--ink2)}
         </div>
       </div>
       <div class="dlegend">
-        <div><span class="dot" style="background:#127a3d"></span>通过<span class="en">Pass</span><b>{{ a_pass }}</b></div>
-        <div><span class="dot" style="background:#b3261e"></span>未通过<span class="en">Fail</span><b>{{ a_fail }}</b></div>
-        <div><span class="dot" style="background:#1e4bb8"></span>人工核查<span class="en">Manual</span><b>{{ a_man }}</b></div>
-        <div><span class="dot" style="background:#7c3aed"></span>检查异常<span class="en">Error</span><b>{{ a_err }}</b></div>
-        <div><span class="dot" style="background:#cbd5e1"></span>不适用<span class="en">N/A</span><b>{{ a_na }}</b></div>
+        <div><span class="dot" style="background:#127a3d"></span>{{ L('通过', 'Pass') }}<b>{{ a_pass }}</b></div>
+        <div><span class="dot" style="background:#b3261e"></span>{{ L('未通过', 'Fail') }}<b>{{ a_fail }}</b></div>
+        <div><span class="dot" style="background:#1e4bb8"></span>{{ L('人工核查', 'Manual') }}<b>{{ a_man }}</b></div>
+        <div><span class="dot" style="background:#7c3aed"></span>{{ L('检查异常', 'Error') }}<b>{{ a_err }}</b></div>
+        <div><span class="dot" style="background:#cbd5e1"></span>{{ L('不适用', 'N/A') }}<b>{{ a_na }}</b></div>
       </div>
     </div>
 
@@ -419,22 +439,22 @@ footer b{color:var(--ink2)}
     <div class="card">
       <h3>
         <span><span class="lvtag {{ lv | lower }}">{{ lv }}</span>
-          &nbsp;{{ 'Level 1 · 基线防护 Baseline' if lv == 'L1' else 'Level 2 · 纵深防御 Defense-in-depth' }}</span>
-        <span class="pill na">本次 {{ tot }} 条<span class="en"> rules</span></span>
+          &nbsp;{{ L('Level 1 · 基线防护', 'Level 1 · Baseline') if lv == 'L1' else L('Level 2 · 纵深防御', 'Level 2 · Defense-in-depth') }}</span>
+        <span class="pill na">{{ L('本次', 'This run') }} {{ tot }} {{ L('条', 'rules') }}</span>
       </h3>
       <div class="cap">
-        {% if IS_APPLY %}本次 apply 实际修复的 {{ lv }} 规则条数<span class="en"> {{ lv }} rules actually remediated by this run</span>{% else %}scan 模式不做任何变更，以下为待修复项<span class="en"> scan makes no changes; these are pending fixes</span>{% endif %}
+        {% if IS_APPLY %}{{ L('本次 apply 实际修复的', 'Rules actually remediated by this run:') }} {{ lv }}{% else %}{{ L('scan 模式不做任何变更，以下为待修复项', 'scan makes no changes; these are pending fixes') }}{% endif %}
       </div>
 
       {% if IS_APPLY %}
       <div class="bigrow">
         <span class="n" style="color:{{ '#127a3d' if applied > 0 else '#7c8a9e' }}">{{ applied }}</span>
-        <span class="u">条已修复<span class="en"> fixed</span>{% if pending %}，另 {{ pending }} 条已改待生效<span class="en"> ({{ pending }} pending restart)</span>{% endif %}</span>
+        <span class="u">{{ L('条已修复', 'fixed') }}{% if pending %}{{ L('，另', ' (') }}{{ pending }} {{ L('条已改待生效', 'pending restart)') }}{% endif %}</span>
       </div>
       {% else %}
       <div class="bigrow">
         <span class="n" style="color:{{ '#b3261e' if nfail > 0 else '#127a3d' }}">{{ nfail }}</span>
-        <span class="u">条待修复 / 共 {{ tot }} 条<span class="en"> to fix / {{ tot }} total</span></span>
+        <span class="u">{{ L('条待修复 / 共', 'to fix / total') }} {{ tot }} {{ L('条', '') }}</span>
       </div>
       {% endif %}
 
@@ -445,36 +465,32 @@ footer b{color:var(--ink2)}
         <i style="background:#7c3aed;width:{{ (100.0 * nerr / tt) | round(2) }}%"></i>
       </div>
       <div class="barlabels">
-        <span>合规率<span class="en"> Compliance</span> <b style="color:var(--ink)">{{ D.score }}%</b></span>
-        <span>{{ npass }} 通过<span class="en"> Pass</span> · {{ nfail }} 未通过<span class="en"> Fail</span> · {{ nman }} 人工<span class="en"> Manual</span></span>
+        <span>{{ L('合规率', 'Compliance') }} <b style="color:var(--ink)">{{ D.score }}%</b></span>
+        <span>{{ npass }} {{ L('通过', 'Pass') }} · {{ nfail }} {{ L('未通过', 'Fail') }} · {{ nman }} {{ L('人工', 'Manual') }}</span>
       </div>
 
       <div class="kv">
-        <div class="k"><span class="pill ok">已修复</span>applied</div>
+        <div class="k"><span class="pill ok">{{ L('已修复', 'Applied') }}</span></div>
         <div class="v{{ ' z' if applied == 0 }}">{{ applied }}</div>
-        <div class="k"><span class="pill warn">已改·待生效</span>需重启 / 重载</div>
+        <div class="k"><span class="pill warn">{{ L('已改·待生效', 'Changed·Pending') }}</span></div>
         <div class="v{{ ' z' if pending == 0 }}">{{ pending }}</div>
-        <div class="k"><span class="pill bad">修复失败</span>apply_failed</div>
+        <div class="k"><span class="pill bad">{{ L('修复失败', 'Apply failed') }}</span></div>
         <div class="v{{ ' z' if afail == 0 }}">{{ afail }}</div>
-        <div class="k"><span class="pill warn">跳过·高风险</span>需显式放行</div>
+        <div class="k"><span class="pill warn">{{ L('跳过·高风险', 'Skipped·High-risk') }}</span></div>
         <div class="v{{ ' z' if adisr == 0 }}">{{ adisr }}</div>
-        <div class="k"><span class="pill na">无自动修复</span>需人工处置</div>
+        <div class="k"><span class="pill na">{{ L('无自动修复', 'No auto-fix') }}</span></div>
         <div class="v{{ ' z' if auns == 0 }}">{{ auns }}</div>
-        <div class="k"><span class="pill ok">本就合规</span>无需变更</div>
+        <div class="k"><span class="pill ok">{{ L('本就合规', 'Already ok') }}</span></div>
         <div class="v{{ ' z' if alrd == 0 }}">{{ alrd }}</div>
       </div>
 
       {% if not IS_APPLY %}
       <div class="notice">
-        执行 <code>-e cis_mode=apply -e cis_profile={{ lv }}</code> 可自动修复其中风险可控的部分；
-        涉及重启或服务中断的规则默认跳过。
-        <span class="en">Run <code>-e cis_mode=apply -e cis_profile={{ lv }}</code> to auto-remediate the safe subset; rules needing reboot / outage are skipped by default.</span>
+        {{ L('执行', 'Run') }} <code>-e cis_mode=apply -e cis_profile={{ lv }}</code> {{ L('可自动修复其中风险可控的部分；涉及重启或服务中断的规则默认跳过。', 'to auto-remediate the safe subset; rules needing reboot / outage are skipped by default.') }}
       </div>
       {% elif adisr > 0 and not cis_allow_disruptive | bool %}
       <div class="notice warn">
-        {{ adisr }} 条修复涉及重启、分区挂载或服务中断，已按默认策略跳过。
-        确认变更窗口后追加 <code>-e cis_allow_disruptive=true</code> 重跑。
-        <span class="en">{{ adisr }} fixes need reboot / remount / service outage and were skipped. Re-run with <code>-e cis_allow_disruptive=true</code> in a change window.</span>
+        {{ adisr }} {{ L('条修复涉及重启、分区挂载或服务中断，已按默认策略跳过。确认变更窗口后追加', 'fixes need reboot / remount / outage and were skipped. Re-run with') }} <code>-e cis_allow_disruptive=true</code> {{ L('重跑。', 'in a change window.') }}
       </div>
       {% endif %}
     </div>
@@ -482,7 +498,7 @@ footer b{color:var(--ink2)}
   </div>
 
   <!-- ============ chapters ============ -->
-  <h2 class="sec">章节分布 <span class="en">Chapter Breakdown</span><span class="hint">绿=通过　红=未通过　蓝=人工核查　紫=检查异常<span class="en"> green=pass red=fail blue=manual purple=error</span></span></h2>
+  <h2 class="sec">{{ L('章节分布', 'Chapter Breakdown') }}<span class="hint">{{ L('绿=通过　红=未通过　蓝=人工核查　紫=检查异常', 'green=pass red=fail blue=manual purple=error') }}</span></h2>
   <div class="chaps">
     {% for ch in chorder | sort %}
     {%- set c = chapters[ch] -%}
@@ -498,47 +514,53 @@ footer b{color:var(--ink2)}
       <div class="cnt">
         <span style="color:#127a3d;font-weight:650">{{ c['pass'] }}</span> /
         <span style="color:#b3261e;font-weight:650">{{ c['fail'] }}</span>
-        {%- if IS_APPLY and c['applied'] %} <span class="pill ok">修 {{ c['applied'] }}</span>{% endif %}
+        {%- if IS_APPLY and c['applied'] %} <span class="pill ok">{{ L('修', 'Fix') }} {{ c['applied'] }}</span>{% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
 
   <!-- ============ findings ============ -->
-  <h2 class="sec">检查明细 <span class="en">Findings</span><span class="hint">点击任意行展开判定依据与整改方法<span class="en"> click any row to expand rationale &amp; remediation</span></span></h2>
+  <h2 class="sec">{{ L('检查明细', 'Findings') }}<span class="hint">{{ L('点击任意行展开判定依据与整改方法', 'click any row to expand rationale & remediation') }}</span></h2>
 
   <div class="toolbar" id="tb">
-    <span class="chip on" data-st="all">全部 <span class="en">All</span> <span class="c">{{ a_total }}</span></span>
-    <span class="chip" data-st="fail">未通过 <span class="en">Fail</span> <span class="c">{{ a_fail }}</span></span>
-    <span class="chip" data-st="pass">通过 <span class="en">Pass</span> <span class="c">{{ a_pass }}</span></span>
-    <span class="chip" data-st="manual">人工核查 <span class="en">Manual</span> <span class="c">{{ a_man }}</span></span>
-    {% if a_err %}<span class="chip" data-st="error">异常 <span class="en">Error</span> <span class="c">{{ a_err }}</span></span>{% endif %}
-    {% if IS_APPLY %}<span class="chip" data-st="applied">本次已修复 <span class="en">Fixed</span> <span class="c">{{ a_appl + a_pend }}</span></span>{% endif %}
+    <span class="chip on" data-st="all">{{ L('全部', 'All') }} <span class="c">{{ a_total }}</span></span>
+    <span class="chip" data-st="fail">{{ L('未通过', 'Fail') }} <span class="c">{{ a_fail }}</span></span>
+    <span class="chip" data-st="pass">{{ L('通过', 'Pass') }} <span class="c">{{ a_pass }}</span></span>
+    <span class="chip" data-st="manual">{{ L('人工核查', 'Manual') }} <span class="c">{{ a_man }}</span></span>
+    {% if a_err %}<span class="chip" data-st="error">{{ L('异常', 'Error') }} <span class="c">{{ a_err }}</span></span>{% endif %}
+    {% if IS_APPLY %}<span class="chip" data-st="applied">{{ L('本次已修复', 'Fixed') }} <span class="c">{{ a_appl + a_pend }}</span></span>{% endif %}
+    <select id="frisk">
+      <option value="">{{ L('全部风险', 'All risks') }}</option>
+      <option value="safe">{{ L('低风险·可自动', 'Low · auto') }}</option>
+      <option value="disruptive">{{ L('高风险·需放行', 'High · needs allow') }}</option>
+      <option value="none">{{ L('不涉及', 'N/A') }}</option>
+    </select>
     <select id="flv">
-      <option value="">全部级别 All levels</option>
-      <option value="1">仅 Level 1 Only L1</option>
-      <option value="2">仅 Level 2 Only L2</option>
+      <option value="">{{ L('全部级别', 'All levels') }}</option>
+      <option value="1">{{ L('仅 Level 1', 'Only L1') }}</option>
+      <option value="2">{{ L('仅 Level 2', 'Only L2') }}</option>
     </select>
     <select id="fch">
-      <option value="">全部章节 All chapters</option>
+      <option value="">{{ L('全部章节', 'All chapters') }}</option>
       {% for ch in chorder | sort %}
       <option value="{{ ch }}">{{ ch }}. {{ SEC.chapters.get(ch, '') | e }}</option>
       {% endfor %}
     </select>
-    <input type="search" id="fq" placeholder="搜索规则编号、标题或关键字… Search ID, title or keyword">
-    <button class="tbtn" id="bex">展开全部 Expand</button>
-    <button class="tbtn" id="bpr">打印 / 导出 PDF Print / Export</button>
+    <input type="search" id="fq" placeholder="{{ L('搜索规则编号、标题或关键字…', 'Search ID, title or keyword…') }}">
+    <button class="tbtn" id="bex">{{ L('展开全部', 'Expand') }}</button>
+    <button class="tbtn" id="bpr">{{ L('打印 / 导出 PDF', 'Print / Export') }}</button>
   </div>
 
   <div class="tblwrap">
     <table class="f">
       <thead>
         <tr>
-          <th style="width:88px">编号 <span class="en">ID</span></th>
-          <th>规则 <span class="en">Rule</span></th>
-          <th style="width:54px">级别 <span class="en">Level</span></th>
-          <th style="width:98px">结果 <span class="en">Result</span></th>
-          <th style="width:114px">{{ '修复动作 Action' if IS_APPLY else '修复风险 Risk' }}</th>
+          <th style="width:88px">{{ L('编号', 'ID') }}</th>
+          <th>{{ L('规则', 'Rule') }}</th>
+          <th style="width:54px">{{ L('级别', 'Level') }}</th>
+          <th style="width:98px">{{ L('结果', 'Result') }}</th>
+          <th style="width:114px">{% if IS_APPLY %}{{ L('修复动作', 'Action') }}{% else %}{{ L('修复风险', 'Risk') }}{% endif %}</th>
         </tr>
       </thead>
       <tbody id="tb-body">
@@ -547,7 +569,7 @@ footer b{color:var(--ink2)}
       {%- set sinfo = ST.get(r.status, ST['notapplicable']) -%}
       {%- set ainfo = AP.get(r.apply_status, AP['n/a']) -%}
       {%- set did = 'd' ~ (r.id | replace('.', '_')) -%}
-        <tr class="r" data-id="{{ did }}" data-st="{{ r.status }}"
+        <tr class="r" data-id="{{ did }}" data-st="{{ r.status }}" data-risk="{{ r.risk }}"
             data-ap="{{ 'applied' if r.apply_status in ['applied', 'applied_pending'] else '' }}"
             data-lv="{{ r.level }}" data-ch="{{ r.id.split('.')[0] }}"
             data-q="{{ (r.id ~ ' ' ~ r.title ~ ' ' ~ r.family ~ ' ' ~ SEC.subsections.get(r.section, '')) | lower | e }}">
@@ -557,51 +579,51 @@ footer b{color:var(--ink2)}
               · {{ r.assessment }} · {{ r.family }}</span>
           </td>
           <td class="c"><span class="lvtag l{{ r.level }}">L{{ r.level }}</span></td>
-          <td class="c"><span class="pill {{ sinfo.cls }}">{{ sinfo.zh }}</span></td>
+          <td class="c"><span class="pill {{ sinfo.cls }}">{{ L(sinfo.zh, sinfo.en) }}</span></td>
           <td class="c">
             {%- if IS_APPLY -%}
-            <span class="pill {{ ainfo.cls }}">{{ ainfo.zh }}</span>
+            <span class="pill {{ ainfo.cls }}">{{ L(ainfo.zh, ainfo.en) }}</span>
             {%- else -%}
-            <span class="pill {{ 'warn' if r.risk == 'disruptive' else ('na' if r.risk == 'none' else 'ok') }}">{{ RISK.get(r.risk, r.risk) }}</span>
+            <span class="pill {{ RISK.get(r.risk, {'cls':'na'}).cls }}">{{ L(RISK.get(r.risk, {'zh': r.risk, 'en': r.risk}).zh, RISK.get(r.risk, {'zh': r.risk, 'en': r.risk}).en) }}</span>
             {%- endif -%}
           </td>
         </tr>
         <tr class="d" id="{{ did }}">
           <td colspan="5">
             <div class="det">
-              <h4>检查结论 <span class="en">Finding</span></h4>
+              <h4>{{ L('检查结论', 'Finding') }}</h4>
               <div class="obs {{ sinfo.cls if sinfo.cls in ['bad', 'ok', 'warn'] else '' }}">{{ (r.detail or '（无输出）') | e }}</div>
               {% if r.apply_status not in ['n/a', 'already'] %}
-              <h4>修复动作 <span class="en">Remediation</span> · {{ ainfo.zh }}</h4>
+              <h4>{{ L('修复动作', 'Remediation') }} · {{ L(ainfo.zh, ainfo.en) }}</h4>
               <div class="obs {{ ainfo.cls if ainfo.cls in ['bad', 'ok', 'warn'] else '' }}">{{ (r.apply_detail or '—') | e }}</div>
               {% endif %}
-              {% if g.get('description') %}<h4>规则说明 <span class="en">Description</span></h4><p>{{ g.get('description') | e }}</p>{% endif %}
-              {% if g.get('rationale') %}<h4>安全依据 <span class="en">Rationale</span></h4><p>{{ g.get('rationale') | e }}</p>{% endif %}
-              {% if g.get('impact') %}<h4>业务影响 <span class="en">Impact</span></h4><p>{{ g.get('impact') | e }}</p>{% endif %}
-              {% if g.get('audit') %}<h4>人工核查步骤 <span class="en">Audit (CIS)</span></h4><pre>{{ g.get('audit') | e }}</pre>{% endif %}
+              {% if g.get('description') %}<h4>{{ L('规则说明', 'Description') }}</h4><p>{{ g.get('description') | e }}</p>{% endif %}
+              {% if g.get('rationale') %}<h4>{{ L('安全依据', 'Rationale') }}</h4><p>{{ g.get('rationale') | e }}</p>{% endif %}
+              {% if g.get('impact') %}<h4>{{ L('业务影响', 'Impact') }}</h4><p>{{ g.get('impact') | e }}</p>{% endif %}
+              {% if g.get('audit') %}<h4>{{ L('人工核查步骤', 'Audit (CIS)') }}</h4><pre>{{ g.get('audit') | e }}</pre>{% endif %}
               {% if cis_report_embed_remediation | bool and g.get('remediation') and r.status in ['fail', 'error', 'manual'] %}
-              <h4>整改方法 <span class="en">Remediation (CIS)</span></h4><pre>{{ g.get('remediation') | e }}</pre>
+              <h4>{{ L('整改方法', 'Remediation (CIS)') }}</h4><pre>{{ g.get('remediation') | e }}</pre>
               {% endif %}
-              <h4>元信息 <span class="en">Meta</span></h4>
-              <p>适用级别 L{{ r.levels | join('/L') }} · 判定方式 {{ r.assessment }}
-                 · 实现族 <code>{{ r.family }}</code>
-                 · 修复风险 {{ RISK.get(r.risk, r.risk) }}
-                 {%- if r.page %} · 基准 PDF 第 {{ r.page }} 页{% endif %}
-                 · 耗时 {{ r.duration_ms }} ms</p>
+              <h4>{{ L('元信息', 'Meta') }}</h4>
+              <p>{{ L('适用级别', 'Levels') }} L{{ r.levels | join('/L') }} · {{ L('判定方式', 'Method') }} {{ r.assessment }}
+                 · {{ L('实现族', 'Family') }} <code>{{ r.family }}</code>
+                 · {{ L('修复风险', 'Risk') }} {{ L(RISK.get(r.risk, {'zh': r.risk, 'en': r.risk}).zh, RISK.get(r.risk, {'zh': r.risk, 'en': r.risk}).en) }}
+                 {%- if r.page %} · {{ L('基准 PDF 第', 'PDF p.') }} {{ r.page }} {{ L('页', '') }}{% endif %}
+                 · {{ r.duration_ms }} ms</p>
             </div>
           </td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
-    <div class="empty" id="none">没有匹配的规则，试试放宽筛选条件。<span class="en">No matching rules — try relaxing the filters.</span></div>
+    <div class="empty" id="none">{{ L('没有匹配的规则，试试放宽筛选条件。', 'No matching rules — try relaxing the filters.') }}</div>
   </div>
 
   {% if IS_APPLY and R.changed_files %}
   <details class="blk" open>
-    <summary>本次改动的文件 <span class="en">Changed files</span><span class="n">{{ R.changed_files | length }} 个</span></summary>
+    <summary>{{ L('本次改动的文件', 'Changed files') }}<span class="n">{{ R.changed_files | length }}</span></summary>
     <div class="blkbody">
-      <p style="margin:0 0 8px">原文件已备份至 <code>{{ cis_backup_dir }}</code>，可按需回滚。<span class="en">Originals backed up to <code>{{ cis_backup_dir }}</code> for rollback.</span></p>
+      <p style="margin:0 0 8px">{{ L('原文件已备份至', 'Originals backed up to') }} <code>{{ cis_backup_dir }}</code> {{ L('，可按需回滚。', 'for rollback.') }}</p>
       <ul>{% for f in R.changed_files %}<li><code>{{ f | e }}</code></li>{% endfor %}</ul>
     </div>
   </details>
@@ -609,7 +631,7 @@ footer b{color:var(--ink2)}
 
   {% if R.excluded %}
   <details class="blk">
-    <summary>未纳入本次评估的规则 <span class="en">Excluded rules</span><span class="n">{{ R.excluded | length }} 条</span></summary>
+    <summary>{{ L('未纳入本次评估的规则', 'Excluded rules') }}<span class="n">{{ R.excluded | length }}</span></summary>
     <div class="blkbody">
       <table class="exl">
         {% for x in R.excluded %}
@@ -622,46 +644,60 @@ footer b{color:var(--ink2)}
 
   {% if R.engine_notes %}
   <details class="blk">
-    <summary>引擎运行提示 <span class="en">Engine notes</span><span class="n">{{ R.engine_notes | length }} 条</span></summary>
+    <summary>{{ L('引擎运行提示', 'Engine notes') }}<span class="n">{{ R.engine_notes | length }}</span></summary>
     <div class="blkbody"><ul>{% for n in R.engine_notes %}<li>{{ n | e }}</li>{% endfor %}</ul></div>
   </details>
   {% endif %}
 
   <footer>
     <b>{{ cis_benchmark_name }} {{ cis_benchmark_version }}</b> ·
-    目标 <b>{{ cis_host.hostname | e }}</b>（{{ cis_host.ipv4 | e }} / {{ cis_host.mac | upper | e }}） ·
-    模式 <b>{{ '修复 apply' if IS_APPLY else '扫描 scan' }}</b> ·
-    配置档 <b>{{ cis_profile }}</b> · 平台 <b>{{ cis_platform }}</b><br>
-    <span class="en">Target {{ cis_host.hostname | e }} ({{ cis_host.ipv4 | e }} / {{ cis_host.mac | upper | e }}) · mode {{ 'apply' if IS_APPLY else 'scan' }} · profile {{ cis_profile }} · platform {{ cis_platform }}</span><br>
-    评估开始 {{ R.started_at }} · 目标机耗时 {{ R.duration_seconds }} 秒 ·
-    引擎 v{{ R.engine_version }} · 报告生成 {{ cis_run_human }}（控制节点时间）<br>
-    <span class="en">Started {{ R.started_at }} · {{ R.duration_seconds }}s on target · engine v{{ R.engine_version }} · rendered {{ cis_run_human }} (controller time)</span><br>
-    合规分 = 通过 ÷（通过 + 未通过）；标记为「人工核查 / 不适用」的规则不计入分母。
-    本报告为自动化评估结果，不能替代人工安全审计。<br>
-    <span class="en">Score = Pass ÷ (Pass + Fail); rules marked Manual / N.A. are excluded from the denominator. This automated report does not replace a manual security audit.</span>
+    {{ L('目标', 'Target') }} <b>{{ cis_host.hostname | e }}</b>（{{ cis_host.ipv4 | e }} / {{ cis_host.mac | upper | e }}） ·
+    {{ L('模式', 'Mode') }} <b>{{ 'apply' if IS_APPLY else 'scan' }}</b> ·
+    {{ L('配置档', 'Profile') }} <b>{{ cis_profile }}</b> · {{ L('平台', 'Platform') }} <b>{{ cis_platform }}</b><br>
+    {{ L('评估开始', 'Started') }} {{ R.started_at }} · {{ L('目标机耗时', 'target') }} {{ R.duration_seconds }}s ·
+    {{ L('引擎', 'Engine') }} v{{ R.engine_version }} · {{ L('报告生成', 'rendered') }} {{ cis_run_human }}
+    （{{ L('控制节点时间', 'controller time') }}）<br>
+    {{ L('合规分 = 通过 ÷（通过 + 未通过）；标记为「人工核查 / 不适用」的规则不计入分母。本报告为自动化评估结果，不能替代人工安全审计。',
+         'Score = Pass ÷ (Pass + Fail); rules marked Manual / N.A. are excluded from the denominator. This automated report does not replace a manual security audit.') }}
   </footer>
 </div>
 
 <script>
 (function () {
+  var html = document.documentElement;
+  function getLang(){ try { return localStorage.getItem('cis_lang') || 'zh'; } catch(e){ return 'zh'; } }
+  function setLang(l){
+    html.setAttribute('data-lang', l);
+    try { localStorage.setItem('cis_lang', l); } catch(e){}
+    var b = document.getElementById('langBtn');
+    if (b) { b.textContent = (l === 'zh') ? 'EN' : '中文'; }
+  }
+  setLang(getLang());
+  var btn = document.getElementById('langBtn');
+  if (btn) { btn.addEventListener('click', function () {
+    setLang(html.getAttribute('data-lang') === 'zh' ? 'en' : 'zh');
+  }); }
+
   var body = document.getElementById('tb-body');
   var rows = [].slice.call(body.querySelectorAll('tr.r'));
   var chips = [].slice.call(document.querySelectorAll('#tb .chip'));
   var q = document.getElementById('fq');
   var lv = document.getElementById('flv');
   var ch = document.getElementById('fch');
+  var rk = document.getElementById('frisk');
   var none = document.getElementById('none');
   var state = 'all';
 
   function apply() {
     var text = q.value.trim().toLowerCase();
-    var wantLv = lv.value, wantCh = ch.value, shown = 0;
+    var wantLv = lv.value, wantCh = ch.value, wantRk = rk.value, shown = 0;
     rows.forEach(function (tr) {
       var ok = true;
       if (state === 'applied') { ok = tr.dataset.ap === 'applied'; }
       else if (state !== 'all') { ok = tr.dataset.st === state; }
       if (ok && wantLv) { ok = tr.dataset.lv === wantLv; }
       if (ok && wantCh) { ok = tr.dataset.ch === wantCh; }
+      if (ok && wantRk) { ok = tr.dataset.risk === wantRk; }
       if (ok && text) { ok = tr.dataset.q.indexOf(text) !== -1; }
       tr.style.display = ok ? '' : 'none';
       var d = document.getElementById(tr.dataset.id);
@@ -682,6 +718,7 @@ footer b{color:var(--ink2)}
   q.addEventListener('input', apply);
   lv.addEventListener('change', apply);
   ch.addEventListener('change', apply);
+  rk.addEventListener('change', apply);
 
   rows.forEach(function (tr) {
     tr.addEventListener('click', function () {
@@ -701,7 +738,7 @@ footer b{color:var(--ink2)}
       d.classList.toggle('show', expanded);
       tr.classList.toggle('open', expanded);
     });
-    bex.textContent = expanded ? '收起全部' : '展开全部';
+    bex.textContent = expanded ? (html.getAttribute('data-lang') === 'zh' ? '收起全部' : 'Collapse') : (html.getAttribute('data-lang') === 'zh' ? '展开全部' : 'Expand');
   });
 
   document.getElementById('bpr').addEventListener('click', function () { window.print(); });

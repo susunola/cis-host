@@ -30,6 +30,11 @@
     cis_run_human: "{{ now(fmt='%Y-%m-%d %H:%M:%S') }}"
   run_once: true
 
+- name: Record fleet size for the multi-host banner
+  ansible.builtin.set_fact:
+    cis_fleet_size: "{{ ansible_play_hosts | length }}"
+  run_once: true
+
 - name: Build the host identity block
   ansible.builtin.set_fact:
     cis_host: >-
