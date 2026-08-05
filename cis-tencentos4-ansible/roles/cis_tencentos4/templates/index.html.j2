@@ -1,6 +1,6 @@
 {#- Fleet overview across every host in the play. Language switchable.
     v2 — professional enterprise layout matching report template. -#}
-{%- macro L(zh, en) -%}<span class="zh">{{ zh }}</span><span class="en">{{ en }}</span>{%- endmacro -%}
+{%- macro L(zh, en) -%}{{ en }}{%- endmacro -%}
 {%- set hosts = [] -%}
 {%- for h in ansible_play_hosts | sort -%}
   {%- if hostvars[h].cis_result is defined -%}{%- set _ = hosts.append(hostvars[h]) -%}{%- endif -%}
@@ -23,11 +23,11 @@
 {%- set scored = tot['pass'] + tot['fail'] -%}
 {%- set fleetscore = (100.0 * tot['pass'] / scored) | round(1) if scored else 0.0 -%}
 <!DOCTYPE html>
-<html lang="zh-CN" data-lang="zh">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · {{ L('集群合规总览', 'Fleet Compliance Overview') }}</title>
+<title>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · {{ 'Fleet Compliance Overview' }}</title>
 <style>
 :root{
   --bg:#f0f2f8;--card:#fff;--ink:#1a2332;--ink2:#4a5f7a;--ink3:#8896aa;
@@ -53,10 +53,6 @@ code,.mono{font-family:var(--font-mono)}
 a{color:var(--brand2);text-decoration:none;font-weight:600;border-bottom:1.5px solid transparent;
   transition:border-color .15s}
 a:hover{border-bottom-color:var(--brand2)}
-.zh,.en{display:inline}
-html[data-lang="en"] .zh{display:none !important}
-html[data-lang="zh"] .en{display:none !important}
-
 /* ── masthead ── */
 .mast{background:linear-gradient(135deg,#122240 0%,#1a3560 40%,#1e4580 100%);
   color:#fff;position:relative;overflow:hidden}
@@ -73,10 +69,6 @@ html[data-lang="zh"] .en{display:none !important}
 .mb{display:inline-flex;align-items:center;padding:5px 12px;border-radius:999px;
   font-size:11.5px;font-weight:600;background:rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.16)}
-.mb.langbtn{cursor:pointer;background:rgba(255,255,255,.94);color:#1a3058;
-  border-color:transparent;min-width:54px;justify-content:center;font-weight:700;
-  letter-spacing:.5px;transition:all .15s}
-.mb.langbtn:hover{background:#fff;transform:scale(1.03)}
 .wrap{max-width:1200px;margin:0 auto;padding:0 28px 64px}
 
 /* ── stat cards ── */
@@ -132,53 +124,51 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);
   body{background:#fff}
   .mast{background:#122240 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .st,.tblwrap{box-shadow:none;break-inside:avoid}
-  .mb.langbtn{display:none}
-}
+  }
 </style>
 </head>
 <body>
 <header class="mast">
   <div class="mast-in">
     <div>
-      <h1>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · {{ L('集群合规总览', 'Fleet Compliance Overview') }}</h1>
-      <div class="sub">{{ hosts | length }} {{ L('台主机', 'hosts') }} · {{ L('配置档', 'profile') }} {{ cis_profile }} ·
-         {{ L('模式', 'mode') }} {{ 'apply' if cis_mode_effective == 'apply' else 'scan' }} ·
-         {{ L('生成于', 'generated') }} {{ cis_run_human }}</div>
+      <h1>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · {{ 'Fleet Compliance Overview' }}</h1>
+      <div class="sub">{{ hosts | length }} {{ 'hosts' }} · {{ 'profile' }} {{ cis_profile }} ·
+         {{ 'mode' }} {{ 'apply' if cis_mode_effective == 'apply' else 'scan' }} ·
+         {{ 'generated' }} {{ cis_run_human }}</div>
     </div>
     <div class="mbadges">
-      <button type="button" class="mb langbtn" id="langBtn">EN</button>
     </div>
   </div>
 </header>
 <div class="wrap">
   <div class="stats">
-    <div class="st"><div class="k">{{ L('集群合规分', 'Fleet Score') }}</div>
+    <div class="st"><div class="k">{{ 'Fleet Score' }}</div>
       <div class="v" style="color:{{ '#0d7a53' if fleetscore >= 90 else ('#b86c00' if fleetscore >= 70 else '#c42a1e') }}">{{ fleetscore }}<span style="font-size:17px">%</span></div>
-      <div class="u">{{ tot['pass'] }} / {{ scored }} {{ L('项通过', 'passed') }}</div></div>
-    <div class="st"><div class="k">{{ L('待修复项', 'To Fix') }}</div>
+      <div class="u">{{ tot['pass'] }} / {{ scored }} {{ 'passed' }}</div></div>
+    <div class="st"><div class="k">{{ 'To Fix' }}</div>
       <div class="v" style="color:#c42a1e">{{ tot['fail'] }}</div>
-      <div class="u">{{ L('全集群累计', 'fleet-wide') }}</div></div>
-    <div class="st"><div class="k">{{ L('L1 已修复', 'L1 Fixed') }}</div>
+      <div class="u">{{ 'fleet-wide' }}</div></div>
+    <div class="st"><div class="k">{{ 'L1 Fixed' }}</div>
       <div class="v" style="color:#1a50ba">{{ tot['l1applied'] }}</div>
-      <div class="u">{{ L('Level 1 规则条数', 'Level 1 rules') }}</div></div>
-    <div class="st"><div class="k">{{ L('L2 已修复', 'L2 Fixed') }}</div>
+      <div class="u">{{ 'Level 1 rules' }}</div></div>
+    <div class="st"><div class="k">{{ 'L2 Fixed' }}</div>
       <div class="v" style="color:#7c3aed">{{ tot['l2applied'] }}</div>
-      <div class="u">{{ L('Level 2 规则条数', 'Level 2 rules') }}</div></div>
-    <div class="st"><div class="k">{{ L('人工核查', 'Manual') }}</div>
+      <div class="u">{{ 'Level 2 rules' }}</div></div>
+    <div class="st"><div class="k">{{ 'Manual' }}</div>
       <div class="v" style="color:#4a5f7a">{{ tot['manual'] }}</div>
-      <div class="u">{{ L('需运维确认', 'needs review') }}</div></div>
-    <div class="st"><div class="k">{{ L('修复失败', 'Fix Failed') }}</div>
+      <div class="u">{{ 'needs review' }}</div></div>
+    <div class="st"><div class="k">{{ 'Fix Failed' }}</div>
       <div class="v" style="color:{{ '#c42a1e' if tot['failedfix'] else '#8896aa' }}">{{ tot['failedfix'] }}</div>
-      <div class="u">{{ L('需人工介入', 'needs attention') }}</div></div>
+      <div class="u">{{ 'needs attention' }}</div></div>
   </div>
 
-  <h2 class="sec">{{ L('主机明细', 'Host Details') }}</h2>
+  <h2 class="sec">{{ 'Host Details' }}</h2>
   <div class="tblwrap">
     <table>
       <thead>
         <tr>
-          <th>{{ L('主机名', 'Host') }}</th><th>IPv4</th><th>MAC</th><th>{{ L('操作系统', 'OS') }}</th>
-          <th>{{ L('合规分', 'Score') }}</th><th>{{ L('通过 / 未通过', 'Pass / Fail') }}</th><th>{{ L('L1 修复', 'L1 Fixed') }}</th><th>{{ L('L2 修复', 'L2 Fixed') }}</th><th>{{ L('报告', 'Report') }}</th>
+          <th>{{ 'Host' }}</th><th>IPv4</th><th>MAC</th><th>{{ 'OS' }}</th>
+          <th>{{ 'Score' }}</th><th>{{ 'Pass / Fail' }}</th><th>{{ 'L1 Fixed' }}</th><th>{{ 'L2 Fixed' }}</th><th>{{ 'Report' }}</th>
         </tr>
       </thead>
       <tbody>
@@ -200,10 +190,10 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);
           <td><span class="pill ok">{{ s.all['pass'] }}</span> /
               <span class="pill {{ 'bad' if (s.all.fail | int) else 'na' }}">{{ s.all.fail }}</span></td>
           <td><span class="pill {{ 'ok' if (s.L1.applied | int) else 'na' }}">{{ s.L1.applied }}</span>
-              {%- if s.L1.applied_pending | int %} <span class="pill warn">+{{ L('待生效', 'pending') }}</span>{% endif %}</td>
+              {%- if s.L1.applied_pending | int %} <span class="pill warn">+{{ 'pending' }}</span>{% endif %}</td>
           <td><span class="pill {{ 'ok' if (s.L2.applied | int) else 'na' }}">{{ s.L2.applied }}</span>
-              {%- if s.L2.applied_pending | int %} <span class="pill warn">+{{ L('待生效', 'pending') }}</span>{% endif %}</td>
-          <td><a href="{{ hv.cis_report_slug }}.html">{{ L('打开', 'Open') }} &rsaquo;</a></td>
+              {%- if s.L2.applied_pending | int %} <span class="pill warn">+{{ 'pending' }}</span>{% endif %}</td>
+          <td><a href="{{ hv.cis_report_slug }}.html">{{ 'Open' }} &rsaquo;</a></td>
         </tr>
       {% endfor %}
       </tbody>
@@ -212,27 +202,19 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);
 
   <footer>
     {{ cis_benchmark_name }} {{ cis_benchmark_version }} ·
-    {{ hosts | length }} {{ L('台主机', 'hosts') }} · {{ L('累计评估', 'rules assessed') }} {{ tot['rules'] }} ·
-    {{ L('引擎', 'Engine') }} v{{ hosts[0].cis_result.engine_version if hosts else '-' }} ·
-    {{ L('生成于', 'generated') }} {{ cis_run_human }}
+    {{ hosts | length }} {{ 'hosts' }} · {{ 'rules assessed' }} {{ tot['rules'] }} ·
+    {{ 'Engine' }} v{{ hosts[0].cis_result.engine_version if hosts else '-' }} ·
+    {{ 'generated' }} {{ cis_run_human }}
   </footer>
 </div>
 <script>
 (function () {
-  var html = document.documentElement;
-  function setLang(l){
-    html.setAttribute('data-lang', l);
-    try { localStorage.setItem('cis_lang', l); } catch(e){}
-    var b = document.getElementById('langBtn');
-    if (b) { b.textContent = (l === 'zh') ? 'EN' : '中文'; }
-  }
+    }
   var saved = '';
   try { saved = localStorage.getItem('cis_lang') || ''; } catch(e) {}
-  if (saved) setLang(saved);
-  var btn = document.getElementById('langBtn');
+  if (saved) 
   if (btn) { btn.addEventListener('click', function () {
-    setLang(html.getAttribute('data-lang') === 'zh' ? 'en' : 'zh');
-  }); }
+}); }
 })();
 </script>
 </body>
