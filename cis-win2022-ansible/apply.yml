@@ -1,7 +1,7 @@
 ---
 # CIS Windows Server remediation + re-assessment
 - name: "CIS Windows Server Benchmark - apply ({{ cis_profile | default('L1') }})"
-  hosts: "{{ cis_hosts | default('windows') }}"
+  hosts: "{{ cis_hosts | default('win2022') }}"
   gather_facts: true
   serial: "{{ cis_serial | default('100%') }}"
 
