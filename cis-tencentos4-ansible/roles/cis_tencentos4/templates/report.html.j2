@@ -649,8 +649,8 @@ footer b{color:var(--ink2)}
               <p>{{ 'Levels' }} L{{ (r.levels | default([])) | join('/L') }} · {{ 'Method' }} {{ r.assessment | e }}
      · {{ 'Family' }} <code>{{ r.family | e }}</code>
                  · {{ 'Risk' }} {{ RISK.get(r.risk, {'en': r.risk | e}).en }}
-    {%- if r.page %} · {{ 'PDF p.' }} {{ r.page }} {{ '' }}{% endif %}
-       · {{ r.duration_ms }} ms</p>
+    {%- if r.page %} · {{ 'PDF p.' }} {{ r.page | e }} {{ '' }}{% endif %}
+       · {{ r.duration_ms | e }} ms</p>
             </div>
           </td>
         </tr>
