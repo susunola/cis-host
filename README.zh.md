@@ -1,15 +1,8 @@
-# SecX Automation Suite
-
-**Compliance Baseline as Code | Hardening & Drift Automation**
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
-[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
-[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+# cis-os
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
-针对 10 种主流 Linux 发行版及 4 个 Windows Server 版本跑 **CIS** 安全基准的 Ansible Playbook 与本地 CLI。每个套件有两种模式 —— `scan`（只读）与 `apply`（修复），按主机生成独立的交互式 HTML 报告，并支持结构化审计日志。
+针对 10 种主流 Linux 发行版及 4 个 Windows Server 版本跑 **CIS** 安全基准的 Ansible Playbook 与本地 CLI。每个套件有两种模式 —— `scan`（只读）与 `apply`（修复），按主机生成 HTML 报告，并支持结构化审计日志。
 
 **支持平台：**
 
@@ -24,7 +17,7 @@
 ## 架构
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite 架构图" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="cis-os 架构图" width="800">
 </p>
 
 引擎是单文件脚本（Linux 为 Python 3，Windows 为 PowerShell），无第三方依赖。Ansible 只负责文件拷贝、命令执行、报告渲染。每个引擎产出 `result.json`（结构化结果）和可选的 `audit.log`（JSON-lines 审计日志），便于合规审查与 SIEM 接入。
@@ -146,7 +139,7 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
 
 ## 特权模式
 
-SecX 支持三种特权级别。`apply` 必须使用 **root**（Linux）或 **Administrator**（Windows）。
+`apply` 必须使用 **root**（Linux）或 **Administrator**（Windows）。
 
 ### scan — 各层级覆盖范围（Linux）
 
@@ -191,7 +184,7 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 secx/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
-├── cis_cli.py                      # 本地 CLI（--os 一键切换）
+├── cis_cli.py                      # 本地 CLI（--os 切换目标）
 ├── docs/architecture.svg           # 架构图
 ├── cis-tencentos3-ansible/         # TencentOS 3
 ├── cis-tencentos4-ansible/         # TencentOS 4

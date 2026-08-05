@@ -1,15 +1,8 @@
-# SecX Automation Suite (cis-os)
-
-**Compliance Baseline as Code | Hardening & Drift Automation**
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
-[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
-[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+# cis-os
 
 **English** | [简体中文](README.zh.md) | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
-Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Each suite operates in two modes — `scan` (read-only) and `apply` (remediate) — and produces per-host interactive HTML reports with structured audit logs.
+Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Each suite operates in two modes — `scan` (read-only) and `apply` (remediate) — and produces per-host HTML reports with structured audit logs.
 
 **Supported platforms:**
 
@@ -24,7 +17,7 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 ## Architecture
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="cis-os architecture" width="800">
 </p>
 
 Engines are single-file scripts with zero third-party dependencies (Python 3 on Linux, PowerShell on Windows). Ansible handles file transfer, command execution, and report rendering only. Each engine produces both a structured `result.json` and an optional `audit.log` (JSON-lines) suitable for compliance review and SIEM ingestion.
@@ -37,7 +30,7 @@ Engines are single-file scripts with zero third-party dependencies (Python 3 on 
 2. `push` — Copies `cis_engine.py`, `rules.json`, `guidance.json`, and `sections.json` to `/tmp/cis-scan/` on the target (`C:\Windows\Temp\cis-scan` on Windows).
 3. `run` — Engine starts in `--mode scan`, iterates through the catalog checking each rule, collects evidence, and writes `result.json`. Nothing on the target is modified.
 4. `fetch` — Ansible pulls `result.json` (and `audit.log` if enabled) back to the control machine.
-5. `report` — Jinja2 templates (`report.html.j2`) combine `result.json` with host facts (hostname, IP, MAC, OS, kernel) to render an interactive HTML report.
+5. `report` — Jinja2 templates (`report.html.j2`) combine `result.json` with host facts (hostname, IP, MAC, OS, kernel) to render an HTML report.
 
 ### apply (remediate)
 
@@ -146,7 +139,7 @@ When using Ansible, the corresponding variables are documented in each suite's R
 
 ## Privilege modes
 
-SecX runs under three privilege levels. `apply` requires **root-equivalent privileges** — effective UID 0 on Linux (via `sudo` or direct root) or **Administrator** on Windows.
+`apply` requires **root-equivalent privileges** — effective UID 0 on Linux (via `sudo` or direct root) or **Administrator** on Windows.
 
 ### scan — what works at each level (Linux)
 
@@ -231,11 +224,11 @@ Two distinct HTML reports are produced from every run. Both are static, self-con
 A `findings.csv.j2` template is also available for Excel/Sheets consumption — enable with `cis_report_csv=true`.
 
 <p align="center">
-  <img src="docs/screenshots/per-host-report.png" alt="SecX per-host compliance report" width="900">
+  <img src="docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/fleet-index.png" alt="SecX fleet compliance index" width="900">
+  <img src="docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
 </p>
 
 ### CLI mode
@@ -247,7 +240,7 @@ python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
 ```
 
 <p align="center">
-  <img src="docs/screenshots/cli-mode.png" alt="SecX CLI scan output" width="900">
+  <img src="docs/screenshots/cli-mode.png" alt="CLI scan output" width="900">
 </p>
 
 The CLI reuses the suite's `cis_engine.py`, `rules.json`, `guidance.json`, and `sections.json` directly. The rendered summary, color-coded status counts, and per-rule table mirror what the engine writes to `result.json` — anything you can do in Ansible, you can do here.

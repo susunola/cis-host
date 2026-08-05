@@ -1,4 +1,4 @@
-# Contributing to SecX Automation Suite
+# Contributing to cis-os
 
 Thanks for your interest in contributing.
 

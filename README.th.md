@@ -1,15 +1,8 @@
-# SecX Automation Suite
-
-**Compliance Baseline as Code | Hardening & Drift Automation**
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
-[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
-[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+# cis-os
 
 [English](README.md) | [简体中文](README.zh.md) | [日本語](README.ja.md) | **ภาษาไทย**
 
-Ansible playbooks และ CLI แบบローカルที่ใช้ดำเนินการตรวจสอบมาตรฐานความปลอดภัย **CIS** บน Linux 10 รุ่น และ Windows Server 4 เวอร์ชัน แต่ละชุดทำงานในสองโหมด — `scan` (อ่านอย่างเดียว) และ `apply` (แก้ไข) — และสร้างรายงาน HTML แบบโต้ตอบพร้อมบันทึกการตรวจสอบที่มีโครงสร้างสำหรับแต่ละโฮสต์
+Ansible playbooks และ CLI แบบローカルที่ใช้ดำเนินการตรวจสอบมาตรฐานความปลอดภัย **CIS** บน Linux 10 รุ่น และ Windows Server 4 เวอร์ชัน แต่ละชุดทำงานในสองโหมด — `scan` (อ่านอย่างเดียว) และ `apply` (แก้ไข) — และสร้างรายงาน HTML พร้อมบันทึกการตรวจสอบที่มีโครงสร้างสำหรับแต่ละโฮสต์
 
 **แพลตฟอร์มที่รองรับ:**
 
@@ -24,7 +17,7 @@ Ansible playbooks และ CLI แบบローカルที่ใช้ดำเ
 ## สถาปัตยกรรม
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="cis-os architecture" width="800">
 </p>
 
 Engine เป็นสคริปต์ไฟล์เดียวที่ไม่มีการพึ่งพาไลบรารีภายนอก (Python 3 บน Linux, PowerShell บน Windows) Ansible ทำหน้าที่จัดการเฉพาะการถ่ายโอนไฟล์ การเรียกใช้คำสั่ง และการสร้างรายงาน แต่ละ Engine สร้างทั้ง `result.json` ที่มีโครงสร้าง และ `audit.log` (JSON-lines) ซึ่งเหมาะสำหรับการตรวจสอบด้านการปฏิบัติตามข้อกำหนด และการนำเข้าสู่ระบบ SIEM
@@ -37,7 +30,7 @@ Engine เป็นสคริปต์ไฟล์เดียวที่ไ�
 2. `push` — คัดลอก `cis_engine.py`, `rules.json`, `guidance.json` และ `sections.json` ไปยัง `/tmp/cis-scan/` บนเครื่องเป้าหมาย (`C:\Windows\Temp\cis-scan` บน Windows)
 3. `run` — Engine เริ่มทำงานใน `--mode scan` วนตรวจสอบแต่ละกฎในแคตตาล็อก เก็บรวบรวมหลักฐาน และเขียน `result.json` โดยไม่มีการแก้ไขใด ๆ บนเครื่องเป้าหมาย
 4. `fetch` — Ansible ดึง `result.json` (และ `audit.log` หากเปิดใช้งาน) กลับมายังเครื่องควบคุม
-5. `report` — เทมเพลต Jinja2 (`report.html.j2`) รวม `result.json` เข้ากับข้อมูลโฮสต์ (hostname, IP, MAC, OS, kernel) เพื่อสร้างรายงาน HTML แบบโต้ตอบ
+5. `report` — เทมเพลต Jinja2 (`report.html.j2`) รวม `result.json` เข้ากับข้อมูลโฮสต์ (hostname, IP, MAC, OS, kernel) เพื่อสร้างรายงาน HTML
 
 ### apply (แก้ไข)
 
@@ -146,7 +139,7 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
 
 ## โหมดสิทธิ์
 
-SecX รองรับ 3 ระดับสิทธิ์ `apply` ต้องใช้ **root** (Linux) หรือ **Administrator** (Windows) เสมอ
+`apply` ต้องใช้ **root** (Linux) หรือ **Administrator** (Windows) เสมอ
 
 ### scan — สิ่งที่ทำงานได้ในแต่ละระดับ (Linux)
 

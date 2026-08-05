@@ -1,15 +1,8 @@
-# SecX Automation Suite
-
-**Compliance Baseline as Code | Hardening & Drift Automation**
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
-[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
-[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+# cis-os
 
 [English](README.md) | [简体中文](README.zh.md) | **日本語** | [ภาษาไทย](README.th.md)
 
-10 種類の Linux ディストリビューションと 4 バージョンの Windows Server に対して **CIS** セキュリティベンチマークを実行する Ansible Playbook およびローカル CLI です。各スイートは `scan`（読み取り専用）と `apply`（修復）の 2 つのモードで動作し、構造化された監査ログ付きのインタラクティブな HTML レポートをホストごとに生成します。
+10 種類の Linux ディストリビューションと 4 バージョンの Windows Server に対して **CIS** セキュリティベンチマークを実行する Ansible Playbook およびローカル CLI です。各スイートは `scan`（読み取り専用）と `apply`（修復）の 2 つのモードで動作し、構造化された監査ログ付きの HTML レポートをホストごとに生成します。
 
 **サポートプラットフォーム:**
 
@@ -24,7 +17,7 @@
 ## アーキテクチャ
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="cis-os architecture" width="800">
 </p>
 
 エンジンは単一ファイルのスクリプトであり、サードパーティの依存関係は一切ありません（Linux では Python 3、Windows では PowerShell）。Ansible はファイル転送、コマンド実行、レポートのレンダリングのみを担当します。各エンジンは、構造化された `result.json` と、準拠レビューや SIEM 取り込みに適したオプションの `audit.log`（JSON 行形式）の両方を生成します。
@@ -37,7 +30,7 @@
 2. `push` — `cis_engine.py`、`rules.json`、`guidance.json`、`sections.json` をターゲットの `/tmp/cis-scan/`（Windows では `C:\Windows\Temp\cis-scan`）にコピーします。
 3. `run` — エンジンが `--mode scan` で起動し、カタログを走査して各ルールをチェックし、証跡を収集して `result.json` を書き込みます。ターゲット上の設定は一切変更されません。
 4. `fetch` — Ansible が `result.json`（および有効な場合は `audit.log`）を制御マシンに取得します。
-5. `report` — Jinja2 テンプレート（`report.html.j2`）が `result.json` とホスト情報（ホスト名、IP、MAC、OS、カーネル）を組み合わせて、インタラクティブな HTML レポートをレンダリングします。
+5. `report` — Jinja2 テンプレート（`report.html.j2`）が `result.json` とホスト情報（ホスト名、IP、MAC、OS、カーネル）を組み合わせて HTML レポートをレンダリングします。
 
 ### apply（修復）
 
@@ -146,7 +139,7 @@ Ansible を使用する場合、対応する変数は各スイートの README �
 
 ## 権限モード
 
-SecX は 3 つの権限レベルをサポートします。`apply` は常に **root**（Linux）または **Administrator**（Windows）が必要です。
+`apply` は常に **root**（Linux）または **Administrator**（Windows）が必要です。
 
 ### scan — 各レベルで動作するもの（Linux）
 

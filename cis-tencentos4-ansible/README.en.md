@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-基于 CIS **TencentOS Linux 4 Benchmark v1.0.0** 的自动化合规扫描与修复 Playbook，属于 [SecX Automation Suite](../) 项目的一部分。
+基于 CIS **TencentOS Linux 4 Benchmark v1.0.0** 的合规扫描与修复 Playbook。
 
 ## 一次运行的流程
 
@@ -70,7 +70,7 @@ ansible-playbook -i inventory/hosts.ini apply.yml -e cis_profile=L2 \
 | **L1 / L2 选择** | `cis_profile=L1`（基线防护）或 `cis_profile=L2`（纵深防御）|
 | **HTML 报告** | 自包含单文件，含主机名 / IP / MAC、合规分、章节分布、可搜索明细表 |
 | **CSV 导出** | 平坦化所有检查结果，方便导入 SIEM 或 BI 工具 |
-| **集群总览** | 多主机时自动生成 index 页面汇总各节点状态 |
+| **集群总览** | 多主机时生成 index 页面汇总各节点状态 |
 | **风险分级** | 高风险修复默认跳过，需显式放行 |
 | **细粒度过滤** | `--include`、`--exclude`、`--sections`、`--families` |
 

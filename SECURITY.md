@@ -10,7 +10,7 @@
 
 ## Reporting a vulnerability
 
-If you discover a security vulnerability in the SecX Automation Suite (e.g., a rule that introduces a misconfiguration, an insecure default, or a privilege escalation path), please report it responsibly.
+If you discover a security vulnerability in cis-os (e.g., a rule that introduces a misconfiguration, an insecure default, or a privilege escalation path), please report it responsibly.
 
 **Do not open a public issue.** Instead, email the maintainers directly.
 

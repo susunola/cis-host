@@ -3,7 +3,7 @@
 **English** | [简体中文](README.en.md)
 
 Ansible playbooks that implement the **CIS TencentOS Linux 3 Benchmark v1.0.0** for
-automated compliance scanning and remediation. Part of [SecX Automation Suite](../).
+compliance scanning and remediation.
 
 ## How a run works
 
