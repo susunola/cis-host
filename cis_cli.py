@@ -234,13 +234,13 @@ def run_engine(args, mode):
 
     try:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=600,
+            cmd, capture_output=True, text=True, timeout=args.timeout,
             stdin=subprocess.DEVNULL, cwd=engine_dir
         )
         elapsed = time.time() - started
         print(f"[{mode.upper()}] Exit: {proc.returncode}  Duration: {elapsed:.1f}s")
     except subprocess.TimeoutExpired:
-        print(f"[{mode.upper()}] TIMEOUT after 600s", file=sys.stderr)
+        print(f"[{mode.upper()}] TIMEOUT after {args.timeout}s", file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError as e:
         print(f"[{mode.upper()}] Engine not found: {e}", file=sys.stderr)
@@ -378,7 +378,7 @@ def render_report(result_data, args, mode, scan_result_file):
         "cis_report_embed_remediation": True,
     }
 
-    env = Environment(loader=FileSystemLoader(template_dir))
+    env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
     try:
         template = env.get_template(template_name)
     except Exception as exc:
@@ -920,6 +920,8 @@ Examples:
                        help="Also save result JSON alongside the HTML report")
         p.add_argument("--audit-log", default="",
                        help="Write audit log (JSON-lines) to this path")
+        p.add_argument("--timeout", type=int, default=600,
+                       help="Engine execution timeout in seconds (default: 600)")
         p.add_argument("--no-prescan", action="store_true",
                        help="Skip pre-scan baseline in apply mode")
 
