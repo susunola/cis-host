@@ -2,7 +2,12 @@
 
 **Compliance Baseline as Code | Hardening & Drift Automation**
 
-**English** | [简体中文](README.zh.md) | [日本語](README.ja.md) | **ภาษาไทย**
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
+[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
+[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+
+[English](README.md) | [简体中文](README.zh.md) | [日本語](README.ja.md) | **ภาษาไทย**
 
 Ansible playbooks และ CLI แบบローカルที่ใช้ดำเนินการตรวจสอบมาตรฐานความปลอดภัย **CIS** บน Linux 10 รุ่น และ Windows Server 4 เวอร์ชัน แต่ละชุดทำงานในสองโหมด — `scan` (อ่านอย่างเดียว) และ `apply` (แก้ไข) — และสร้างรายงาน HTML แบบโต้ตอบพร้อมบันทึกการตรวจสอบที่มีโครงสร้างสำหรับแต่ละโฮสต์
 
@@ -252,4 +257,4 @@ secx/
 
 ## ใบอนุญาต
 
-เนื้อหา Benchmark เป็นลิขสิทธิ์ของ Center for Internet Security สคริปต์อัตโนมัติใน repository นี้จัดเตรียมให้ตามสภาพที่เป็นอยู่สำหรับการใช้งานจริง
+เนื้อหา Benchmark เป็นลิขสิทธิ์ของ Center for Internet Security สคริปต์อัตโนมัติใน repository นี้ได้รับอนุญาตภายใต้ [MIT License](LICENSE)

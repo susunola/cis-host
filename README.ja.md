@@ -2,7 +2,12 @@
 
 **Compliance Baseline as Code | Hardening & Drift Automation**
 
-**English** | [简体中文](README.zh.md) | **日本語** | [ภาษาไทย](README.th.md)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
+[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
+[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+
+[English](README.md) | [简体中文](README.zh.md) | **日本語** | [ภาษาไทย](README.th.md)
 
 10 種類の Linux ディストリビューションと 4 バージョンの Windows Server に対して **CIS** セキュリティベンチマークを実行する Ansible Playbook およびローカル CLI です。各スイートは `scan`（読み取り専用）と `apply`（修復）の 2 つのモードで動作し、構造化された監査ログ付きのインタラクティブな HTML レポートをホストごとに生成します。
 
@@ -252,4 +257,4 @@ secx/
 
 ## ライセンス
 
-ベンチマークの内容の著作権は Center for Internet Security に帰属します。このリポジトリの自動化スクリプトは、運用利用のために現状有姿で提供されます。
+ベンチマークの内容の著作権は Center for Internet Security に帰属します。このリポジトリの自動化スクリプトは [MIT License](LICENSE) の下で提供されます。

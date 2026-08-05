@@ -2,6 +2,11 @@
 
 **Compliance Baseline as Code | Hardening & Drift Automation**
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-14%20OS%20targets-34d058?logo=linux&logoColor=white)](https://github.com/susunola/cis-os#suites)
+[![Python](https://img.shields.io/badge/python-3.6%2B-3670A0?logo=python&logoColor=ffdd54)](https://www.python.org/)
+[![PowerShell](https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+
 **English** | [简体中文](README.zh.md) | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Each suite operates in two modes — `scan` (read-only) and `apply` (remediate) — and produces per-host interactive HTML reports with structured audit logs.
@@ -252,4 +257,4 @@ A single play runs against every host in the inventory. Each host gets its own `
 
 ## License
 
-Benchmark content copyright Center for Internet Security. Automation scripts in this repository are provided as-is for operational use.
+Automation scripts in this repository are licensed under the [MIT License](LICENSE). CIS Benchmark content is copyright &copy; Center for Internet Security, Inc. and used under their terms of use.
