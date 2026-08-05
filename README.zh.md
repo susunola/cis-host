@@ -2,7 +2,9 @@
 
 [English](README.md) | **简体中文**
 
-针对 TencentOS Linux 3、TencentOS Linux 4 与 Windows Server 跑 **CIS** 安全基准的 Ansible Playbook。每个套件有两种模式 —— `scan`（只读）与 `apply`（修复），并按主机生成独立的 HTML 报告。
+针对 11 种主流 Linux 发行版及 Windows Server 跑 **CIS** 安全基准的 Ansible Playbook。每个套件有两种模式 —— `scan`（只读）与 `apply`（修复），并按主机生成独立的 HTML 报告。
+
+支持：TencentOS 3/4 · RHEL 8/9/10 · SLES 15/16 · Ubuntu 20.04/22.04/24.04 LTS · Windows Server 2025
 
 ## 架构
 
@@ -36,34 +38,48 @@
 |------|------|------|--------|
 | `cis-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
 | `cis-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
+| `cis-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
+| `cis-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
+| `cis-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
+| `cis-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
+| `cis-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
+| `cis-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
+| `cis-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
+| `cis-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
 | `cis-windows-ansible/`    | CIS Windows Server 2025 v2.1.0 | PowerShell | 154 |
 
 每个套件都是独立的 Ansible 工程，自带 inventory、group_vars、`scan.yml`、`apply.yml`、role 树、模板。
 
 ## 快速开始
 
+### 本地 CLI（推荐）
+
 ```bash
-# 1. 编辑 inventory，指向目标主机
-vim cis-tencentos3-ansible/inventory/hosts.ini
+# L1 scan（只读）
+python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
 
-# 2. L1 scan（只读）
-ansible-playbook -i cis-tencentos3-ansible/inventory/hosts.ini \
-                 cis-tencentos3-ansible/scan.yml
+# L1 apply（修复）
+python3 cis_cli.py apply --os ubuntu2204 --profile L1 --output output/
 
-# 3. 看报告
-open cis-tencentos3-ansible/reports/*-L1-scan.html
+# L2 全量 + 放行高风险规则
+python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive --output output/
 
-# 4. L1 apply（先看报告确认影响范围）
-ansible-playbook -i cis-tencentos3-ansible/inventory/hosts.ini \
-                 cis-tencentos3-ansible/apply.yml
-
-# 5. L2 全量 + 放行高风险
-ansible-playbook -i cis-tencentos3-ansible/inventory/hosts.ini \
-                 cis-tencentos3-ansible/apply.yml \
-                 -e cis_profile=L2 -e cis_allow_disruptive=true
+# 只跑部分规则
+python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 ```
 
-TOS 4 和 Windows 把目录名换掉即可。
+`--os` 取值：`tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `windows`
+
+### 通过 Ansible
+
+```bash
+ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
+                 cis-rhel9-ansible/scan.yml
+
+ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
+                 cis-rhel9-ansible/apply.yml \
+                 -e cis_profile=L2 -e cis_allow_disruptive=true
+```
 
 ## 细粒度执行
 
@@ -86,17 +102,27 @@ TOS 4 和 Windows 把目录名换掉即可。
 CIS-OS/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
-├── cis-tencentos3-ansible/         # TOS 3 套件
-│   ├── ansible.cfg
-│   ├── scan.yml | apply.yml | site.yml
-│   ├── inventory/  group_vars/
-│   ├── reports/                    # HTML / JSON / CSV 输出
-│   └── roles/cis_tencentos3/
-│       ├── files/   cis_engine.py, rules.json, guidance.json, sections.json
-│       ├── tasks/   preflight, run, report, gate
-│       └── templates/  report.html.j2, index.html.j2, findings.csv.j2
-├── cis-tencentos4-ansible/         # TOS 4 套件（结构同上）
-└── cis-windows-ansible/            # Windows 套件（PowerShell 引擎）
+├── cis_cli.py                      # 本地 CLI（--os 一键切换）
+├── docs/architecture.svg           # 架构图
+├── cis-tencentos3-ansible/         # TencentOS 3
+├── cis-tencentos4-ansible/         # TencentOS 4
+├── cis-rhel8-ansible/              # RHEL 8
+├── cis-rhel9-ansible/              # RHEL 9
+├── cis-rhel10-ansible/             # RHEL 10
+├── cis-sles15-ansible/             # SLES 15
+├── cis-sles16-ansible/             # SLES 16
+├── cis-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
+├── cis-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
+├── cis-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
+└── cis-windows-ansible/            # Windows Server 2025
+    ├── ansible.cfg
+    ├── scan.yml | apply.yml | site.yml
+    ├── inventory/  group_vars/
+    ├── reports/                    # HTML / JSON / CSV 输出
+    └── roles/cis_<os>/
+        ├── files/   engine, rules.json, guidance.json, sections.json
+        ├── tasks/   preflight, run, report, gate
+        └── templates/  report.html.j2, index.html.j2, findings.csv.j2
 ```
 
 ## 多主机
@@ -108,7 +134,7 @@ CIS-OS/
 - `apply` 会就地修改配置文件。原文件备份在 `/var/backups/cis-<os>/`。
 - 标记为 `disruptive` 的规则（重启、重新挂载、重启服务）默认跳过，需要传 `-e cis_allow_disruptive=true` 放行。请在维护窗口跑。
 - 6 个家族刻意不做自动修复 —— 需要人工判断或与具体环境相关：`bootloader_password`、`info_only`、`manual`、`partition`、`root_access`、`sshd_access`。引擎会报告这些条目，但不修改任何东西。
-- Linux 引擎依赖 `rpm`、`dnf`、`systemctl`、`sshd -T`、`auditctl`、`/proc`，目标机是 TencentOS Linux 3 / 4。Windows 引擎目标机是 Server 2019 / 2022。
+- Linux 引擎依赖 `rpm`/`dpkg`、`systemctl`、`sshd -T`、`auditctl`、`/proc`，覆盖 RHEL/Debian/SUSE 系。Windows 引擎目标机是 Server 2019 / 2022 / 2025。
 - 生产环境执行 `apply` 前，先在测试环境跑 `scan`，审阅报告，再上 `apply`。
 
 ## 许可
