@@ -92,6 +92,36 @@ function Get-SecPol {
     return $null
 }
 
+# ── Policy name → (secedit key, expected, op) ──
+$PasswordPolicyMap = @{
+    "1" = @{ Key = "PasswordHistorySize";   Expected = 24;  Op = "ge" }
+    "2" = @{ Key = "MaximumPasswordAge";    Expected = 365; Op = "le" }
+    "3" = @{ Key = "MinimumPasswordAge";    Expected = 1;   Op = "ge" }
+    "4" = @{ Key = "MinimumPasswordLength"; Expected = 14;  Op = "ge" }
+    "5" = @{ Key = "PasswordComplexity";    Expected = 1;   Op = "eq" }
+    "7" = @{ Key = "ClearTextPassword";     Expected = 0;   Op = "eq" }
+}
+
+$LockoutPolicyMap = @{
+    "1" = @{ Key = "LockoutDuration";  Expected = 15; Op = "ge" }
+    "2" = @{ Key = "LockoutBadCount";  Expected = 5;  Op = "le" }
+    "4" = @{ Key = "ResetLockoutCount"; Expected = 15; Op = "ge" }
+}
+
+# Registry-based policies (not in secedit)
+$PasswordRegMap = @{
+    "6" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Sam"; Name = "RelaxMinimumPasswordLengthLimits"; Value = 1; Title = "Relax minimum password length limits" }
+}
+$LockoutRegMap = @{
+    "3" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "LimitBlankPasswordUse"; Value = 1; Title = "Allow Administrator account lockout" }
+}
+
+# Security Options audit policies (registry-based, not auditpol)
+$AuditPolicyRegMap = @{
+    "1" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "SCENoApplyLegacyAuditPolicy"; Value = 1; Summary = "Force audit policy subcategory settings" }
+    "2" = @{ Path = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Name = "CrashOnAuditFail"; Value = 0; Summary = "Shut down system if unable to log security audits" }
+}
+
 # ── Checks ─────────────────────────────────────────────────
 function Invoke-Check {
     param($Rule, $Ctx)
@@ -104,12 +134,30 @@ function Invoke-Check {
 
         # ── 1. Account Policies ──
         "password-policy" {
-            $key = $params.key
-            $expected = $params.expected
+            $pn = $params.policy_name
+            if ($pn) {
+                if ($PasswordPolicyMap.ContainsKey($pn)) {
+                    $m = $PasswordPolicyMap[$pn]; $key = $m.Key; $expected = $m.Expected; $op = $m.Op
+                } elseif ($PasswordRegMap.ContainsKey($pn)) {
+                    $m = $PasswordRegMap[$pn]
+                    try {
+                        $val = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name
+                        $ok = ($val -eq $m.Value)
+                        return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Title)=$val (expected $($m.Value))"}
+                    } catch { return @{status="error"; detail="Registry key not found: $($m.Path)\$($m.Name)"} }
+                } else {
+                    return @{status="error"; detail="Unknown policy_name: $pn"}
+                }
+            } else {
+                $key = $params.key; $expected = $params.expected
+                $op = if ($params.op) { $params.op } else { "ge" }
+            }
             $val = Get-SecPol "SECURITYPOLICY" $key
             if ($null -ne $val) {
-                $ok = ([int]$val -ge [int]$expected) -or ($params.op -eq "eq" -and $val -eq $expected)
-                return @{status=if($ok){"pass"}else{"fail"}; detail="$key=$val (expected ≥$expected)"}
+                $ok = if ($op -eq "ge") { [int]$val -ge [int]$expected }
+                      elseif ($op -eq "le") { [int]$val -le [int]$expected }
+                      else { $val -eq $expected }
+                return @{status=if($ok){"pass"}else{"fail"}; detail="$key=$val (expected $op $expected)"}
             }
             return @{status="error"; detail="$key not found in security policy"}
         }
@@ -128,9 +176,24 @@ function Invoke-Check {
 
         # ── 2. Account Lockout ──
         "lockout-policy" {
-            $key = $params.key
-            $expected = $params.expected
-            $op = if ($params.op) { $params.op } else { "le" }
+            $pn = $params.policy_name
+            if ($pn) {
+                if ($LockoutPolicyMap.ContainsKey($pn)) {
+                    $m = $LockoutPolicyMap[$pn]; $key = $m.Key; $expected = $m.Expected; $op = $m.Op
+                } elseif ($LockoutRegMap.ContainsKey($pn)) {
+                    $m = $LockoutRegMap[$pn]
+                    try {
+                        $val = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name
+                        $ok = ($val -eq $m.Value)
+                        return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Title)=$val (expected $($m.Value))"}
+                    } catch { return @{status="error"; detail="Registry key not found: $($m.Path)\$($m.Name)"} }
+                } else {
+                    return @{status="error"; detail="Unknown policy_name: $pn"}
+                }
+            } else {
+                $key = $params.key; $expected = $params.expected
+                $op = if ($params.op) { $params.op } else { "le" }
+            }
             $val = Get-SecPol "SECURITYPOLICY" $key
             if ($null -ne $val) {
                 if ($op -eq "le") { $ok = [int]$val -le [int]$expected }
@@ -143,17 +206,16 @@ function Invoke-Check {
 
         # ── 3. Audit Policy ──
         "audit-policy" {
-            $subcategory = $params.subcategory
-            $expected = $params.expected
-            try {
-                $out = auditpol /get /subcategory:"$subcategory" 2>&1 | Out-String
-                if ($out -match "$subcategory\s+(.+)$") {
-                    $actual = $Matches[1].Trim()
-                    $ok = ($actual -eq $expected)
-                    return @{status=if($ok){"pass"}else{"fail"}; detail="$subcategory = $actual (expected $expected)"}
-                }
-            } catch {}
-            return @{status="error"; detail="Failed to query audit policy: $subcategory"}
+            $policy = $params.policy
+            if ($AuditPolicyRegMap.ContainsKey($policy)) {
+                $m = $AuditPolicyRegMap[$policy]
+                try {
+                    $val = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name
+                    $ok = ($val -eq $m.Value)
+                    return @{status=if($ok){"pass"}else{"fail"}; detail="$($m.Summary): $m.Name=$val (expected $($m.Value))"}
+                } catch { return @{status="error"; detail="Registry key not found: $($m.Path)\$($m.Name)"} }
+            }
+            return @{status="error"; detail="Unknown audit policy index: $policy"}
         }
 
         # ── 4. User Rights Assignment ──
@@ -354,34 +416,60 @@ function Invoke-Fix {
     switch ($family) {
 
         "password-policy" {
-            $key = $params.key; $expected = $params.expected
+            $pn = $params.policy_name
+            if ($pn) {
+                if ($PasswordPolicyMap.ContainsKey($pn)) {
+                    $m = $PasswordPolicyMap[$pn]; $key = $m.Key; $expected = $m.Expected; $op = $m.Op
+                } elseif ($PasswordRegMap.ContainsKey($pn)) {
+                    $m = $PasswordRegMap[$pn]
+                    try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch {}
+                    try { if (-not (Test-Path $m.Path)) { New-Item -Path $m.Path -Force | Out-Null }; Set-ItemProperty -Path $m.Path -Name $m.Name -Value $m.Value -Type DWord -Force; return "applied" } catch { return "failed: $($_.Exception.Message)" }
+                } else { return "error: unknown policy_name: $pn" }
+            } else {
+                $key = $params.key; $expected = $params.expected
+                $op = if ($params.op) { $params.op } else { "ge" }
+            }
             $val = Get-SecPol "SECURITYPOLICY" $key
             if ($null -eq $val) { return "error: cannot read $key" }
-            $isOk = if ($params.op -eq "ge") { [int]$val -ge [int]$expected }
-                    elseif ($params.op -eq "le") { [int]$val -le [int]$expected }
+            $isOk = if ($op -eq "ge") { [int]$val -ge [int]$expected }
+                    elseif ($op -eq "le") { [int]$val -le [int]$expected }
                     else { $val -eq $expected }
             if ($isOk) { return "already" }
             try {
                 $tmpInf = "$env:TEMP\secpol_fix_$([Guid]::NewGuid()).inf"
+                $seceditDb = "$env:TEMP\cis-secedit-$pid.sdb"
                 secedit /export /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
                 $c = Get-Content $tmpInf -Raw
                 if ($c -match "(?m)^(\s*[^\s=]*\s*=\s*).+$") {
-                    if ($c -match "(?m)^(\s*$key\s*=\s*).+$") {
+                    if ($c -match "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$") {
                         $c = $c -replace "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$", "`${1}$expected"
                     } else {
                         $c += "`r`n$key = $expected"
                     }
                     [System.IO.File]::WriteAllText($tmpInf, $c)
-                    secedit /configure /db "$env:TEMP\secedit.sdb" /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+                    secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+                    Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
+                    return "applied"
                 }
                 Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
-                return "applied"
+                return "error: secedit export was empty or invalid"
             } catch { return "failed: $($_.Exception.Message)" }
         }
 
         "lockout-policy" {
-            $key = $params.key; $expected = $params.expected
-            $op = if ($params.op) { $params.op } else { "le" }
+            $pn = $params.policy_name
+            if ($pn) {
+                if ($LockoutPolicyMap.ContainsKey($pn)) {
+                    $m = $LockoutPolicyMap[$pn]; $key = $m.Key; $expected = $m.Expected; $op = $m.Op
+                } elseif ($LockoutRegMap.ContainsKey($pn)) {
+                    $m = $LockoutRegMap[$pn]
+                    try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch {}
+                    try { if (-not (Test-Path $m.Path)) { New-Item -Path $m.Path -Force | Out-Null }; Set-ItemProperty -Path $m.Path -Name $m.Name -Value $m.Value -Type DWord -Force; return "applied" } catch { return "failed: $($_.Exception.Message)" }
+                } else { return "error: unknown policy_name: $pn" }
+            } else {
+                $key = $params.key; $expected = $params.expected
+                $op = if ($params.op) { $params.op } else { "le" }
+            }
             $val = Get-SecPol "SECURITYPOLICY" $key
             if ($null -eq $val) { return "error: cannot read $key" }
             $isOk = if ($op -eq "le") { [int]$val -le [int]$expected }
@@ -390,30 +478,33 @@ function Invoke-Fix {
             if ($isOk) { return "already" }
             try {
                 $tmpInf = "$env:TEMP\secpol_fix_$([Guid]::NewGuid()).inf"
+                $seceditDb = "$env:TEMP\cis-secedit-$pid.sdb"
                 secedit /export /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
                 $c = Get-Content $tmpInf -Raw
-                if ($c -match "(?m)^(\s*$key\s*=\s*).+$") {
-                    $c = $c -replace "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$", "`${1}$expected"
-                } else {
-                    $c += "`r`n$key = $expected"
+                if ($c -match "(?m)^(\s*[^\s=]*\s*=\s*).+$") {
+                    if ($c -match "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$") {
+                        $c = $c -replace "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$", "`${1}$expected"
+                    } else {
+                        $c += "`r`n$key = $expected"
+                    }
+                    [System.IO.File]::WriteAllText($tmpInf, $c)
+                    secedit /configure /db $seceditDb /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
+                    Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
+                    return "applied"
                 }
-                [System.IO.File]::WriteAllText($tmpInf, $c)
-                secedit /configure /db "$env:TEMP\secedit.sdb" /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
                 Remove-Item $tmpInf -Force -ErrorAction SilentlyContinue
-                return "applied"
+                return "error: secedit export was empty or invalid"
             } catch { return "failed: $($_.Exception.Message)" }
         }
 
         "audit-policy" {
-            $subcategory = $params.subcategory; $expected = $params.expected
-            try {
-                $out = auditpol /get /subcategory:"$subcategory" 2>&1 | Out-String
-                if ($out -match "$subcategory\s+(.+)$") {
-                    if ($Matches[1].Trim() -eq $expected) { return "already" }
-                }
-                auditpol /set /subcategory:"$subcategory" /success:enable /failure:enable 2>$null | Out-Null
-                return "applied"
-            } catch { return "failed: $($_.Exception.Message)" }
+            $policy = $params.policy
+            if ($AuditPolicyRegMap.ContainsKey($policy)) {
+                $m = $AuditPolicyRegMap[$policy]
+                try { $cur = Get-ItemProperty -Path $m.Path -Name $m.Name -ErrorAction Stop | Select-Object -ExpandProperty $m.Name; if ($cur -eq $m.Value) { return "already" } } catch {}
+                try { if (-not (Test-Path $m.Path)) { New-Item -Path $m.Path -Force | Out-Null }; Set-ItemProperty -Path $m.Path -Name $m.Name -Value $m.Value -Type DWord -Force; return "applied" } catch { return "failed: $($_.Exception.Message)" }
+            }
+            return "error: unknown audit policy index: $policy"
         }
 
         "user-right" {
@@ -438,7 +529,7 @@ function Invoke-Fix {
                     $c += "`r`n$privilege = $expectedSid"
                 }
                 [System.IO.File]::WriteAllText($tmp2, $c)
-                secedit /configure /db "$env:TEMP\secedit.sdb" /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+                secedit /configure /db "$env:TEMP\cis-secedit-$pid.sdb" /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
                 Remove-Item $tmp2 -Force -ErrorAction SilentlyContinue
                 return "applied"
             } catch { return "failed: $($_.Exception.Message)" }
