@@ -4,6 +4,7 @@
   become: true
   gather_facts: true
   serial: 25%
+  max_fail_percentage: 0
   vars:
     cis_mode: apply
     cis_allow_disruptive: false

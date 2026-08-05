@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 cis_engine.py -- CIS Benchmark assessment / remediation engine for
-TencentOS Linux 3 and TencentOS Linux 4.
+Red Hat Enterprise Linux 10.
 
 Driven by a catalog JSON produced from the official CIS benchmark PDF.
 Runs entirely with the Python 3 standard library (the same interpreter
@@ -3500,7 +3500,7 @@ def select(rules, profile, platform, include, exclude, sections, families):
 
 def _audit_entry(rule_result, mode, profile, hostname, version):
     """Return a JSON-lines audit entry dict."""
-    ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    ts = datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     return {
         "ts": ts,
         "host": hostname,

@@ -3500,7 +3500,7 @@ def select(rules, profile, platform, include, exclude, sections, families):
 
 def _audit_entry(rule_result, mode, profile, hostname, version):
     """Return a JSON-lines audit entry dict."""
-    ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    ts = datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     return {
         "ts": ts,
         "host": hostname,

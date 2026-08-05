@@ -19,7 +19,7 @@ Usage:
   python3 cis_cli.py info --os rhel9 --id 1.1.1.1 --format html --output output/
 
 Supported --os values:
-  tos3, tos4
+  tencentos3, tencentos4
   rhel8, rhel9, rhel10
   sles15, sles16
   ubuntu2004, ubuntu2204, ubuntu2404
@@ -39,7 +39,7 @@ from datetime import datetime, timezone
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 OS_PRESETS = {
-    "tos3": {
+    "tencentos3": {
         "engine": "cis-tencentos3-ansible/roles/cis_tencentos3/files/cis_engine.py",
         "catalog": "cis-tencentos3-ansible/roles/cis_tencentos3/files/rules.json",
         "guidance": "cis-tencentos3-ansible/roles/cis_tencentos3/files/guidance.json",
@@ -47,7 +47,7 @@ OS_PRESETS = {
         "template": "cis-tencentos3-ansible/roles/cis_tencentos3/templates/report.html.j2",
         "name": "CIS TencentOS Server 3 Benchmark",
     },
-    "tos4": {
+    "tencentos4": {
         "engine": "cis-tencentos4-ansible/roles/cis_tencentos4/files/cis_engine.py",
         "catalog": "cis-tencentos4-ansible/roles/cis_tencentos4/files/rules.json",
         "guidance": "cis-tencentos4-ansible/roles/cis_tencentos4/files/guidance.json",
