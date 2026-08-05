@@ -24,7 +24,7 @@
 ## 架构
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="SecX Automation Suite 架构图" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite 架构图" width="800">
 </p>
 
 引擎是单文件脚本（Linux 为 Python 3，Windows 为 PowerShell），无第三方依赖。Ansible 只负责文件拷贝、命令执行、报告渲染。每个引擎产出 `result.json`（结构化结果）和可选的 `audit.log`（JSON-lines 审计日志），便于合规审查与 SIEM 接入。

@@ -24,7 +24,7 @@
 ## アーキテクチャ
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
 </p>
 
 エンジンは単一ファイルのスクリプトであり、サードパーティの依存関係は一切ありません（Linux では Python 3、Windows では PowerShell）。Ansible はファイル転送、コマンド実行、レポートのレンダリングのみを担当します。各エンジンは、構造化された `result.json` と、準拠レビューや SIEM 取り込みに適したオプションの `audit.log`（JSON 行形式）の両方を生成します。

@@ -24,7 +24,7 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@main/docs/architecture.svg" alt="SecX Automation Suite Architecture" width="800">
 </p>
 
 Engines are single-file scripts with zero third-party dependencies (Python 3 on Linux, PowerShell on Windows). Ansible handles file transfer, command execution, and report rendering only. Each engine produces both a structured `result.json` and an optional `audit.log` (JSON-lines) suitable for compliance review and SIEM ingestion.
