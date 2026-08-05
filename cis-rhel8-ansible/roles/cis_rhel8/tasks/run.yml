@@ -90,7 +90,7 @@
   ansible.builtin.command:
     argv: "{{ cis_engine_argv }}"
   check_mode: false
-  changed_when: false
+  changed_when: cis_mode_effective == 'apply'
   register: _cis_run
   timeout: "{{ cis_engine_timeout | int }}"
   environment:

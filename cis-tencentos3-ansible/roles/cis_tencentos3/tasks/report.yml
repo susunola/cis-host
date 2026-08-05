@@ -22,7 +22,6 @@
   become: false
   run_once: true
   check_mode: false
-  changed_when: false
 
 - name: Freeze the run timestamp
   ansible.builtin.set_fact:
@@ -70,7 +69,6 @@
   become: false
   when: cis_report_html | bool
   check_mode: false
-  changed_when: false
 
 - name: Write the raw engine result
   ansible.builtin.copy:
@@ -92,7 +90,6 @@
   become: false
   when: cis_report_csv | bool
   check_mode: false
-  changed_when: false
 
 - name: Write the fleet index page
   ansible.builtin.template:
@@ -104,7 +101,6 @@
   run_once: true
   when: cis_report_index | bool and cis_report_html | bool
   check_mode: false
-  changed_when: false
 
 - name: Report location
   ansible.builtin.debug:

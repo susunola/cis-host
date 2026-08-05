@@ -13,7 +13,6 @@
     state: directory
     mode: "0750"
   delegate_to: localhost
-  changed_when: false
   run_once: true
 
 - name: Set report timestamp
@@ -54,7 +53,6 @@
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.html"
     mode: "0640"
   delegate_to: localhost
-  changed_when: false
 
 - name: Write JSON result
   ansible.builtin.copy:
@@ -62,7 +60,6 @@
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.json"
     mode: "0640"
   delegate_to: localhost
-  changed_when: false
 
 - name: Write CSV findings
   ansible.builtin.template:
@@ -70,7 +67,6 @@
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.csv"
     mode: "0640"
   delegate_to: localhost
-  changed_when: false
   when: cis_report_csv | default(false) | bool
 
 - name: Write fleet index
@@ -79,7 +75,6 @@
     dest: "{{ cis_report_dir }}/index-{{ cis_run_stamp }}.html"
     mode: "0640"
   delegate_to: localhost
-  changed_when: false
   run_once: true
   when: (cis_report_index | default(false)) and (cis_report_html | default(true))
 
