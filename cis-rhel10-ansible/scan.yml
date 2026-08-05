@@ -2,6 +2,7 @@
 - name: CIS Benchmark Scan
   hosts: all
   gather_facts: true
+  become: true
   vars:
     cis_mode: scan
   roles:

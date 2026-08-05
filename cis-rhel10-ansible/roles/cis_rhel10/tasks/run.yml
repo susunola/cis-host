@@ -11,56 +11,91 @@
     suffix: ""
   register: _cis_tmp
   check_mode: false
+  changed_when: false
 
-- name: Ship engine and rules
-  check_mode: false
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ _cis_tmp.path }}/{{ item }}"
-    mode: "0644"
+- name: Verify engine artifacts exist
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/{{ item }}"
   loop:
     - "{{ cis_engine_file }}"
     - "{{ cis_rules_file }}"
-
-- name: Ensure engine is executable
+  register: _artifact_stat
+  changed_when: false
   check_mode: false
-  ansible.builtin.file:
-    path: "{{ _cis_tmp.path }}/{{ cis_engine_file }}"
-    mode: "0755"
+  delegate_to: localhost
+  become: false
+
+- name: Fail if any engine artifact is missing
+  ansible.builtin.fail:
+    msg: "Missing CIS artifact: {{ item.item }}"
+  loop: "{{ _artifact_stat.results }}"
+  when: not item.stat.exists
+  changed_when: false
+
+- name: Validate rules JSON is parseable
+  ansible.builtin.set_fact:
+    _rules_json_valid: "{{ lookup('file', role_path ~ '/files/' ~ cis_rules_file) | from_json | length }}"
+  changed_when: false
+  check_mode: false
+  delegate_to: localhost
+  become: false
+
+- name: Ship engine and rules
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ _cis_tmp.path }}/{{ item }}"
+    mode: "0700"
+  loop:
+    - "{{ cis_engine_file }}"
+    - "{{ cis_rules_file }}"
+  check_mode: false
+  changed_when: false
 
 - name: Create backup directory
   ansible.builtin.file:
     path: "{{ cis_backup_dir }}"
     state: directory
+    owner: root
+    group: root
     mode: "0700"
   check_mode: false
   when: cis_mode_effective == 'apply'
 
 - name: Assemble engine command
   ansible.builtin.set_fact:
-    _cmd: >-
-      {{ cis_python_real }} {{ _cis_tmp.path }}/{{ cis_engine_file }}
-      --catalog {{ _cis_tmp.path }}/{{ cis_rules_file }}
-      --mode {{ cis_mode_effective }}
-      --profile {{ cis_profile }}
-      --platform {{ cis_platform }}
-      {% if cis_include | length > 0 %}--include {{ cis_include | join(',') }}{% endif %}
-      {% if cis_exclude | length > 0 %}--exclude {{ cis_exclude | join(',') }}{% endif %}
-      {% if cis_sections | length > 0 %}--sections {{ cis_sections | join(',') }}{% endif %}
-      {% if cis_families | length > 0 %}--families {{ cis_families | join(',') }}{% endif %}
-      {% if cis_mode == 'apply' %}--backup-dir {{ cis_backup_dir }}{% endif %}
-      {% if cis_mode_effective == 'apply' and cis_allow_disruptive %}--allow-disruptive{% endif %}
-      --benchmark "{{ cis_benchmark_name }} {{ cis_benchmark_version }}"
-      --out {{ _cis_tmp.path }}/result.json
+    cis_engine_argv: >-
+      {{ [cis_python_real,
+          _cis_tmp.path ~ '/' ~ cis_engine_file,
+          '--catalog', _cis_tmp.path ~ '/' ~ cis_rules_file,
+          '--mode', cis_mode_effective,
+          '--profile', cis_profile,
+          '--platform', cis_platform,
+          '--benchmark', cis_benchmark_name ~ ' ' ~ cis_benchmark_version,
+          '--out', _cis_tmp.path ~ '/result.json']
+         + (['--include', cis_include | join(',')]
+            if (cis_include | length) > 0 else [])
+         + (['--exclude', cis_exclude | join(',')]
+            if (cis_exclude | length) > 0 else [])
+         + (['--sections', cis_sections | join(',')]
+            if (cis_sections | length) > 0 else [])
+         + (['--families', cis_families | join(',')]
+            if (cis_families | length) > 0 else [])
+         + (['--backup-dir', cis_backup_dir]
+            if (cis_mode_effective == 'apply') else [])
+         + (['--allow-disruptive']
+            if (cis_mode_effective == 'apply' and cis_allow_disruptive | bool)
+            else []) }}
 
 - name: Run benchmark
-  ansible.builtin.command: "{{ _cmd }}"
+  ansible.builtin.command:
+    argv: "{{ cis_engine_argv }}"
   check_mode: false
   changed_when: false
   register: _cis_run
-  timeout: "{{ cis_engine_timeout }}"
+  timeout: "{{ cis_engine_timeout | int }}"
   environment:
     LC_ALL: C
+    LANG: C
 
 - name: Slurp result
   check_mode: false
@@ -74,6 +109,7 @@
 
 - name: Clean up temp directory
   check_mode: false
+  changed_when: false
   ansible.builtin.file:
     path: "{{ _cis_tmp.path }}"
     state: absent
