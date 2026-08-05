@@ -1,253 +1,157 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 680" role="img" aria-label="SecX Automation Suite Architecture">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 580" role="img" aria-label="SecX Automation Suite Architecture">
   <style><![CDATA[
-    :root, [data-theme="dark"] {
-      --bg: #0f172a;
-      --grid: #1e293b;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --lane: rgba(30,41,59,0.35);
-      --lane-stroke: #334155;
-      --panel-mask: #0f172a;
-      --arrow: #475569;
-      --arrow-em: #34d399;
-      --arrow-warn: #f59e0b;
-    }
-    [data-theme="light"] {
-      --bg: #f8fafc;
-      --grid: #e2e8f0;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --lane: rgba(226,232,240,0.5);
-      --lane-stroke: #cbd5e1;
-      --panel-mask: #ffffff;
-      --arrow: #94a3b8;
-      --arrow-em: #059669;
-      --arrow-warn: #d97706;
-    }
-    /* category colors — same in both themes */
-    .c-ext  { fill: rgba(100,116,139,0.18); stroke: #64748b; }
-    .c-ctl  { fill: rgba(34,211,238,0.18); stroke: #06b6d4; }
-    .c-db   { fill: rgba(167,139,250,0.22); stroke: #8b5cf6; }
-    .c-tran { fill: rgba(251,146,60,0.18); stroke: #f97316; }
-    .c-eng  { fill: rgba(52,211,153,0.18); stroke: #10b981; }
-    .c-sec  { fill: rgba(251,113,133,0.18); stroke: #f43f5e; }
-    .c-rpt  { fill: rgba(56,189,248,0.18); stroke: #0ea5e9; }
-    .c-out  { fill: rgba(250,204,21,0.15); stroke: #eab308; }
+    .lane-bg { fill: #fafbfc; stroke: #e2e8f0; stroke-width: 1; }
+    .lane-label { fill: #64748b; font-size: 9px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-    .t-ext  { fill: #64748b; }
-    .t-ctl  { fill: #06b6d4; }
-    .t-db   { fill: #8b5cf6; }
-    .t-tran { fill: #f97316; }
-    .t-eng  { fill: #10b981; }
-    .t-sec  { fill: #f43f5e; }
-    .t-rpt  { fill: #0ea5e9; }
-    .t-out  { fill: #eab308; }
+    .box-bg { fill: #ffffff; stroke-width: 1.2; }
+    .box-blue { stroke: #3b82f6; }
+    .box-amber { stroke: #d97706; }
+    .box-green { stroke: #16a34a; }
+    .box-slate { stroke: #64748b; }
+    .box-red { stroke: #dc2626; }
 
-    .t-primary { fill: var(--text); }
-    .t-muted   { fill: var(--text-muted); }
-    .t-dim     { fill: #475569; }
+    .box-title { fill: #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .box-desc  { fill: #64748b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .box-tag   { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .tag-blue  { fill: #3b82f6; }
+    .tag-amber { fill: #d97706; }
+    .tag-green { fill: #16a34a; }
+    .tag-slate { fill: #64748b; }
 
-    .grid-bg  { fill: none; stroke: var(--grid); }
-    .lane-bg  { fill: var(--lane); stroke: var(--lane-stroke); stroke-dasharray: 6,4; }
-    .mask     { fill: var(--panel-mask); stroke: none; }
-    .arrow    { fill: none; stroke: var(--arrow); stroke-width: 1.6; }
-    .arrow-em { fill: none; stroke: var(--arrow-em); stroke-width: 1.8; }
-
-    .box { stroke-width: 1.5; rx: 8; stroke-linejoin: round; }
-
-    .section-title {
-      font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
-      text-transform: uppercase;
-    }
+    .arrow { fill: none; stroke: #94a3b8; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+    .arrow-label { fill: #94a3b8; font-size: 7px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
   ]]></style>
 
   <defs>
-    <marker id="ar" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
-      <polygon points="0 0, 9 3.5, 0 7" fill="var(--arrow)"/>
+    <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
     </marker>
-    <marker id="ar-em" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
-      <polygon points="0 0, 9 3.5, 0 7" fill="var(--arrow-em)"/>
-    </marker>
-    <pattern id="grid-pat" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M 32 0 L 0 0 0 32" class="grid-bg" stroke-width="0.4"/>
-    </pattern>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
   </defs>
 
   <!-- Background -->
-  <rect width="800" height="680" fill="var(--bg)"/>
-  <rect width="800" height="680" fill="url(#grid-pat)"/>
+  <rect width="800" height="580" fill="#ffffff"/>
 
   <!-- ===== LANES ===== -->
+
   <!-- Lane 1: Control Plane -->
-  <rect x="20" y="16" width="760" height="104" rx="6" class="lane-bg"/>
-  <text x="36" y="36" class="t-dim section-title">Control Plane</text>
+  <rect x="20" y="16" width="760" height="100" rx="4" class="lane-bg"/>
+  <text x="30" y="30" class="lane-label">Control Plane</text>
 
   <!-- Lane 2: Transport -->
-  <rect x="20" y="140" width="760" height="90" rx="6" class="lane-bg"/>
-  <text x="36" y="160" class="t-dim section-title">Transport</text>
+  <rect x="20" y="128" width="760" height="80" rx="4" class="lane-bg"/>
+  <text x="30" y="142" class="lane-label">Transport</text>
 
   <!-- Lane 3: Execution -->
-  <rect x="20" y="250" width="760" height="104" rx="6" class="lane-bg"/>
-  <text x="36" y="270" class="t-dim section-title">Execution</text>
+  <rect x="20" y="220" width="760" height="90" rx="4" class="lane-bg"/>
+  <text x="30" y="234" class="lane-label">Execution</text>
 
   <!-- Lane 4: Audit &amp; Reporting -->
-  <rect x="20" y="374" width="760" height="130" rx="6" class="lane-bg"/>
-  <text x="36" y="394" class="t-dim section-title">Audit &amp; Reporting</text>
+  <rect x="20" y="322" width="760" height="120" rx="4" class="lane-bg"/>
+  <text x="30" y="336" class="lane-label">Audit &amp; Reporting</text>
 
   <!-- Lane 5: Output -->
-  <rect x="20" y="524" width="760" height="136" rx="6" class="lane-bg"/>
-  <text x="36" y="544" class="t-dim section-title">Output</text>
+  <rect x="20" y="454" width="760" height="106" rx="4" class="lane-bg"/>
+  <text x="30" y="468" class="lane-label">Output</text>
 
-  <!-- ===== ARROWS (behind boxes) ===== -->
+  <!-- ===== ARROWS ===== -->
+
   <!-- Operator → Control Machine -->
-  <line x1="230" y1="68" x2="262" y2="68" class="arrow-em" marker-end="url(#ar-em)"/>
+  <line x1="176" y1="66" x2="210" y2="66" class="arrow" marker-end="url(#a)"/>
 
   <!-- Control Machine → Inventory -->
-  <line x1="550" y1="68" x2="584" y2="68" class="arrow" marker-end="url(#ar)"/>
+  <line x1="484" y1="66" x2="516" y2="66" class="arrow" marker-end="url(#a)"/>
 
-  <!-- Control Machine → Transport (down) -->
-  <path d="M 400 108 L 400 168" class="arrow-em" marker-end="url(#ar-em)"/>
+  <!-- Control Machine → Transport -->
+  <path d="M 360 96 L 360 156" class="arrow" marker-end="url(#a)"/>
+  <text x="366" y="132" class="arrow-label">deploy</text>
 
   <!-- Transport → Linux Engine -->
-  <path d="M 330 210 L 270 210 Q 260 210 260 220 L 260 256" class="arrow-em" marker-end="url(#ar-em)"/>
+  <path d="M 280 188 L 230 188 Q 220 188 220 198 L 220 248" class="arrow" marker-end="url(#a)"/>
+  <text x="240" y="224" class="arrow-label">SSH</text>
 
   <!-- Transport → Windows Engine -->
-  <path d="M 470 210 L 530 210 Q 540 210 540 220 L 540 256" class="arrow-em" marker-end="url(#ar-em)"/>
+  <path d="M 520 188 L 570 188 Q 580 188 580 198 L 580 248" class="arrow" marker-end="url(#a)"/>
+  <text x="532" y="224" class="arrow-label">WinRM</text>
 
   <!-- Linux Engine → result.json -->
-  <path d="M 260 328 L 260 382" class="arrow" marker-end="url(#ar)"/>
+  <path d="M 220 300 L 220 350" class="arrow" marker-end="url(#a)"/>
 
   <!-- Linux Engine → audit.log -->
-  <path d="M 260 328 L 260 346 Q 260 356 270 356 L 520 356 Q 530 356 530 366 L 530 382" class="arrow" marker-end="url(#ar)"/>
+  <path d="M 220 300 L 220 324 Q 220 334 230 334 L 510 334 Q 520 334 520 324 L 520 350" class="arrow" marker-end="url(#a)"/>
 
   <!-- Windows Engine → audit.log -->
-  <path d="M 540 328 L 540 382" class="arrow" marker-end="url(#ar)"/>
+  <path d="M 580 300 L 580 350" class="arrow" marker-end="url(#a)"/>
 
   <!-- Windows Engine → result.json -->
-  <path d="M 540 328 L 540 346 Q 540 356 530 356 L 270 356 Q 260 356 260 366 L 260 382" class="arrow" marker-end="url(#ar)"/>
+  <path d="M 580 300 L 580 324 Q 580 334 570 334 L 290 334 Q 280 334 280 324 L 280 350" class="arrow" marker-end="url(#a)"/>
 
   <!-- result.json → Report Engine -->
-  <path d="M 360 446 L 360 478" class="arrow" marker-end="url(#ar)"/>
+  <path d="M 320 398 L 320 432" class="arrow" marker-end="url(#a)"/>
 
   <!-- audit.log → Report Engine -->
-  <path d="M 440 446 L 440 478" class="arrow" marker-end="url(#ar)"/>
+  <path d="M 480 398 L 480 432" class="arrow" marker-end="url(#a)"/>
 
-  <!-- Report Engine → outputs -->
-  <path d="M 300 552 L 220 552 Q 210 552 210 562 L 210 578" class="arrow" marker-end="url(#ar)"/>
-  <path d="M 400 552 L 400 578" class="arrow" marker-end="url(#ar)"/>
-  <path d="M 500 552 L 580 552 Q 590 552 590 562 L 590 578" class="arrow" marker-end="url(#ar)"/>
+  <!-- Report Engine → Outputs -->
+  <path d="M 280 486 L 200 486 Q 190 486 190 496 L 190 516" class="arrow" marker-end="url(#a)"/>
+  <path d="M 400 486 L 400 516" class="arrow" marker-end="url(#a)"/>
+  <path d="M 520 486 L 600 486 Q 610 486 610 496 L 610 516" class="arrow" marker-end="url(#a)"/>
+
+  <text x="376" y="502" class="arrow-label">render</text>
 
   <!-- ===== BOXES ===== -->
 
   <!-- Row 1: Operator, Control Machine, Inventory -->
-  <rect x="90" y="38" width="140" height="60" rx="6" class="mask"/>
-  <rect x="90" y="38" width="140" height="60" class="box c-ext"/>
-  <text x="160" y="63" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Operator</text>
-  <text x="160" y="81" class="t-muted" font-size="9" text-anchor="middle">Security / DevOps</text>
+  <rect x="56" y="40" width="120" height="52" rx="3" class="box-bg box-slate"/>
+  <text x="116" y="61" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Operator</text>
+  <text x="116" y="79" class="box-desc" font-size="9" text-anchor="middle">Security / DevOps</text>
 
-  <rect x="270" y="38" width="272" height="60" rx="6" class="mask"/>
-  <rect x="270" y="38" width="272" height="60" class="box c-ctl"/>
-  <text x="406" y="60" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Control Machine</text>
-  <text x="406" y="78" class="t-muted" font-size="9" text-anchor="middle">cis_cli.py · ansible-playbook</text>
-  <text x="406" y="90" class="t-ctl" font-size="7" text-anchor="middle">Python 3 + Ansible · Target Management · Schedule</text>
+  <rect x="210" y="40" width="274" height="52" rx="3" class="box-bg box-blue"/>
+  <text x="347" y="61" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Control Machine</text>
+  <text x="347" y="79" class="box-desc" font-size="9" text-anchor="middle">cis_cli.py · ansible-playbook · Inventory · Schedule</text>
 
-  <rect x="592" y="38" width="118" height="60" rx="6" class="mask"/>
-  <rect x="592" y="38" width="118" height="60" class="box c-db"/>
-  <text x="651" y="63" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Inventory</text>
-  <text x="651" y="81" class="t-muted" font-size="9" text-anchor="middle">hosts · group_vars</text>
+  <rect x="516" y="40" width="110" height="52" rx="3" class="box-bg box-slate"/>
+  <text x="571" y="61" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Inventory</text>
+  <text x="571" y="79" class="box-desc" font-size="9" text-anchor="middle">hosts · group_vars</text>
 
   <!-- Row 2: Ansible Transport -->
-  <rect x="220" y="178" width="360" height="56" rx="6" class="mask"/>
-  <rect x="220" y="178" width="360" height="56" class="box c-tran"/>
-  <text x="400" y="200" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Ansible Transport Layer</text>
-  <text x="400" y="218" class="t-muted" font-size="9" text-anchor="middle">SSH · Linux ⎸ WinRM · Windows</text>
-  <text x="400" y="228" class="t-tran" font-size="7" text-anchor="middle">push · run · fetch · render</text>
+  <rect x="190" y="164" width="420" height="48" rx="3" class="box-bg box-amber"/>
+  <text x="400" y="185" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Ansible Transport Layer</text>
+  <text x="400" y="201" class="box-desc" font-size="9" text-anchor="middle">SSH (Linux) · WinRM (Windows) — push · run · fetch · render</text>
 
   <!-- Row 3: Engines -->
-  <rect x="90" y="266" width="340" height="56" rx="6" class="mask"/>
-  <rect x="90" y="266" width="340" height="56" class="box c-eng"/>
-  <text x="260" y="288" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Linux Compliance Engine</text>
-  <text x="260" y="306" class="t-muted" font-size="9" text-anchor="middle">6 distributions · Single-file Python · Zero deps</text>
-  <text x="260" y="316" class="t-eng" font-size="7" text-anchor="middle">RHEL · TencentOS · SLES · Ubuntu</text>
+  <rect x="60" y="256" width="320" height="52" rx="3" class="box-bg box-green"/>
+  <text x="220" y="277" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Linux Compliance Engine</text>
+  <text x="220" y="295" class="box-desc" font-size="9" text-anchor="middle">6 distributions · RHEL / TencentOS / SLES / Ubuntu · Single-file Python</text>
 
-  <rect x="470" y="266" width="240" height="56" rx="6" class="mask"/>
-  <rect x="470" y="266" width="240" height="56" class="box c-eng"/>
-  <text x="590" y="288" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Windows Compliance Engine</text>
-  <text x="590" y="306" class="t-muted" font-size="9" text-anchor="middle">4 server versions · Single-file PS</text>
-  <text x="590" y="316" class="t-eng" font-size="7" text-anchor="middle">Server 2016 · 2019 · 2022 · 2025</text>
+  <rect x="420" y="256" width="320" height="52" rx="3" class="box-bg box-green"/>
+  <text x="580" y="277" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Windows Compliance Engine</text>
+  <text x="580" y="295" class="box-desc" font-size="9" text-anchor="middle">Server 2016 / 2019 / 2022 / 2025 · Single-file PowerShell</text>
 
-  <!-- Row 4: Data -->
-  <rect x="160" y="392" width="200" height="54" rx="6" class="mask"/>
-  <rect x="160" y="392" width="200" height="54" class="box c-db"/>
-  <text x="260" y="414" class="t-primary" font-size="12" font-weight="700" text-anchor="middle">result.json</text>
-  <text x="260" y="432" class="t-muted" font-size="9" text-anchor="middle">Structured findings · machine-readable</text>
-  <text x="260" y="442" class="t-db" font-size="7" text-anchor="middle">pass · fail · manual · error · notapplicable</text>
+  <!-- Row 4: Data stores -->
+  <rect x="120" y="358" width="200" height="48" rx="3" class="box-bg box-slate"/>
+  <text x="220" y="376" class="box-title" font-size="11" font-weight="600" text-anchor="middle">result.json</text>
+  <text x="220" y="394" class="box-desc" font-size="9" text-anchor="middle">Structured findings · machine-readable</text>
 
-  <rect x="440" y="392" width="200" height="54" rx="6" class="mask"/>
-  <rect x="440" y="392" width="200" height="54" class="box c-sec"/>
-  <text x="540" y="414" class="t-primary" font-size="12" font-weight="700" text-anchor="middle">audit.log</text>
-  <text x="540" y="432" class="t-muted" font-size="9" text-anchor="middle">JSON-lines · append-only · SIEM-ready</text>
-  <text x="540" y="442" class="t-sec" font-size="7" text-anchor="middle">ISO-8601 · ms precision · 12 fields</text>
+  <rect x="480" y="358" width="200" height="48" rx="3" class="box-bg box-red"/>
+  <text x="580" y="376" class="box-title" font-size="11" font-weight="600" text-anchor="middle">audit.log</text>
+  <text x="580" y="394" class="box-desc" font-size="9" text-anchor="middle">JSON-lines append-only · SIEM-ready</text>
 
   <!-- Row 5: Report Engine -->
-  <rect x="230" y="488" width="340" height="56" rx="6" class="mask"/>
-  <rect x="230" y="488" width="340" height="56" class="box c-rpt"/>
-  <text x="400" y="510" class="t-primary" font-size="13" font-weight="700" text-anchor="middle">Jinja2 Report Engine</text>
-  <text x="400" y="528" class="t-muted" font-size="9" text-anchor="middle">4-language templates · dark / light theme · self-contained HTML</text>
-  <text x="400" y="538" class="t-rpt" font-size="7" text-anchor="middle">EN · 中文 · 日本語 · ไทย</text>
+  <rect x="190" y="440" width="420" height="48" rx="3" class="box-bg box-blue"/>
+  <text x="400" y="461" class="box-title" font-size="12" font-weight="600" text-anchor="middle">Jinja2 Report Engine</text>
+  <text x="400" y="477" class="box-desc" font-size="9" text-anchor="middle">Self-contained HTML · Dark / Light theme · EN · 中文 · 日本語 · ไทย</text>
 
   <!-- Row 6: Outputs -->
-  <rect x="48" y="588" width="264" height="54" rx="6" class="mask"/>
-  <rect x="48" y="588" width="264" height="54" class="box c-out"/>
-  <text x="180" y="610" class="t-primary" font-size="12" font-weight="700" text-anchor="middle">Per-Host Report</text>
-  <text x="180" y="628" class="t-muted" font-size="9" text-anchor="middle">Score · Filterable findings · Remediation steps</text>
-  <text x="180" y="638" class="t-out" font-size="7" text-anchor="middle">report.html.j2</text>
+  <rect x="40" y="524" width="220" height="48" rx="3" class="box-bg box-blue"/>
+  <text x="150" y="545" class="box-title" font-size="11" font-weight="600" text-anchor="middle">Per-Host Report</text>
+  <text x="150" y="561" class="box-desc" font-size="9" text-anchor="middle">Score · Findings · Remediation steps</text>
 
-  <rect x="344" y="588" width="112" height="54" rx="6" class="mask"/>
-  <rect x="344" y="588" width="112" height="54" class="box c-out"/>
-  <text x="400" y="610" class="t-primary" font-size="12" font-weight="700" text-anchor="middle">CSV Findings</text>
-  <text x="400" y="628" class="t-muted" font-size="9" text-anchor="middle">Excel · Sheets</text>
-  <text x="400" y="638" class="t-out" font-size="7" text-anchor="middle">findings.csv.j2</text>
+  <rect x="290" y="524" width="220" height="48" rx="3" class="box-bg box-blue"/>
+  <text x="400" y="545" class="box-title" font-size="11" font-weight="600" text-anchor="middle">CSV Findings</text>
+  <text x="400" y="561" class="box-desc" font-size="9" text-anchor="middle">Excel · Sheets compatible</text>
 
-  <rect x="488" y="588" width="264" height="54" rx="6" class="mask"/>
-  <rect x="488" y="588" width="264" height="54" class="box c-out"/>
-  <text x="620" y="610" class="t-primary" font-size="12" font-weight="700" text-anchor="middle">Fleet Index</text>
-  <text x="620" y="628" class="t-muted" font-size="9" text-anchor="middle">Multi-host compliance overview</text>
-  <text x="620" y="638" class="t-out" font-size="7" text-anchor="middle">index.html.j2</text>
+  <rect x="540" y="524" width="220" height="48" rx="3" class="box-bg box-blue"/>
+  <text x="650" y="545" class="box-title" font-size="11" font-weight="600" text-anchor="middle">Fleet Index</text>
+  <text x="650" y="561" class="box-desc" font-size="9" text-anchor="middle">Multi-host compliance overview</text>
 
-  <!-- Arrows label -->
-  <rect x="369" y="103" width="62" height="12" rx="3" class="mask"/>
-  <text x="400" y="112" class="t-muted" font-size="7" text-anchor="middle">deploy</text>
-
-  <rect x="273" y="234" width="54" height="12" rx="3" class="mask"/>
-  <text x="300" y="243" class="t-muted" font-size="7" text-anchor="middle">SSH</text>
-
-  <rect x="486" y="234" width="68" height="12" rx="3" class="mask"/>
-  <text x="520" y="243" class="t-muted" font-size="7" text-anchor="middle">WinRM</text>
-
-  <rect x="354" y="460" width="52" height="12" rx="3" class="mask"/>
-  <text x="380" y="469" class="t-muted" font-size="7" text-anchor="middle">render</text>
-
-  <!-- Legend at bottom -->
-  <g transform="translate(200, 656)">
-    <text x="0" y="8" class="t-dim" font-size="8" font-weight="600">Legend</text>
-    <rect x="52" y="0" width="12" height="8" rx="2" class="c-ext"/>
-    <text x="68" y="8" class="t-muted" font-size="7">External</text>
-    <rect x="126" y="0" width="12" height="8" rx="2" class="c-ctl"/>
-    <text x="142" y="8" class="t-muted" font-size="7">Control</text>
-    <rect x="190" y="0" width="12" height="8" rx="2" class="c-tran"/>
-    <text x="206" y="8" class="t-muted" font-size="7">Transport</text>
-    <rect x="268" y="0" width="12" height="8" rx="2" class="c-eng"/>
-    <text x="284" y="8" class="t-muted" font-size="7">Engine</text>
-    <rect x="332" y="0" width="12" height="8" rx="2" class="c-sec"/>
-    <text x="348" y="8" class="t-muted" font-size="7">Audit</text>
-    <rect x="388" y="0" width="12" height="8" rx="2" class="c-rpt"/>
-    <text x="404" y="8" class="t-muted" font-size="7">Report</text>
-    <rect x="446" y="0" width="12" height="8" rx="2" class="c-out"/>
-    <text x="462" y="8" class="t-muted" font-size="7">Output</text>
-  </g>
 </svg>
