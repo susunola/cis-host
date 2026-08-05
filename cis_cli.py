@@ -3,11 +3,8 @@
 CIS Benchmark CLI — scan, apply, show rule detail, with HTML + CLI output.
 
 Usage:
-  # Scan only (pure check)
+  # Scan only (check compliance)
   python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
-
-  # Apply only (pure fix, no re-scan)
-  python3 cis_cli.py apply --os rhel9 --profile L1 --no-postscan --output output/
 
   # Apply then re-scan (combined)
   python3 cis_cli.py apply --os rhel9 --profile L1 --output output/
@@ -202,6 +199,8 @@ def run_engine(args, mode):
             cmd.append("--allow-disruptive")
         if args.backup_dir:
             cmd += ["--backup-dir", os.path.abspath(args.backup_dir)]
+        if args.audit_log:
+            cmd += ["--audit-log", os.path.abspath(args.audit_log)]
     else:
         # Windows: run cis_engine.ps1 with powershell
         cmd = [
@@ -225,6 +224,8 @@ def run_engine(args, mode):
             cmd.append("-AllowDisruptive")
         if args.backup_dir:
             cmd += ["-BackupDir", os.path.abspath(args.backup_dir)]
+        if args.audit_log:
+            cmd += ["-AuditLog", os.path.abspath(args.audit_log)]
 
     print(f"[{mode.upper()}] Running: {' '.join(cmd)}")
     started = time.time()
@@ -631,7 +632,7 @@ def cmd_scan(args):
 
 
 def cmd_apply(args):
-    """APPLY mode: fix rules, optionally re-scan, generate report."""
+    """APPLY mode: pre-scan, apply fixes, post-scan, generate report."""
     print(f"\n╔══ CIS Benchmark — APPLY ══╗")
     print(f"║ Target:  {args.name}")
     print(f"║ Profile: {args.profile}")
@@ -640,8 +641,6 @@ def cmd_apply(args):
         print(f"║ Include: {args.include}")
     if not args.allow_disruptive:
         print(f"║ Note:    Disruptive rules skipped (use --allow-disruptive)")
-    if args.no_postscan:
-        print(f"║ Mode:    Pure apply (no post-scan)")
     print(f"╚{'═'*26}╝\n")
 
     # Step 1: Pre-scan (baseline) — skip with --no-prescan
@@ -659,18 +658,7 @@ def cmd_apply(args):
     apply_data, apply_file = run_engine(args, "apply")
     print_summary(apply_data, "apply")
 
-    out_path = None
-
-    if args.no_postscan:
-        # Pure apply — no post-scan, no report
-        print("── (Post-scan skipped: --no-postscan) ──")
-        # Still save the apply result JSON
-        if args.format in ("html", "both"):
-            out_path = render_report(apply_data, args, "apply", apply_file)
-            print(f"Apply result saved: {out_path}")
-        return out_path
-
-    # Step 3: Post-apply scan
+    # Step 3: Post-apply scan (always — verify fixes)
     print("── Step 3/3: Post-apply scan (verify) ──")
     post_data, post_file = run_engine(args, "scan")
     print_summary(post_data, "scan")
@@ -688,6 +676,7 @@ def cmd_apply(args):
     if pre_scan:
         post_data["_prescan_summary"] = pre_scan.get("summary", {})
 
+    out_path = None
     if args.format in ("html", "both"):
         out_path = render_report(post_data, args, "apply", post_file)
         print(f"\nReport saved: {out_path}")
@@ -853,9 +842,6 @@ Examples:
   # Pure scan
   python3 cis_cli.py scan --os rhel9 --profile L1 --output ./out/
 
-  # Pure apply (no post-scan)
-  python3 cis_cli.py apply --os rhel9 --profile L1 --no-postscan --output ./out/
-
   # Apply + auto re-scan (combined)
   python3 cis_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
 
@@ -914,6 +900,8 @@ Examples:
                        help="Output format: html, cli, or both (default: both)")
         p.add_argument("--copy-json", action="store_true",
                        help="Also save result JSON alongside the HTML report")
+        p.add_argument("--audit-log", default="",
+                       help="Write audit log (JSON-lines) to this path")
         p.add_argument("--no-prescan", action="store_true",
                        help="Skip pre-scan baseline in apply mode")
 
@@ -923,9 +911,6 @@ Examples:
                        help="Allow potentially disruptive rules to be applied")
         p.add_argument("--backup-dir", default="",
                        help="Directory to store backup files before changes")
-        p.add_argument("--no-postscan", action="store_true",
-                       help="Skip post-apply rescan (pure apply mode)")
-
     # ── scan ──
     p_scan = sub.add_parser("scan", help="Check compliance only, generate HTML report")
     add_common_args(p_scan)

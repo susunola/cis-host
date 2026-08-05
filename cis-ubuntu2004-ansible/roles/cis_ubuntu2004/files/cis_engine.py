@@ -13,6 +13,9 @@ Usage:
     cis_engine.py --catalog catalog.json --mode apply --profile L1 \
                   --allow-disruptive --exclude 1.1.2.1.1,5.2.10
 
+    # With audit logging enabled:
+    cis_engine.py --catalog catalog.json --mode scan --audit-log audit.log
+
 Exit code is always 0 unless the engine itself crashes; rule failures are
 reported in the JSON document written to stdout (or --out).
 """
@@ -29,6 +32,7 @@ import stat
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 VERSION = "1.0.0"
 
@@ -234,12 +238,18 @@ def fmt_mode(m):
 def mode_ok(actual, maximum):
     """True when `actual` grants no more bits than `maximum`."""
     a = actual & 0o7777
-    m = int(maximum, 8) if isinstance(maximum, str) else maximum
+    try:
+        m = int(maximum, 8) if isinstance(maximum, str) else maximum
+    except (ValueError, TypeError):
+        return False
     return (a & ~m) == 0
 
 
 def owner_of(path):
-    st = os.stat(path)
+    try:
+        st = os.stat(path)
+    except OSError:
+        return "?", "?", None
     try:
         u = pwd.getpwuid(st.st_uid).pw_name
     except KeyError:
@@ -273,7 +283,7 @@ def conf_values(files, key, seps=(r"\s+", r"\s*=\s*")):
                 for sep in seps:
                     m = re.match(r"^\s*\$?" + re.escape(key) + sep + r"(.*)$", s, re.I)
                     if m:
-                        found.append((path, m.group(1).strip()))
+                        found.append((path, m.group(1).split("#")[0].strip()))
                         break
     return found
 
@@ -348,6 +358,8 @@ def _mounts(ctx):
 def c_mount_opt(ctx, p):
     mp, opt = p["mount"], p["option"]
     mounts = _mounts(ctx)
+    if mounts is None:
+        return "error", "unable to read /proc/mounts"
     if mp not in mounts:
         return "notapplicable", "%s is not a separate mount point" % mp
     if opt in mounts[mp]["opts"]:
@@ -396,6 +408,8 @@ def f_mount_opt(ctx, p):
 def c_partition(ctx, p):
     mp = p["mount"]
     mounts = _mounts(ctx)
+    if mounts is None:
+        return "error", "unable to read /proc/mounts"
     if mp not in mounts:
         return "fail", "%s is not on a separate partition/filesystem" % mp
     fst = mounts[mp]["fstype"]
@@ -460,6 +474,8 @@ def c_file_perm(ctx, p):
             return "fail", "%s does not exist" % path
         return "notapplicable", "%s does not exist" % path
     u, g, st = owner_of(path)
+    if st is None:
+        return "error", "cannot stat %s" % path
     bad = []
     if p.get("mode") is not None and not mode_ok(st.st_mode, p["mode"]):
         bad.append("mode %s (max %s)" % (fmt_mode(st.st_mode), p["mode"]))
@@ -510,6 +526,9 @@ def c_path_perm_glob(ctx, p):
     bad = []
     for f in files:
         u, g, st = owner_of(f)
+        if st is None:
+            bad.append("%s (cannot stat)" % f)
+            continue
         if kind == "ssh_private":
             # CIS allows 0600 root:root, or 0640 root:ssh_keys
             ok = (u == "root" and (
@@ -2238,9 +2257,10 @@ def _rule_present(want, pool):
     m = re.match(r"^-w\s+(\S+)\s+-p\s+(\S+)\s+-k\s+(\S+)$", w)
     if m:
         path, perm, key = m.groups()
+        pat = re.compile(r"-F\s+path=" + re.escape(path) + r"(?:\s|$)")
         for r in pool:
-            if ("-F path=%s" % path) in r and ("-F perm=%s" % perm) in r \
-                    and r.endswith("-F key=%s" % key):
+            if pat.search(r) and ("-F perm=%s" % perm) in r \
+                    and r.rstrip().endswith("-F key=%s" % key):
                 return True
         return False
     # normalise -k vs -F key=
@@ -2260,6 +2280,8 @@ def c_audit_rule(ctx, p):
         return "notapplicable", "the audit package is not installed"
     running = _running_rules(ctx)
     ondisk = _ondisk_rules(ctx)
+    if running is None or ondisk is None:
+        return "error", "unable to read audit rules (cache error)"
     miss_run, miss_disk = [], []
     for r in p["rules"]:
         if not _rule_present(r, running):
@@ -2322,7 +2344,8 @@ def c_audit_privileged(ctx, p):
     for b in binaries:
         want = ("-a always,exit -F path=%s -F perm=x -F auid>=%d -F auid!=-1 "
                 "-k privileged" % (b, umin))
-        if not any(("-F path=%s " % b) in r and "-F perm=x" in r for r in pool):
+        pat = re.compile(r"-F\s+path=" + re.escape(b) + r"(?:\s|$)")
+        if not any(pat.search(r) and "-F perm=x" in r for r in pool):
             missing.append(b)
     if missing:
         return "fail", "%d/%d privileged binaries lack an audit rule, e.g. %s" % (
@@ -3475,7 +3498,25 @@ def select(rules, profile, platform, include, exclude, sections, families):
 # Execution
 # ==========================================================================
 
-def run_rule(ctx, rule):
+def _audit_entry(rule_result, mode, profile, hostname, version):
+    """Return a JSON-lines audit entry dict."""
+    ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    return {
+        "ts": ts,
+        "host": hostname,
+        "version": version,
+        "mode": mode,
+        "profile": profile,
+        "rule": rule_result["id"],
+        "title": rule_result["title"],
+        "status": rule_result["status"],
+        "apply_status": rule_result.get("apply_status", "n/a"),
+        "detail": rule_result.get("detail", "")[:200],
+        "duration_ms": rule_result["duration_ms"],
+    }
+
+
+def run_rule(ctx, rule, audit_fh=None):
     fam = rule["family"]
     params = rule.get("params") or {}
     res = {
@@ -3536,6 +3577,11 @@ def run_rule(ctx, rule):
     elif ctx.opts.mode == "apply" and st == "pass":
         res["apply_status"] = "already"
     res["duration_ms"] = int((time.time() - t0) * 1000)
+    if audit_fh is not None:
+        audit_fh.write(json.dumps(_audit_entry(
+            res, ctx.opts.mode, ctx.opts.profile,
+            ctx._hostname, VERSION), ensure_ascii=False) + "\n")
+        audit_fh.flush()
     return res
 
 
@@ -3576,13 +3622,19 @@ def main():
     ap.add_argument("--allow-disruptive", action="store_true")
     ap.add_argument("--backup-dir", default="")
     ap.add_argument("--out", default="-")
+    ap.add_argument("--audit-log", default="")
     ap.add_argument("--benchmark", default="")
     opts = ap.parse_args()
 
     def csv(x):
         return [i.strip() for i in x.split(",") if i.strip()]
 
-    rules = json.load(open(opts.catalog, "r", encoding="utf-8"))
+    try:
+        with open(opts.catalog, "r", encoding="utf-8") as fh:
+            rules = json.load(fh)
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
+        sys.stderr.write("catalog error: %s\n" % exc)
+        sys.exit(1)
     sel, skipped = select(rules, opts.profile, opts.platform,
                           csv(opts.include), csv(opts.exclude),
                           csv(opts.sections), csv(opts.families))
@@ -3594,9 +3646,26 @@ def main():
         os.makedirs(opts.backup_dir, exist_ok=True)
 
     ctx = Ctx(opts)
+    audit_fh = None
+    if opts.audit_log:
+        try:
+            audit_fh = open(opts.audit_log, "w", encoding="utf-8")
+        except OSError as exc:
+            sys.stderr.write("audit-log: cannot open %s: %s\n" % (opts.audit_log, exc))
+    ctx._hostname = out("hostname -s 2>/dev/null || hostname", 20) or os.uname()[1]
     started = time.time()
-    results = [run_rule(ctx, r) for r in sorted(
-        sel, key=lambda x: [int(n) for n in x["id"].split(".")])]
+    def _sort_key(r):
+        parts = []
+        for n in r["id"].split("."):
+            try:
+                parts.append(int(n))
+            except ValueError:
+                parts.append(hash(n) % 10000)
+        return parts
+
+    results = [run_rule(ctx, r, audit_fh) for r in sorted(sel, key=_sort_key)]
+    if audit_fh:
+        audit_fh.close()
     elapsed = time.time() - started
 
     doc = {
@@ -3621,10 +3690,16 @@ def main():
     if opts.out == "-":
         sys.stdout.write(payload)
     else:
-        with open(opts.out, "w", encoding="utf-8") as fh:
-            fh.write(payload)
-        sys.stderr.write("wrote %s (%d rules, %.1fs)\n"
-                         % (opts.out, len(results), elapsed))
+        try:
+            with open(opts.out, "w", encoding="utf-8") as fh:
+                fh.write(payload)
+            sys.stderr.write("wrote %s (%d rules, %.1fs)\n"
+                             % (opts.out, len(results), elapsed))
+        except OSError as exc:
+            sys.stderr.write("ERROR: failed to write %s: %s\n" % (opts.out, exc))
+            sys.stderr.write("--- JSON output follows (stdout) ---\n")
+            sys.stdout.write(payload)
+            sys.exit(1)
 
 
 if __name__ == "__main__":

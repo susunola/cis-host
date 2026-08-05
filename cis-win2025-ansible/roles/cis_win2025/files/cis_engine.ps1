@@ -24,12 +24,22 @@ param(
     [string]$Sections = "",
     [string]$Families = "",
     [string]$BackupDir = "",
+    [string]$AuditLog = "",
     [switch]$AllowDisruptive
 )
 
 $ErrorActionPreference = "Stop"
 $startedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
+$auditWriter = $null
+if ($AuditLog) {
+    try {
+        $auditWriter = [System.IO.StreamWriter]::new($AuditLog, $false, [System.Text.Encoding]::UTF8)
+    } catch {
+        Write-Host "audit-log: cannot open $AuditLog : $_"
+    }
+}
+$hostname = [System.Net.Dns]::GetHostName()
 
 # ── Helpers ────────────────────────────────────────────────
 function Write-Result {
@@ -41,6 +51,26 @@ function Write-Result {
         risk = $Risk; detail = $Detail; page = $Page; levels = $Levels
         duration_ms = 0; apply_status = "n/a"
     }
+}
+
+function Write-Audit {
+    param($RuleId, $Title, $Status, $ApplyStatus, $Detail, $DurationMs)
+    if (-not $auditWriter) { return }
+    $entry = @{
+        ts = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss.fff") + "Z"
+        host = $hostname
+        version = "1.1.0-windows"
+        mode = $Mode
+        profile = $Profile
+        rule = $RuleId
+        title = $Title
+        status = $Status
+        apply_status = $ApplyStatus
+        detail = if ($Detail.Length -gt 200) { $Detail.Substring(0, 200) } else { $Detail }
+        duration_ms = $DurationMs
+    }
+    $auditWriter.WriteLine(($entry | ConvertTo-Json -Compress))
+    $auditWriter.Flush()
 }
 
 function Get-SecPol {
@@ -608,6 +638,9 @@ foreach ($rule in $rules) {
             -Risk $rule.risk -Detail "Engine error: $_" -Page $rule.page `
             -Levels @($rule.levels)
         $global:Results[-1].duration_ms = $rsw.ElapsedMilliseconds
+        Write-Audit -RuleId $rule.id -Title $rule.title `
+            -Status "error" -ApplyStatus "n/a" -Detail "Engine error: $_" `
+            -DurationMs $rsw.ElapsedMilliseconds
         continue
     }
 
@@ -639,6 +672,9 @@ foreach ($rule in $rules) {
         -Levels @($rule.levels)
     $global:Results[-1].duration_ms = $rsw.ElapsedMilliseconds
     $global:Results[-1].apply_status = $applyStatus
+    Write-Audit -RuleId $rule.id -Title $rule.title `
+        -Status $result.status -ApplyStatus $applyStatus `
+        -Detail $result.detail -DurationMs $rsw.ElapsedMilliseconds
 }
 
 # ── Summary ─────────────────────────────────────────────────
@@ -693,3 +729,7 @@ $output = @{
 $output | ConvertTo-Json -Depth 4 | Out-File -FilePath $Out -Encoding utf8
 Write-Host "CIS scan complete: $total rules, score=$overallScore%, pass=$($summary.all.pass), fail=$($summary.all.fail)"
 Write-Host "Result written to: $Out"
+if ($auditWriter) {
+    $auditWriter.Close()
+    Write-Host "Audit log written to: $AuditLog"
+}

@@ -7,7 +7,7 @@
 - name: Create a temporary working directory on the target
   ansible.builtin.tempfile:
     state: directory
-    prefix: cis-tos4-
+    prefix: cis-{{ cis_os_key }}-
     path: "{{ cis_remote_tmp }}"
   register: cis_workdir
   changed_when: false

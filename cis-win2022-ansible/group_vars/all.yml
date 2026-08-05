@@ -1,3 +1,4 @@
 ---
-cis_benchmark_name: "CIS Microsoft Windows Server 2025 Benchmark"
+cis_benchmark_name: "CIS Microsoft Windows Server 2022 Benchmark"
 cis_benchmark_version: "v2.1.0"
+

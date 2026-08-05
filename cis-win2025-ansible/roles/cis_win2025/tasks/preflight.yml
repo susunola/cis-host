@@ -4,7 +4,7 @@
     that: cis_mode in ['scan', 'apply']
     fail_msg: >-
       cis_mode must be 'scan' or 'apply' (got '{{ cis_mode }}').
-      Example: ansible-playbook site.yml -e cis_mode=apply
+      Example: ansible-playbook apply.yml
     quiet: true
 
 - name: Validate cis_profile

@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-基于 CIS **TencentOS Linux 4 Benchmark v1.0.0** 的自动化合规扫描与修复 Playbook，属于 [CIS-OS](../) 项目的一部分。
+基于 CIS **TencentOS Linux 4 Benchmark v1.0.0** 的自动化合规扫描与修复 Playbook，属于 [SecX Automation Suite](../) 项目的一部分。
 
 ## 一次运行的流程
 

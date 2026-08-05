@@ -52,3 +52,4 @@ cis_min_score: 0               # or fail when the L1/L2 score drops below this
 cis_benchmark_name: "CIS TencentOS Linux 4 Benchmark"
 cis_benchmark_version: "v1.0.0"
 cis_org_name: ""               # shown in the report header when set
+

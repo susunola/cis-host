@@ -33,19 +33,50 @@
   ansible.builtin.set_fact:
     cis_python_real: "{{ _py_probe.stdout.strip() }}"
 
-- name: Require root for apply mode
+- name: Determine effective privilege level
+  ansible.builtin.set_fact:
+    cis_is_root: "{{ ansible_user == 'root' }}"
+    cis_is_become_root: "{{ (ansible_become | default(false)) and (ansible_become_user | default('root') == 'root') }}"
+    cis_is_become: "{{ ansible_become | default(false) }}"
+    cis_has_privilege: "{{ ansible_user == 'root' or ((ansible_become | default(false)) and (ansible_become_user | default('root') == 'root')) }}"
+
+- name: Require root or sudo-become-root for apply mode
   ansible.builtin.fail:
-    msg: "Apply mode requires root privileges. Use --become"
+    msg: >
+      Apply mode requires root privileges.
+      Options:
+        A. Run as root directly (ansible_user=root)
+        B. Use --become with sudo to root (ansible-playbook apply.yml --become)
+        C. Set ansible_become=true and ansible_become_user=root in inventory
   when:
     - cis_mode == 'apply'
-    - ansible_user != 'root'
-    - not (ansible_become | default(false))
+    - not cis_has_privilege
+
+- name: Warn about become-as-role-user for apply mode
+  ansible.builtin.debug:
+    msg: >
+      Running apply mode with become as '{{ ansible_become_user }}' (not root).
+      Some system-level changes may fail. Consider using --become to root if available.
+  when:
+    - cis_mode == 'apply'
+    - cis_is_become | bool
+    - not cis_is_become_root
+
+- name: Warn about non-root scan limitations
+  ansible.builtin.debug:
+    msg: >
+      Running scan without root. File permission checks, kernel parameter reads,
+      and some package queries may be skipped or incomplete.
+      For full scan coverage, re-run with --become (Option B above).
+  when:
+    - cis_mode == 'scan'
+    - not cis_has_privilege
 
 - name: Announce benchmark run
   ansible.builtin.debug:
     msg:
       - "======================================================"
-      - "  CIS Benchmark: CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 v1.0.0"
+      - "  CIS Benchmark: {{ cis_benchmark_name }} {{ cis_benchmark_version }}"
       - "  Mode: {{ cis_mode }}  Profile: {{ cis_profile }}  Platform: {{ cis_platform }}"
       - "  Allow disruptive: {{ cis_allow_disruptive }}"
       - "  Target: {{ inventory_hostname }}"
