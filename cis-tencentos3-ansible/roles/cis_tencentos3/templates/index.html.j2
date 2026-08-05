@@ -25,7 +25,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · 集群合规总览</title>
+<title>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · 集群合规总览 Fleet Overview</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--ink:#16202e;--ink2:#475569;--ink3:#7c8a9e;
   --line:#e2e8f2;--line2:#eef1f7;--brand:#1c3f7c;--brand2:#2f6fd0;
@@ -75,46 +75,47 @@ tr:hover td{background:#f8fbff}
 .sc .t i{display:block;height:100%}
 footer{margin-top:28px;font-size:11.5px;color:var(--ink3);line-height:1.9;
   border-top:1px solid var(--line);padding-top:14px}
+.en{font-size:.84em;font-weight:500;color:var(--ink3);letter-spacing:0;margin-left:5px}
 </style>
 </head>
 <body>
 <header class="mast">
   <div class="mast-in">
-    <h1>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · 集群合规总览</h1>
-    <div class="sub">{{ hosts | length }} 台主机 · 配置档 {{ cis_profile }} ·
-      模式 {{ '修复 apply' if cis_mode_effective == 'apply' else '扫描 scan' }} ·
-      生成于 {{ cis_run_human }}</div>
+    <h1>{{ cis_benchmark_name }} {{ cis_benchmark_version }} · 集群合规总览 <span class="en">Fleet Compliance Overview</span></h1>
+    <div class="sub">{{ hosts | length }} 台主机 <span class="en">hosts</span> · 配置档 {{ cis_profile }} <span class="en">profile</span> ·
+      模式 {{ '修复 apply' if cis_mode_effective == 'apply' else '扫描 scan' }} <span class="en">mode</span> ·
+      生成于 {{ cis_run_human }} <span class="en">generated {{ cis_run_human }}</span></div>
   </div>
 </header>
 <div class="wrap">
   <div class="stats">
-    <div class="st"><div class="k">集群合规分</div>
+    <div class="st"><div class="k">集群合规分 Fleet Score</div>
       <div class="v" style="color:{{ '#127a3d' if fleetscore >= 90 else ('#9a5b00' if fleetscore >= 70 else '#b3261e') }}">{{ fleetscore }}%</div>
-      <div class="u">{{ tot['pass'] }} / {{ scored }} 项通过</div></div>
-    <div class="st"><div class="k">待修复项</div>
+      <div class="u">{{ tot['pass'] }} / {{ scored }} 项通过 <span class="en">passed</span></div></div>
+    <div class="st"><div class="k">待修复项 To Fix</div>
       <div class="v" style="color:#b3261e">{{ tot['fail'] }}</div>
-      <div class="u">全集群累计</div></div>
-    <div class="st"><div class="k">L1 已修复</div>
+      <div class="u">全集群累计 <span class="en">fleet-wide</span></div></div>
+    <div class="st"><div class="k">L1 已修复 L1 Fixed</div>
       <div class="v" style="color:#1e4bb8">{{ tot['l1applied'] }}</div>
-      <div class="u">Level 1 规则条数</div></div>
-    <div class="st"><div class="k">L2 已修复</div>
+      <div class="u">Level 1 规则条数 <span class="en">rules</span></div></div>
+    <div class="st"><div class="k">L2 已修复 L2 Fixed</div>
       <div class="v" style="color:#6d28d9">{{ tot['l2applied'] }}</div>
-      <div class="u">Level 2 规则条数</div></div>
-    <div class="st"><div class="k">人工核查</div>
+      <div class="u">Level 2 规则条数 <span class="en">rules</span></div></div>
+    <div class="st"><div class="k">人工核查 Manual</div>
       <div class="v" style="color:#475569">{{ tot['manual'] }}</div>
-      <div class="u">需运维确认</div></div>
-    <div class="st"><div class="k">修复失败</div>
+      <div class="u">需运维确认 <span class="en">needs review</span></div></div>
+    <div class="st"><div class="k">修复失败 Fix Failed</div>
       <div class="v" style="color:{{ '#b3261e' if tot['failedfix'] else '#7c8a9e' }}">{{ tot['failedfix'] }}</div>
-      <div class="u">需人工介入</div></div>
+      <div class="u">需人工介入 <span class="en">needs attention</span></div></div>
   </div>
 
-  <h2 class="sec">主机明细</h2>
+  <h2 class="sec">主机明细 <span class="en">Host Details</span></h2>
   <div class="tblwrap">
     <table>
       <thead>
         <tr>
-          <th>主机名</th><th>IP 地址</th><th>MAC 地址</th><th>操作系统</th>
-          <th>合规分</th><th>通过 / 未通过</th><th>L1 修复</th><th>L2 修复</th><th>报告</th>
+          <th>主机名 <span class="en">Host</span></th><th>IP 地址 <span class="en">IP</span></th><th>MAC 地址 <span class="en">MAC</span></th><th>操作系统 <span class="en">OS</span></th>
+          <th>合规分 <span class="en">Score</span></th><th>通过 / 未通过 <span class="en">Pass / Fail</span></th><th>L1 修复 <span class="en">L1 Fixed</span></th><th>L2 修复 <span class="en">L2 Fixed</span></th><th>报告 <span class="en">Report</span></th>
         </tr>
       </thead>
       <tbody>
@@ -139,7 +140,7 @@ footer{margin-top:28px;font-size:11.5px;color:var(--ink3);line-height:1.9;
               {%- if s.L1.applied_pending | int %} <span class="pill warn">+{{ s.L1.applied_pending }} 待生效</span>{% endif %}</td>
           <td><span class="pill {{ 'ok' if (s.L2.applied | int) else 'na' }}">{{ s.L2.applied }}</span>
               {%- if s.L2.applied_pending | int %} <span class="pill warn">+{{ s.L2.applied_pending }} 待生效</span>{% endif %}</td>
-          <td><a href="{{ hv.cis_report_slug }}.html">打开 &rsaquo;</a></td>
+          <td><a href="{{ hv.cis_report_slug }}.html">打开 <span class="en">Open</span> &rsaquo;</a></td>
         </tr>
       {% endfor %}
       </tbody>
@@ -148,9 +149,9 @@ footer{margin-top:28px;font-size:11.5px;color:var(--ink3);line-height:1.9;
 
   <footer>
     {{ cis_benchmark_name }} {{ cis_benchmark_version }} ·
-    共 {{ hosts | length }} 台主机 · 累计评估 {{ tot['rules'] }} 条规则 ·
+    共 {{ hosts | length }} 台主机 <span class="en">hosts</span> · 累计评估 {{ tot['rules'] }} 条规则 <span class="en">rules assessed</span> ·
     引擎 v{{ hosts[0].cis_result.engine_version if hosts else '-' }} ·
-    生成于 {{ cis_run_human }}（控制节点时间）
+    生成于 {{ cis_run_human }} <span class="en">generated {{ cis_run_human }} (controller time)</span>
   </footer>
 </div>
 </body>
