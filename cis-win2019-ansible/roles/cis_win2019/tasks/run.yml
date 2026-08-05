@@ -9,6 +9,33 @@
     path: "{{ cis_remote_tmp }}\\cis-run"
     state: directory
 
+- name: Verify engine artifacts exist
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/{{ item }}"
+  loop:
+    - "{{ cis_engine_file }}"
+    - "{{ cis_rules_file }}"
+  register: _artifact_stat
+  changed_when: false
+  check_mode: false
+  delegate_to: localhost
+  become: false
+
+- name: Fail if any engine artifact is missing
+  ansible.builtin.fail:
+    msg: "Missing CIS artifact: {{ item.item }}"
+  loop: "{{ _artifact_stat.results }}"
+  when: not item.stat.exists
+  changed_when: false
+
+- name: Validate rules JSON is parseable
+  ansible.builtin.set_fact:
+    _rules_json_valid: "{{ lookup('file', role_path ~ '/files/' ~ cis_rules_file) | from_json | length }}"
+  changed_when: false
+  check_mode: false
+  delegate_to: localhost
+  become: false
+
 - name: Ship the engine and rule catalogue to the target
   ansible.windows.win_copy:
     src: "{{ item }}"

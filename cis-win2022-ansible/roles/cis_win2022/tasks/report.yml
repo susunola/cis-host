@@ -9,6 +9,7 @@
   ansible.builtin.template:
     src: report.html.j2
     dest: "{{ cis_report_dir }}/{{ inventory_hostname }}/report.html"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
   when: cis_report_html | bool
@@ -17,6 +18,7 @@
   ansible.builtin.template:
     src: findings.csv.j2
     dest: "{{ cis_report_dir }}/{{ inventory_hostname }}/findings.csv"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
   when: cis_report_csv | bool
@@ -25,6 +27,7 @@
   ansible.builtin.template:
     src: index.html.j2
     dest: "{{ cis_report_dir }}/index.html"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
   when:

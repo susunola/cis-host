@@ -1,8 +1,8 @@
 ---
 - name: Load guidance and sections data
   ansible.builtin.set_fact:
-    cis_guidance: "{{ lookup('file', cis_guidance_file) | from_json }}"
-    cis_sections: "{{ lookup('file', cis_sections_file) | from_json }}"
+    cis_guidance: "{{ lookup('file', role_path ~ '/files/' ~ cis_guidance_file) | from_json }}"
+    cis_sections: "{{ lookup('file', role_path ~ '/files/' ~ cis_sections_file) | from_json }}"
   delegate_to: localhost
   changed_when: false
   run_once: true
@@ -11,7 +11,7 @@
   ansible.builtin.file:
     path: "{{ cis_report_dir }}"
     state: directory
-    mode: "0755"
+    mode: "0750"
   delegate_to: localhost
   changed_when: false
   run_once: true
@@ -52,7 +52,7 @@
   ansible.builtin.template:
     src: report.html.j2
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.html"
-    mode: "0644"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
 
@@ -60,7 +60,7 @@
   ansible.builtin.copy:
     content: "{{ cis_result | to_nice_json }}"
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.json"
-    mode: "0644"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
 
@@ -68,7 +68,7 @@
   ansible.builtin.template:
     src: findings.csv.j2
     dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.csv"
-    mode: "0644"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
   when: cis_report_csv | default(false) | bool
@@ -77,7 +77,7 @@
   ansible.builtin.template:
     src: index.html.j2
     dest: "{{ cis_report_dir }}/index-{{ cis_run_stamp }}.html"
-    mode: "0644"
+    mode: "0640"
   delegate_to: localhost
   changed_when: false
   run_once: true

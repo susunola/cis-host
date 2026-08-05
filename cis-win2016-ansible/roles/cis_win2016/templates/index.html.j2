@@ -194,7 +194,7 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);
     {%- if s.L1.applied_pending | default(0) | int %} <span class="pill warn">+{{ 'pending' }}</span>{% endif %}</td>
     <td><span class="pill {{ 'ok' if (s.L2.applied | default(0) | int) else 'na' }}">{{ s.L2.applied | default(0) }}</span>
    {%- if s.L2.applied_pending | default(0) | int %} <span class="pill warn">+{{ 'pending' }}</span>{% endif %}</td>
-  <td><a href="{{ hv.cis_report_slug | e }}.html">{{ 'Open' }} &rsaquo;</a></td>
+  <td><a href="{{ (hv.cis_report_slug ~ '.html') | urlencode }}">{{ 'Open' }} &rsaquo;</a></td>
         </tr>
       {% endfor %}
       </tbody>
