@@ -261,6 +261,7 @@ function Invoke-Check {
         "user-right" {
             $privilege = $params.privilege
             $expectedSid = $params.expected_sid
+            if (-not $expectedSid) { return @{status="error"; detail="No expected SID for $privilege"} }
             $tmp = $null
             try {
                 $tmp = "$env:TEMP\ur_$([Guid]::NewGuid()).inf"
@@ -268,8 +269,8 @@ function Invoke-Check {
                 if (Test-Path $tmp) {
                     $content = Get-Content $tmp -Raw
                     if ($content -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
-                        $sids = $Matches[1].Trim() -split ','
-                        $ok = ($sids | Where-Object { $_.Trim() -eq $expectedSid })
+                        $sids = $Matches[1].Trim() -split ',' | ForEach-Object { $_.Trim() }
+                        $ok = ($sids -contains $expectedSid.Trim())
                         return @{status=if($ok){"pass"}else{"fail"}; detail="$privilege members: $($Matches[1].Trim())"}
                     }
                 }
@@ -311,19 +312,16 @@ function Invoke-Check {
         # ── 6. Windows Firewall ──
         "firewall-profile" {
             $fwProfile = $params.profile
-       $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
-     try {
+            $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
+            try {
                 $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
-   $enabled = $fw.Enabled
-      $defaultIn = $fw.DefaultInboundAction
-                $defaultOut = $fw.DefaultOutboundAction
-     $ok = ("$enabled" -eq "True" -and "$defaultIn" -eq "Block" -and "$defaultOut" -eq "$expectedOut")
-       return @{
-  status = if($ok){"pass"}else{"fail"}
-        detail = "${fwProfile}: enabled=$enabled inbound=$defaultIn outbound=$defaultOut (expected out=$expectedOut)"
- }
+                $ok = ($fw.Enabled -eq $true -and $fw.DefaultInboundAction -eq "Block" -and $fw.DefaultOutboundAction -eq $expectedOut)
+                return @{
+                    status = if($ok){"pass"}else{"fail"}
+                    detail = "${fwProfile}: enabled=$($fw.Enabled) inbound=$($fw.DefaultInboundAction) outbound=$($fw.DefaultOutboundAction) (expected out=$expectedOut)"
+                }
             } catch {
-return @{status="error"; detail="Failed to query firewall profile $fwProfile"}
+                return @{status="error"; detail="Failed to query firewall profile $fwProfile"}
             }
         }
 
@@ -566,35 +564,41 @@ function Invoke-Fix {
         "user-right" {
             $privilege = $params.privilege; $expectedSid = $params.expected_sid
             if (-not $expectedSid) { return "skipped: no expected SID defined" }
-     try {
-             $tmp = "$env:TEMP\ur_$([Guid]::NewGuid()).inf"
-       secedit /export /cfg $tmp /areas USER_RIGHTS 2>$null | Out-Null
-       if (Test-Path $tmp) {
-            $c = Get-Content $tmp -Raw
-    if ($c -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
-       # Exact token match (split on comma) — avoids substring collisions between SIDs
-        $members = $Matches[1].Trim() -split ',' | ForEach-Object { $_.Trim() }
-   if ($members -contains $expectedSid.Trim()) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue; return "already" }
-    }
-    }
-      Remove-Item $tmp -Force -ErrorAction SilentlyContinue
-       $tmp2 = "$env:TEMP\ur_fix_$([Guid]::NewGuid()).inf"
-   secedit /export /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
-     $c = Get-Content $tmp2 -Raw
-     if ($c -match "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$") {
-      $c = $c -replace "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$", "`${1}$expectedSid"
-       } else {
-      $c += "`r`n$privilege = $expectedSid"
-            }
-  [System.IO.File]::WriteAllText($tmp2, $c)
-     $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
-           secedit /configure /db $seceditDb /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
-    $rc = $LASTEXITCODE
-     Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
-  Remove-Item $tmp2 -Force -ErrorAction SilentlyContinue
-   if ($rc -ne 0) { return "failed: secedit exit code $rc" }
-     return "applied"
-         } catch { return "failed: $($_.Exception.Message)" }
+            $tmp = $null
+            try {
+                $tmp = "$env:TEMP\ur_$([Guid]::NewGuid()).inf"
+                secedit /export /cfg $tmp /areas USER_RIGHTS 2>$null | Out-Null
+                $members = @()
+                if (Test-Path $tmp) {
+                    $c = Get-Content $tmp -Raw
+                    if ($c -match "(?m)^\s*$([regex]::Escape($privilege))\s*=\s*(.+)$") {
+                        $members = $Matches[1].Trim() -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+                        if ($members -contains $expectedSid.Trim()) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue; return "already" }
+                    }
+                    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+                }
+                $tmp2 = "$env:TEMP\ur_fix_$([Guid]::NewGuid()).inf"
+                secedit /export /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+                $c = Get-Content $tmp2 -Raw
+                if ($members -notcontains $expectedSid.Trim()) {
+                    $members += $expectedSid.Trim()
+                }
+                $members = $members | Select-Object -Unique
+                $line = "$privilege = $($members -join ',')"
+                if ($c -match "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$") {
+                    $c = $c -replace "(?m)^(\s*$([regex]::Escape($privilege))\s*=\s*).+$", "`${1}$($members -join ',')"
+                } else {
+                    $c += "`r`n$line"
+                }
+                [System.IO.File]::WriteAllText($tmp2, $c)
+                $seceditDb = "$env:TEMP\cis-secedit-$([Guid]::NewGuid()).sdb"
+                secedit /configure /db $seceditDb /cfg $tmp2 /areas USER_RIGHTS 2>$null | Out-Null
+                $rc = $LASTEXITCODE
+                Remove-Item $seceditDb -Force -ErrorAction SilentlyContinue
+                Remove-Item $tmp2 -Force -ErrorAction SilentlyContinue
+                if ($rc -ne 0) { return "failed: secedit exit code $rc" }
+                return "applied"
+            } catch { return "failed: $($_.Exception.Message)" }
         }
 
         "reg-dword" {
@@ -611,15 +615,15 @@ function Invoke-Fix {
         }
 
         "firewall-profile" {
-   $fwProfile = $params.profile
-     $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
-     try {
-     $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
-     if ("$($fw.Enabled)" -eq "True" -and "$($fw.DefaultInboundAction)" -eq "Block" -and "$($fw.DefaultOutboundAction)" -eq "$expectedOut") { return "already" }
-    Set-NetFirewallProfile -Name $fwProfile -Enabled True -DefaultInboundAction Block -DefaultOutboundAction $expectedOut
-        return "applied"
- } catch { return "failed: $($_.Exception.Message)" }
-    }
+            $fwProfile = $params.profile
+            $expectedOut = if (($params.PSObject.Properties.Name -contains 'outbound') -and $params.outbound) { $params.outbound } else { "Allow" }
+            try {
+                $fw = Get-NetFirewallProfile -Name $fwProfile -ErrorAction Stop
+                if ($fw.Enabled -eq $true -and $fw.DefaultInboundAction -eq "Block" -and $fw.DefaultOutboundAction -eq $expectedOut) { return "already" }
+                Set-NetFirewallProfile -Name $fwProfile -Enabled True -DefaultInboundAction Block -DefaultOutboundAction $expectedOut
+                return "applied"
+            } catch { return "failed: $($_.Exception.Message)" }
+        }
 
   "service-state" {
    $name = $params.name; $expected = $params.state
