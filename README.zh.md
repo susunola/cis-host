@@ -85,7 +85,7 @@ TOS 4 和 Windows 把目录名换掉即可。
 ```
 CIS-OS/
 ├── README.md                       # 英文（GitHub 默认）
-├── README.en.md                    # 中文
+├── README.zh.md                    # 中文
 ├── cis-tencentos3-ansible/         # TOS 3 套件
 │   ├── ansible.cfg
 │   ├── scan.yml | apply.yml | site.yml

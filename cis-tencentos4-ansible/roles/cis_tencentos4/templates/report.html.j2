@@ -703,15 +703,6 @@ footer b{color:var(--ink2)}
 </div>
 
 <script>
-(function () {
-    }
-  // Always start in Chinese; only respect localStorage if user explicitly toggled
-  var saved = '';
-  try { saved = localStorage.getItem('cis_lang') || ''; } catch(e) {}
-  if (saved) 
-  if (btn) { btn.addEventListener('click', function () {
-}); }
-
   var body = document.getElementById('tb-body');
   var rows = [].slice.call(body.querySelectorAll('tr.r'));
   var chips = [].slice.call(document.querySelectorAll('#tb .chip'));
@@ -776,7 +767,6 @@ footer b{color:var(--ink2)}
   });
 
   document.getElementById('bpr').addEventListener('click', function () { window.print(); });
-})();
 </script>
 </body>
 </html>

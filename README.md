@@ -1,6 +1,6 @@
 # CIS-OS
 
-**English** | [简体中文](README.en.md)
+**English** | [简体中文](README.zh.md)
 
 Ansible playbooks that run the **CIS** security benchmarks against TencentOS Linux 3,
 TencentOS Linux 4, and Windows Server. Each suite has two modes — `scan` (read-only)
