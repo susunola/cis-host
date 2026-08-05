@@ -166,6 +166,19 @@ def default_shell():
 
 # ─── Engine runner ────────────────────────────────────────────────────
 
+def _engine_is_windows(args):
+    """Determine whether the selected engine is the Windows PowerShell variant.
+
+    The engine type follows the --os preset or the explicit --engine path, not
+    the platform the CLI happens to be running on.
+    """
+    if args.os and args.os.startswith("win"):
+        return True
+    if args.engine and args.engine.lower().endswith(".ps1"):
+        return True
+    return False
+
+
 def run_engine(args, mode):
     """Run cis_engine (Python or PowerShell) and return parsed JSON result."""
     engine = os.path.abspath(args.engine)
@@ -178,7 +191,7 @@ def run_engine(args, mode):
     )
     os.makedirs(os.path.dirname(result_file), exist_ok=True)
 
-    if not is_windows():
+    if not _engine_is_windows(args):
         # Linux: run cis_engine.py with python3
         cmd = [
             "sudo", "python3", engine,
