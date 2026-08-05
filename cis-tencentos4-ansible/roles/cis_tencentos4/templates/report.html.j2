@@ -270,18 +270,19 @@ h2.sec::before{content:"";width:4px;height:18px;background:linear-gradient(180de
 /* ── findings table ── */
 .tblwrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-md);
   box-shadow:var(--shadow-sm);overflow:hidden;margin-top:14px}
-table.f{width:100%;border-collapse:separate;border-spacing:0}
+table.f{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
 table.f thead th{position:sticky;top:52px;background:#f5f7fc;z-index:10;
   text-align:left;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
   color:var(--ink3);font-weight:750;padding:12px 14px;border-bottom:2px solid var(--line)}
+table.f thead th:nth-child(2){width:auto} /* Rule column gets all remaining space */
 table.f tbody tr.r{border-bottom:1px solid var(--line2);cursor:pointer;
   transition:background .12s}
 table.f tbody tr.r:hover{background:#f4f7fe}
 table.f tbody tr.r.open{background:#eef3fd}
 table.f td{padding:12px 14px;vertical-align:top}
 td.id{font-family:var(--font-mono);
-  font-size:12.5px;font-weight:700;color:var(--brand2);white-space:nowrap}
-td.ti{font-size:13px;line-height:1.55}
+  font-size:12.5px;font-weight:700;color:var(--brand2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td.ti{font-size:13px;line-height:1.55;word-break:break-word;overflow-wrap:anywhere}
 td.ti .fam{display:block;margin-top:4px;font-size:11px;color:var(--ink3)}
 td.c{white-space:nowrap}
 tr.d{display:none;background:#fafbfd}
@@ -712,14 +713,16 @@ footer b{color:var(--ink2)}
 <script>
 (function () {
   var html = document.documentElement;
-  function getLang(){ try { return localStorage.getItem('cis_lang') || 'zh'; } catch(e){ return 'zh'; } }
   function setLang(l){
     html.setAttribute('data-lang', l);
     try { localStorage.setItem('cis_lang', l); } catch(e){}
     var b = document.getElementById('langBtn');
     if (b) { b.textContent = (l === 'zh') ? 'EN' : '中文'; }
   }
-  setLang(getLang());
+  // Always start in Chinese; only respect localStorage if user explicitly toggled
+  var saved = '';
+  try { saved = localStorage.getItem('cis_lang') || ''; } catch(e) {}
+  if (saved) setLang(saved);
   var btn = document.getElementById('langBtn');
   if (btn) { btn.addEventListener('click', function () {
     setLang(html.getAttribute('data-lang') === 'zh' ? 'en' : 'zh');

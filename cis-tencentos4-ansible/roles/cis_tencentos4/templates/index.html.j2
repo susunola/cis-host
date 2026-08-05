@@ -220,14 +220,15 @@ footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);
 <script>
 (function () {
   var html = document.documentElement;
-  function getLang(){ try { return localStorage.getItem('cis_lang') || 'zh'; } catch(e){ return 'zh'; } }
   function setLang(l){
     html.setAttribute('data-lang', l);
     try { localStorage.setItem('cis_lang', l); } catch(e){}
     var b = document.getElementById('langBtn');
     if (b) { b.textContent = (l === 'zh') ? 'EN' : '中文'; }
   }
-  setLang(getLang());
+  var saved = '';
+  try { saved = localStorage.getItem('cis_lang') || ''; } catch(e) {}
+  if (saved) setLang(saved);
   var btn = document.getElementById('langBtn');
   if (btn) { btn.addEventListener('click', function () {
     setLang(html.getAttribute('data-lang') === 'zh' ? 'en' : 'zh');
