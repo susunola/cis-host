@@ -72,7 +72,7 @@
 - name: Record assessment summary
   ansible.builtin.debug:
     msg: >-
-      {{ inventory_hostname }}: score={{ cis_result.score }}%,
+      {{ inventory_hostname }}: score={{ cis_result.summary.all.score }}%,
       {{ cis_result.summary.all.pass }} pass, {{ cis_result.summary.all.fail }} fail,
       {{ cis_result.summary.all.manual }} manual, {{ cis_result.summary.all.error }} error
   changed_when: false

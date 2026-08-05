@@ -66,7 +66,7 @@ function Write-Audit {
         title = $Title
         status = $Status
         apply_status = $ApplyStatus
-        detail = if ($Detail.Length -gt 200) { $Detail.Substring(0, 200) } else { $Detail }
+        detail = if ($Detail -and $Detail.Length -gt 200) { $Detail.Substring(0, 200) } else { $Detail }
         duration_ms = $DurationMs
     }
     $auditWriter.WriteLine(($entry | ConvertTo-Json -Compress))
@@ -367,7 +367,7 @@ function Invoke-Fix {
                 $c = Get-Content $tmpInf -Raw
                 if ($c -match "(?m)^(\s*[^\s=]*\s*=\s*).+$") {
                     if ($c -match "(?m)^(\s*$key\s*=\s*).+$") {
-                        $c = $c -replace "(?m)^(\s*$key\s*=\s*).+$", "`${1}$expected"
+                        $c = $c -replace "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$", "`${1}$expected"
                     } else {
                         $c += "`r`n$key = $expected"
                     }
@@ -393,7 +393,7 @@ function Invoke-Fix {
                 secedit /export /cfg $tmpInf /areas SECURITYPOLICY 2>$null | Out-Null
                 $c = Get-Content $tmpInf -Raw
                 if ($c -match "(?m)^(\s*$key\s*=\s*).+$") {
-                    $c = $c -replace "(?m)^(\s*$key\s*=\s*).+$", "`${1}$expected"
+                    $c = $c -replace "(?m)^(\s*$([regex]::Escape($key))\s*=\s*).+$", "`${1}$expected"
                 } else {
                     $c += "`r`n$key = $expected"
                 }
@@ -633,7 +633,7 @@ foreach ($rule in $rules) {
     } catch {
         $rsw.Stop()
         Write-Result -Id $rule.id -Title $rule.title -Section $rule.section `
-            -Status "error" -Level ($rule.levels | Select-Object -First 1) `
+            -Status "error" -Level @($rule.levels) `
             -Assessment $rule.assessment -Family $rule.family `
             -Risk $rule.risk -Detail "Engine error: $_" -Page $rule.page `
             -Levels @($rule.levels)
@@ -666,7 +666,7 @@ foreach ($rule in $rules) {
 
     $rsw.Stop()
     Write-Result -Id $rule.id -Title $rule.title -Section $rule.section `
-        -Status $result.status -Level ($rule.levels | Select-Object -First 1) `
+        -Status $result.status -Level @($rule.levels) `
         -Assessment $rule.assessment -Family $rule.family `
         -Risk $rule.risk -Detail $result.detail -Page $rule.page `
         -Levels @($rule.levels)

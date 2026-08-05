@@ -44,26 +44,26 @@
 
 - name: Compose report slug
   ansible.builtin.set_fact:
-    _slug: "{{ cis_host.hostname }}-{{ cis_profile }}-{{ cis_mode_effective | default(cis_mode) }}-{{ cis_run_stamp }}"
+    cis_report_slug: "{{ cis_host.hostname }}-{{ cis_profile }}-{{ cis_mode_effective | default(cis_mode) }}-{{ cis_run_stamp }}"
 
 - name: Write HTML report
   ansible.builtin.template:
     src: report.html.j2
-    dest: "{{ cis_report_dir }}/{{ _slug }}.html"
+    dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.html"
     mode: "0644"
   delegate_to: localhost
 
 - name: Write JSON result
   ansible.builtin.copy:
     content: "{{ cis_result | to_nice_json }}"
-    dest: "{{ cis_report_dir }}/{{ _slug }}.json"
+    dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.json"
     mode: "0644"
   delegate_to: localhost
 
 - name: Write CSV findings
   ansible.builtin.template:
     src: findings.csv.j2
-    dest: "{{ cis_report_dir }}/{{ _slug }}.csv"
+    dest: "{{ cis_report_dir }}/{{ cis_report_slug }}.csv"
     mode: "0644"
   delegate_to: localhost
   when: cis_report_csv | default(false)
@@ -79,4 +79,4 @@
 
 - name: Report output path
   ansible.builtin.debug:
-    msg: "Report written to {{ cis_report_dir }}/{{ _slug }}.html"
+    msg: "Report written to {{ cis_report_dir }}/{{ cis_report_slug }}.html"

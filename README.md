@@ -60,24 +60,6 @@ Reports show **before** (from a previous scan) and **after** status with deltas.
 
 Each suite is a self-contained Ansible project with its own inventory, group_vars, `scan.yml`, `apply.yml`, role tree, and templates.
 
-## Reports
-
-Two report formats are produced for every run.
-
-**Per-host report** (`report.html.j2`) — single-host deep dive with score, filterable findings (pass / fail / manual / error / N-A), evidence and remediation steps, before/after deltas on `apply` runs, and an embedded audit trail.
-
-<p align="center">
-  <img src="docs/screenshots/per-host-report.png" alt="SecX per-host compliance report" width="900">
-</p>
-
-**Fleet index** (`index.html.j2`) — single-page overview across the whole run with one row per host (hostname, IP, MAC, OS, score bar, pass / fail counts, L1 / L2 fixed). Use it as a landing page for sharing audit results with leadership.
-
-<p align="center">
-  <img src="docs/screenshots/fleet-index.png" alt="SecX fleet compliance index" width="900">
-</p>
-
-Both report templates are dark/light-theme aware and self-contained — open in any browser, no server required. Templates live alongside each suite under `roles/cis_<os>/templates/` so per-OS branding can be customized per team.
-
 ## Audit logging
 
 When `--audit-log` is set, the engine writes one JSON line per rule execution to the specified file, producing a structured, append-safe audit trail. Each entry includes:
@@ -239,6 +221,14 @@ Two distinct HTML reports are produced from every run. Both are static, self-con
 | **Fleet index** | `templates/index.html.j2` | `index-TIMESTAMP.html` | Multi-host inventory, or `cis_report_index=true` |
 
 A `findings.csv.j2` template is also available for Excel/Sheets consumption — enable with `cis_report_csv=true`.
+
+<p align="center">
+  <img src="docs/screenshots/per-host-report.png" alt="SecX per-host compliance report" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/fleet-index.png" alt="SecX fleet compliance index" width="900">
+</p>
 
 ### Per-host report
 

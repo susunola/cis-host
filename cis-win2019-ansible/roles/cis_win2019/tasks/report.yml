@@ -1,5 +1,10 @@
 ---
 # Windows CIS report generation (runs on controller, not target)
+- name: Set report slug for fleet index linking
+  ansible.builtin.set_fact:
+    cis_report_slug: "{{ inventory_hostname }}/report"
+  when: cis_report_index | bool
+
 - name: Generate per-host HTML report
   ansible.builtin.template:
     src: report.html.j2

@@ -76,5 +76,5 @@
     msg:
       - "CIS scan complete: {{ cis_result.summary.all.total }} rules"
       - "Pass: {{ cis_result.summary.all.pass }} / Fail: {{ cis_result.summary.all.fail }}"
-      - "Score: {{ cis_result.score }}%"
+      - "Score: {{ cis_result.summary.all.score }}%"
   when: cis_result.summary.all.assessed | default(0) > 0

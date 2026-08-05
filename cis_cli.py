@@ -354,7 +354,7 @@ def render_report(result_data, args, mode, scan_result_file):
         "cis_profile": args.profile,
         "cis_platform": args.platform,
         "cis_benchmark_name": args.name,
-        "cis_benchmark_version": "1.0.0",
+        "cis_benchmark_version": args.version,
         "cis_org_name": args.org or "",
         "cis_host": host,
         "cis_run_human": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -884,6 +884,8 @@ Examples:
                        help="Target platform (default: server)")
         p.add_argument("--name", default="CIS Benchmark",
                        help="Benchmark display name")
+        p.add_argument("--version", default="v1.0.0",
+                       help="Benchmark version for report footer")
         p.add_argument("--org", default="",
                        help="Organization name for report header")
         p.add_argument("--include", default="",
