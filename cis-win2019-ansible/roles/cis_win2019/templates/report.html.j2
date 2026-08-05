@@ -614,7 +614,7 @@ footer b{color:var(--ink2)}
             data-ap="{{ 'applied' if r.apply_status in ['applied', 'applied_pending'] else '' }}"
             data-lv="{{ r.level }}" data-ch="{{ r.id.split('.')[0] }}"
             data-q="{{ (r.id ~ ' ' ~ r.title ~ ' ' ~ r.family ~ ' ' ~ SEC.subsections.get(r.section, '')) | lower | e }}">
-          <td class="id">{{ r.id }}</td>
+          <td class="id">{{ r.id | e }}</td>
           <td class="ti">{{ r.title | e }}
             <span class="fam">{{ SEC.subsections.get(r.section, SEC.chapters.get(r.id.split('.')[0], '')) | e }}
               · {{ r.assessment }} · {{ r.family }}</span>
@@ -646,7 +646,7 @@ footer b{color:var(--ink2)}
               <h4>{{ 'Remediation (CIS)' }}</h4><pre>{{ g.get('remediation') | e }}</pre>
               {% endif %}
               <h4>{{ 'Meta' }}</h4>
-              <p>{{ 'Levels' }} L{{ r.levels | join('/L') }} · {{ 'Method' }} {{ r.assessment }}
+              <p>{{ 'Levels' }} L{{ (r.levels | default([])) | join('/L') }} · {{ 'Method' }} {{ r.assessment }}
                  · {{ 'Family' }} <code>{{ r.family }}</code>
                  · {{ 'Risk' }} {{ RISK.get(r.risk, {'en': r.risk}).en }}
                  {%- if r.page %} · {{ 'PDF p.' }} {{ r.page }} {{ '' }}{% endif %}

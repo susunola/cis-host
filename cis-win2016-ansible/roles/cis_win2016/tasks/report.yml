@@ -10,6 +10,7 @@
     src: report.html.j2
     dest: "{{ cis_report_dir }}/{{ inventory_hostname }}/report.html"
   delegate_to: localhost
+    changed_when: false
   when: cis_report_html | bool
 
 - name: Generate per-host CSV findings
@@ -17,6 +18,7 @@
     src: findings.csv.j2
     dest: "{{ cis_report_dir }}/{{ inventory_hostname }}/findings.csv"
   delegate_to: localhost
+    changed_when: false
   when: cis_report_csv | bool
 
 - name: Generate fleet index
@@ -24,6 +26,7 @@
     src: index.html.j2
     dest: "{{ cis_report_dir }}/index.html"
   delegate_to: localhost
+    changed_when: false
   when:
     - cis_report_index | bool
     - cis_fleet_size | int > 0

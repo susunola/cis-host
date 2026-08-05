@@ -255,8 +255,12 @@ def run_engine(args, mode):
         print(f"[{mode.upper()}] No result JSON produced", file=sys.stderr)
         sys.exit(1)
 
-    with open(result_file, "r", encoding="utf-8") as fh:
-        data = json.load(fh)
+    try:
+        with open(result_file, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"[{mode.upper()}] Result JSON corrupt: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     return data, result_file
 
@@ -367,7 +371,11 @@ def render_report(result_data, args, mode, scan_result_file):
     }
 
     env = Environment(loader=FileSystemLoader(template_dir))
-    template = env.get_template(template_name)
+    try:
+        template = env.get_template(template_name)
+    except Exception as exc:
+        print(f"Template error ({template_name}): {exc}", file=sys.stderr)
+        return None
     html = template.render(**ctx)
 
     # Output filename
@@ -597,7 +605,7 @@ def get_rule_detail(args, rule_id):
         "rationale": guidance.get("rationale", ""),
         "remediation": guidance.get("remediation", ""),
         "benchmark": args.name,
-        "benchmark_version": "1.0.0",
+        "benchmark_version": args.version,
         "total_rules": total,
     }
 

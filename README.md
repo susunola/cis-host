@@ -25,7 +25,7 @@ Engines are single-file scripts with zero third-party dependencies (Python 3 on 
 
 ### scan (read-only)
 
-1. `preflight` — Ansible validates variables, probes the target for Python 3.6+ (PowerShell 5.1+ on Windows), and confirms root / Administrator.
+1. `preflight` — Ansible validates variables, probes the target for Python 3.6+ (PowerShell 5.1+ on Windows), and confirms root-equivalent privileges (effective UID 0 on Linux, Administrator on Windows).
 2. `push` — Copies `cis_engine.py`, `rules.json`, `guidance.json`, and `sections.json` to `/tmp/cis-scan/` on the target (`C:\Windows\Temp\cis-scan` on Windows).
 3. `run` — Engine starts in `--mode scan`, iterates through the catalog checking each rule, collects evidence, and writes `result.json`. Nothing on the target is modified.
 4. `fetch` — Ansible pulls `result.json` (and `audit.log` if enabled) back to the control machine.
@@ -138,7 +138,7 @@ When using Ansible, the corresponding variables are documented in each suite's R
 
 ## Privilege modes
 
-SecX runs under three privilege levels. `apply` always requires **root** (Linux) or **Administrator** (Windows).
+SecX runs under three privilege levels. `apply` requires **root-equivalent privileges** — effective UID 0 on Linux (via `sudo` or direct root) or **Administrator** on Windows.
 
 ### scan — what works at each level (Linux)
 

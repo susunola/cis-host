@@ -142,7 +142,13 @@ def exists(path):
 def backup(ctx, path):
     if not ctx.backup_dir or not os.path.isfile(path):
         return
-    dest = os.path.join(ctx.backup_dir, path.lstrip("/"))
+    rel = path
+    while rel.startswith("/"):
+        rel = rel[1:]
+    if ".." in rel.split(os.sep):
+        ctx.notes.append("backup skipped (path traversal): %s" % path)
+        return
+    dest = os.path.join(ctx.backup_dir, rel)
     if os.path.exists(dest):
         return
     try:
@@ -619,6 +625,9 @@ def c_journald_fileperm(ctx, p):
     for d in ("/var/log/journal", "/run/log/journal"):
         for f in globmod.glob(d + "/*/*.journal"):
             _, _, st = owner_of(f)
+            if st is None:
+                bad.append("%s (cannot stat)" % f)
+                continue
             if not mode_ok(st.st_mode, "640"):
                 bad.append("%s mode %s" % (f, fmt_mode(st.st_mode)))
                 break
@@ -1788,9 +1797,12 @@ def c_login_defs(ctx, p):
         return "fail", "%s is not set in /etc/login.defs" % key
     cur = vals[-1][1].split()[0]
     n, w = as_int(cur), as_int(want)
-    ok = {"ge": lambda: n is not None and n >= w,
-          "le": lambda: n is not None and n <= w,
-          "eq": lambda: cur == want}.get(op, lambda: cur == want)()
+    handlers = {"ge": lambda: n is not None and n >= w,
+               "le": lambda: n is not None and n <= w,
+               "eq": lambda: cur == want}
+    if op not in handlers:
+        return "error", "unknown login_defs op: %s" % op
+    ok = handlers[op]()
     # also verify existing users
     bad_users = []
     if key == "PASS_MIN_DAYS":
@@ -1812,8 +1824,13 @@ def f_login_defs(ctx, p):
     key, want = p["key"], str(p["value"])
     set_kv_in_file(ctx, "/etc/login.defs", key, want, sep="\t")
     if key == "PASS_MIN_DAYS":
-        sh("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
-           "xargs -r -n1 chage --mindays %s" % want, 180)
+        try:
+            int(want)
+        except (ValueError, TypeError):
+            pass
+        else:
+            sh("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
+               "xargs -r -n1 chage --mindays %s" % want, 180)
     return True, "set %s %s in /etc/login.defs" % (key, want)
 
 
@@ -1954,6 +1971,10 @@ def c_useradd_inactive(ctx, p):
 @fix("useradd_inactive")
 def f_useradd_inactive(ctx, p):
     mx = p.get("max", 30)
+    try:
+        mx = int(mx)
+    except (ValueError, TypeError):
+        return False, "invalid max value: %s" % mx
     sh(["useradd", "-D", "-f", str(mx)], 30)
     sh("awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
        "xargs -r -n1 chage --inactive %d" % mx, 180)
@@ -3659,12 +3680,14 @@ def main():
             try:
                 parts.append(int(n))
             except ValueError:
-                parts.append(hash(n) % 10000)
+                parts.append(n)
         return parts
 
-    results = [run_rule(ctx, r, audit_fh) for r in sorted(sel, key=_sort_key)]
-    if audit_fh:
-        audit_fh.close()
+    try:
+        results = [run_rule(ctx, r, audit_fh) for r in sorted(sel, key=_sort_key)]
+    finally:
+        if audit_fh:
+            audit_fh.close()
     elapsed = time.time() - started
 
     doc = {
@@ -3685,7 +3708,8 @@ def main():
         "changed_files": sorted(set(ctx.changed_files)),
         "engine_notes": ctx.notes,
     }
-    payload = json.dumps(doc, indent=1, ensure_ascii=False)
+    payload = json.dumps(doc, indent=1, ensure_ascii=False,
+                         default=lambda o: str(o))
     if opts.out == "-":
         sys.stdout.write(payload)
     else:

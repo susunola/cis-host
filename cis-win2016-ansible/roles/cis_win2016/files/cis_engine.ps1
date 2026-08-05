@@ -215,7 +215,7 @@ function Invoke-Check {
                 $enabled = $fw.Enabled
                 $defaultIn = $fw.DefaultInboundAction
                 $defaultOut = $fw.DefaultOutboundAction
-                $ok = ($enabled -eq "True" -and $defaultIn -eq "Block" -and $defaultOut -eq "Allow")
+                $ok = ($enabled -eq $true -and $defaultIn -eq "Block" -and $defaultOut -eq "Allow")
                 return @{
                     status = if($ok){"pass"}else{"fail"}
                     detail = "${profile}: enabled=$enabled inbound=$defaultIn outbound=$defaultOut"
@@ -733,3 +733,9 @@ if ($auditWriter) {
     $auditWriter.Close()
     Write-Host "Audit log written to: $AuditLog"
 }
+# ── Exit with code based on failures ──
+$failCount = ($script:results | Where-Object { $_.status -eq "fail" }).Count
+$errorCount = ($script:results | Where-Object { $_.status -eq "error" }).Count
+if ($errorCount -gt 0) { exit 2 }
+if ($failCount -gt 0) { exit 1 }
+exit 0
