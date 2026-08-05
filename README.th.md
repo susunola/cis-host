@@ -131,6 +131,47 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
 
 เมื่อใช้ Ansible ตัวแปรที่เกี่ยวข้องจะถูกอธิบายไว้ใน README ของแต่ละชุด ภายใต้หัวข้อ "Key Variables"
 
+## โหมดสิทธิ์
+
+SecX รองรับ 3 ระดับสิทธิ์ `apply` ต้องใช้ **root** (Linux) หรือ **Administrator** (Windows) เสมอ
+
+### scan — สิ่งที่ทำงานได้ในแต่ละระดับ (Linux)
+
+| ประเภทการตรวจสอบ | Root | ไม่ใช่ root + caps¹ | ผู้ใช้ทั่วไป |
+|-------------|------|-----------------|------------|
+| แพ็คเกจ บริการ โพรเซส | ✅ | ✅ | ✅ |
+| สิทธิ์ไฟล์ (ไฟล์ที่ไม่ใช่ root) | ✅ | ✅ | ✅ |
+| พารามิเตอร์เคอร์เนล (`/proc/sys/`) | ✅ | ✅² | ❌ |
+| สิทธิ์ไฟล์ (ไฟล์ root เท่านั้น) | ✅ | ✅³ | ❌ |
+| การตั้งค่า SSH (`sshd -T`) | ✅ | ✅⁴ | ❌ |
+| กฎการตรวจสอบ (`auditctl -l`) | ✅ | ✅⁴ | ❌ |
+| sudoers, shadow, logs | ✅ | ✅³ | ❌ |
+
+¹ "ไม่ใช่ root + caps" = ผู้ใช้ทั่วไปที่ได้รับสิทธิ์พิเศษผ่าน capability หรือ sudo
+² ต้องการ `cap_sys_ptrace`。³ ต้องการ `cap_dac_read_search`。⁴ ต้องการ sudo สำหรับคำสั่งเฉพาะ。
+
+### การตั้งค่าผู้ใช้สแกนแบบไม่ใช่ root (Linux)
+
+**ตัวเลือก A — บายพาสด้วย capability** (ถาวร; เพิ่มใน systemd unit หรือ `/etc/security/capability.conf`):
+
+```bash
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep $(which python3)
+```
+
+**ตัวเลือก B — กฎ sudo สำหรับคำสั่งเฉพาะ**:
+
+```
+# /etc/sudoers.d/cis-scan
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
+```
+
+เมื่อตั้งค่าทั้ง capabilities และคำสั่ง sudo สองรายการ การสแกนแบบไม่ใช่ root จะครอบคลุมกฎประมาณ 95% ส่วนที่เหลือเป็นเฉพาะการดำเนินการ apply (chown, chmod, การโหลดโมดูล, การปรับขนาดพาร์ติชัน)
+
+### Windows
+
+การสแกนทำงานได้ในโหมดไม่ใช่ Admin โดยใช้นโยบายการเรียกใช้ PowerShell `RemoteSigned` หรือต่ำกว่า Apply ต้องการ Administrator — ใช้ `-RunAsAdministrator` หรือ Ansible `become: true`
+
 ## โครงสร้างไดเรกทอรี
 
 ```

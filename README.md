@@ -131,6 +131,47 @@ Both the engine and wrapper share the same filters:
 
 When using Ansible, the corresponding variables are documented in each suite's README under "Key Variables."
 
+## Privilege modes
+
+SecX runs under three privilege levels. `apply` always requires **root** (Linux) or **Administrator** (Windows).
+
+### scan — what works at each level (Linux)
+
+| Check family | Root | Non-root + caps¹ | Plain user |
+|-------------|------|-------------------|------------|
+| Packages, services, processes | ✅ | ✅ | ✅ |
+| File perms (non-root files) | ✅ | ✅ | ✅ |
+| Kernel params (`/proc/sys/`) | ✅ | ✅² | ❌ |
+| File perms (root-only files) | ✅ | ✅³ | ❌ |
+| SSH config (`sshd -T`) | ✅ | ✅⁴ | ❌ |
+| Audit rules (`auditctl -l`) | ✅ | ✅⁴ | ❌ |
+| Sudoers, shadow, logs | ✅ | ✅³ | ❌ |
+
+¹ "Non-root + caps" = regular user granted specific privileges via capability or sudo.
+² Needs `cap_sys_ptrace`. ³ Needs `cap_dac_read_search`. ⁴ Needs sudo for the specific command.
+
+### Setting up a non-root scan user (Linux)
+
+**Option A — capability-based bypass** (persistent; add to systemd unit or `/etc/security/capability.conf`):
+
+```bash
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep $(which python3)
+```
+
+**Option B — sudo rules** for specific commands:
+
+```
+# /etc/sudoers.d/cis-scan
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
+```
+
+With both capabilities and the two sudo commands, a non-root scan hits ~95% rule coverage. Gaps are limited to apply-only behaviors (chown, chmod, module loading, partition resizing).
+
+### Windows
+
+Scan works as non-Admin with PowerShell execution policy `RemoteSigned` or lower. Apply requires Administrator — use `-RunAsAdministrator` or Ansible `become: true`.
+
 ## Directory structure
 
 ```

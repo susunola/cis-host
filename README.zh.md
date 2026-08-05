@@ -131,6 +131,47 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
 
 通过 Ansible 走的时候，对应变量名见各套件 README 的「关键变量」一节。
 
+## 特权模式
+
+SecX 支持三种特权级别。`apply` 必须使用 **root**（Linux）或 **Administrator**（Windows）。
+
+### scan — 各层级覆盖范围（Linux）
+
+| 检查类别 | Root | 非 root + caps¹ | 普通用户 |
+|---------|------|-----------------|---------|
+| 软件包、服务、进程 | ✅ | ✅ | ✅ |
+| 文件权限（非 root 文件） | ✅ | ✅ | ✅ |
+| 内核参数（`/proc/sys/`） | ✅ | ✅² | ❌ |
+| 文件权限（root 文件） | ✅ | ✅³ | ❌ |
+| SSH 配置（`sshd -T`） | ✅ | ✅⁴ | ❌ |
+| 审计规则（`auditctl -l`） | ✅ | ✅⁴ | ❌ |
+| sudoers、shadow、日志 | ✅ | ✅³ | ❌ |
+
+¹ "非 root + caps" = 普通用户通过 capability 或 sudo 获得特定权限。
+² 需要 `cap_sys_ptrace`。³ 需要 `cap_dac_read_search`。⁴ 需要对特定命令的 sudo 权限。
+
+### 为非 root 用户配置 scan 权限（Linux）
+
+**方案 A — 基于 capability 的绕过**（持久化；写入 systemd unit 或 `/etc/security/capability.conf`）：
+
+```bash
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep $(which python3)
+```
+
+**方案 B — 为特定命令设置 sudo 规则**：
+
+```
+# /etc/sudoers.d/cis-scan
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
+```
+
+同时配置 capabilities 和两条 sudo 命令后，非 root scan 可覆盖约 95% 的规则。剩余盲区主要是 apply 专属操作（chown、chmod、模块加载、分区调整）。
+
+### Windows
+
+非 Admin 用户可执行 scan，需要 PowerShell 执行策略为 `RemoteSigned` 或更低。Apply 必须使用 Administrator — 通过 `-RunAsAdministrator` 或 Ansible `become: true`。
+
 ## 目录结构
 
 ```

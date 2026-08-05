@@ -131,6 +131,47 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
 
 Ansible を使用する場合、対応する変数は各スイートの README の「Key Variables」セクションに記載されています。
 
+## 権限モード
+
+SecX は 3 つの権限レベルをサポートします。`apply` は常に **root**（Linux）または **Administrator**（Windows）が必要です。
+
+### scan — 各レベルで動作するもの（Linux）
+
+| チェックカテゴリ | Root | 非 root + caps¹ | 一般ユーザー |
+|-------------|------|-----------------|------------|
+| パッケージ、サービス、プロセス | ✅ | ✅ | ✅ |
+| ファイル権限（非 root ファイル） | ✅ | ✅ | ✅ |
+| カーネルパラメータ（`/proc/sys/`） | ✅ | ✅² | ❌ |
+| ファイル権限（root 専用ファイル） | ✅ | ✅³ | ❌ |
+| SSH 設定（`sshd -T`） | ✅ | ✅⁴ | ❌ |
+| 監査ルール（`auditctl -l`） | ✅ | ✅⁴ | ❌ |
+| sudoers、shadow、ログ | ✅ | ✅³ | ❌ |
+
+¹ "非 root + caps" = capability または sudo で特定権限を付与された一般ユーザー。
+² `cap_sys_ptrace` が必要。³ `cap_dac_read_search` が必要。⁴ 特定コマンドの sudo が必要。
+
+### 非 root スキャンユーザーの設定（Linux）
+
+**方法 A — capability ベースのバイパス**（永続的；systemd ユニットまたは `/etc/security/capability.conf` に追加）：
+
+```bash
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep $(which python3)
+```
+
+**方法 B — 特定コマンドの sudo ルール**：
+
+```
+# /etc/sudoers.d/cis-scan
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/sshd -T *
+cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
+```
+
+capabilities と 2 つの sudo コマンドを設定することで、非 root スキャンは約 95% のルールカバレッジを達成します。残りのギャップは apply 専用の操作（chown、chmod、モジュールロード、パーティションリサイズ）に限定されます。
+
+### Windows
+
+非 Admin ユーザーでも PowerShell 実行ポリシー `RemoteSigned` 以下でスキャン可能です。apply は Administrator が必要 — `-RunAsAdministrator` または Ansible `become: true` を使用してください。
+
 ## ディレクトリ構成
 
 ```
