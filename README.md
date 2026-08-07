@@ -8,8 +8,8 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/version-1.0.0-006EFF" alt="v1.0.0">
-  <img src="https://img.shields.io/badge/python-3.6%2B-3776AB?logo=python&logoColor=white" alt="Python 3.6+">
+    <img src="https://img.shields.io/badge/version-1.2.0-006EFF" alt="v1.2.0">
+  <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+">
   <img src="https://img.shields.io/badge/suites-14-00B4D8" alt="14 suites">
   <img src="https://img.shields.io/badge/rules-4%2C400%2B-006EFF" alt="4,400+ rules">
@@ -22,22 +22,67 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 
 ## Quick Start
 
+### Install from source (recommended)
+
 ```bash
+git clone https://github.com/susunola/cis-os.git
+cd cis-os
+pip install -e .
+```
+
+This installs the `ciscvm` command.
+
+### Run
+
+```bash
+# List supported OS presets
+ciscvm list
+
 # L1 scan (read-only)
-python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+ciscvm scan --os rhel9 --profile L1 --output output/
 
 # L1 apply (remediate)
-python3 cis_cli.py apply --os ubuntu2204 --profile L1 --output output/
+ciscvm apply --os ubuntu2204 --profile L1 --output output/
 
 # L2 full apply + allow disruptive rules + audit log
-python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
+ciscvm apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
 
 # Scan only specific rules
-python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+ciscvm scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 ```
 
 `--os` values: `tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
+
+### Configuration file
+
+Create `ciscvm.toml` in the working directory (or point to another path with `--config` / `$CISCVM_CONFIG`):
+
+```toml
+[profile]
+os = "rhel9"
+profile = "L1"
+platform = "server"
+
+[rules]
+# Accepts comma-separated strings or TOML arrays
+include = []
+exclude = []
+sections = ["1.1", "5"]
+families = []
+
+[output]
+format = "both"     # html | cli | both
+directory = "./output"
+strict = false      # exit non-zero when residual failures remain
+
+[engine]
+timeout = 600
+allow_disruptive = false
+backup_dir = ""
+```
+
+CLI arguments always override config-file values.
 
 ### Via Ansible
 

@@ -1,0 +1,30 @@
+# Example ciscvm configuration file.
+# Copy to ciscvm.toml and edit for your environment.
+# CLI arguments always override values from this file.
+
+[profile]
+os = "rhel9"
+profile = "L1"
+platform = "server"
+name = "CIS RHEL 9 Benchmark"
+version = "v2.0.0"
+org = "Example Org"
+
+[rules]
+# Comma-separated rule IDs, or TOML arrays
+include = []
+exclude = []
+sections = []
+families = []
+
+[output]
+format = "both"        # html | cli | both
+directory = "./output"
+copy_json = false
+strict = false         # exit non-zero if residual failures remain
+
+[engine]
+timeout = 600
+allow_disruptive = false
+backup_dir = ""
+audit_log = ""

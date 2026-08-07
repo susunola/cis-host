@@ -21,11 +21,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest jsonschema jinja2 ansible-core
+          pip install pytest jsonschema jinja2 ansible-core tomli
 
       - name: Compile Python engines
         run: |
-          python -m py_compile cis_cli.py
+          python -m py_compile cis_cli.py ciscvm_config.py
           for engine in cis-*-ansible/roles/cis_*/files/cis_engine.py; do
             python -m py_compile "$engine"
           done
@@ -41,3 +41,13 @@ jobs:
           for pb in cis-*-ansible/scan.yml cis-*-ansible/apply.yml; do
             ansible-playbook --syntax-check "$pb"
           done
+
+      - name: Test pip install and ciscvm CLI
+        run: |
+          pip install -e .
+          ciscvm --help
+          ciscvm list
+          ciscvm scan --help
+          ciscvm apply --help
+          printf '[profile]\nos = "rhel9"\nprofile = "L1"\n' > /tmp/ciscvm.toml
+          ciscvm scan --config /tmp/ciscvm.toml --help >/dev/null
