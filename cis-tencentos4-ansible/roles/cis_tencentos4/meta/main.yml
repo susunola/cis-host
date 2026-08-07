@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: cis_tencentos4
+  namespace: cis
   author: Platform Security Engineering
   description: >-
     Scan and remediate TencentOS Linux 4 hosts against the

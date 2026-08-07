@@ -1934,8 +1934,8 @@ def c_login_defs(ctx, p):
                          "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow 2>/dev/null | "
                          "while read -r u; do d=$(chage --list \"$u\" 2>/dev/null | "
                          "awk -F: '/Minimum number/{print $2}'); "
-                         "[ -n \"$d\" ] && [ \"$d\" -lt %s ] && echo \"$u\"; "
-                         "done | head -10" % want], 120).splitlines()
+                         "[ -n \"$d\" ] && [ \"$d\" -lt %d ] && echo \"$u\"; "
+                         "done | head -10" % int(want)], 120).splitlines()
     if ok and not bad_users:
         return "pass", "%s %s" % (key, cur)
     why = [] if ok else ["%s=%s (expected %s %s)" % (key, cur, op, want)]
@@ -1956,7 +1956,7 @@ def f_login_defs(ctx, p):
         else:
             sh(["bash", "-c",
                "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
-               "xargs -r -n1 chage --mindays %s" % want], 180)
+               "xargs -r -n1 chage --mindays %d" % int(want)], 180)
     return True, "set %s %s in /etc/login.defs" % (key, want)
 
 
@@ -2105,7 +2105,7 @@ def f_useradd_inactive(ctx, p):
     sh(["useradd", "-D", "-f", str(mx)], 30)
     sh(["bash", "-c",
        "awk -F: '$2 ~ /^\\$/ {print $1}' /etc/shadow | "
-       "xargs -r -n1 chage --inactive %d" % mx], 180)
+       "xargs -r -n1 chage --inactive %d" % int(mx)], 180)
     return True, "set default inactivity to %d days and updated existing users" % mx
 
 

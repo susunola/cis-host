@@ -25,8 +25,8 @@
 
 - name: Freeze the run timestamp
   ansible.builtin.set_fact:
-    cis_run_stamp: "{{ now(fmt='%Y%m%d-%H%M%S') }}"
-    cis_run_human: "{{ now(fmt='%Y-%m-%d %H:%M:%S') }}"
+    cis_run_stamp: "{{ (ansible_date_time.date | default('1970-01-01')) | replace('-', '') }}-{{ (ansible_date_time.time | default('00:00:00')) | replace(':', '') }}"
+    cis_run_human: "{{ ansible_date_time.iso8601 | default('1970-01-01T00:00:00Z') }}"
   run_once: true
 
 - name: Record fleet size for the multi-host banner
@@ -99,7 +99,9 @@
   delegate_to: localhost
   become: false
   run_once: true
-  when: cis_report_index | bool and cis_report_html | bool
+  when:
+    - cis_report_index | bool
+    - cis_report_html | bool
   check_mode: false
 
 - name: Report location

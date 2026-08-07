@@ -15,6 +15,17 @@
   serial: "{{ cis_serial | default('25%') }}"
   max_fail_percentage: "{{ cis_max_fail_percentage | default(0) }}"
 
+
+# ---------------------------------------------------------------------------
+# SELF-LOCKOUT SAFETY
+#
+# By default disruptive remediations (e.g. PermitRootLogin no, firewall
+# changes that require a reboot) are SKIPPED.  If you pass
+# -e cis_allow_disruptive=true while logged in as root, you CAN lock yourself
+# out of the host.  Always ensure out-of-band/console access before enabling
+# disruptive remediations, and run scan.yml first to review the findings.
+# ---------------------------------------------------------------------------
+
   pre_tasks:
     - name: Confirm the operator understands apply mode
       ansible.builtin.debug:

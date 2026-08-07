@@ -12,7 +12,7 @@ cis_report_html: true
 cis_report_json: true
 cis_report_csv: false
 cis_report_index: true
-cis_report_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+cis_report_timestamp: "{{ ansible_date_time.iso8601_basic_short | default('run') }}"
 cis_report_open_sections: 2
 cis_report_embed_remediation: true
 cis_python: /usr/bin/python3

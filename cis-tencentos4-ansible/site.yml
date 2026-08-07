@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# CIS TencentOS Linux 4 Benchmark v1.0.0
+# CIS TencentOS Linux 4 Benchmark
 #
 #   ansible-playbook -i inventory/hosts.ini site.yml                       # L1 scan
 #   ansible-playbook -i inventory/hosts.ini site.yml -e cis_profile=L2     # L2 scan
@@ -14,6 +14,7 @@
 - name: "CIS TencentOS Linux 4 - {{ cis_mode | default('scan') }} ({{ cis_profile | default('L1') }})"
   hosts: "{{ cis_hosts | default('tencentos4') }}"
   gather_facts: true
+  become: true
   any_errors_fatal: false
   serial: "{{ cis_serial | default('100%') }}"
 
