@@ -4,6 +4,7 @@
 *.pyc
 __pycache__/
 .DS_Store
+.pytest_cache/
 
 # Local inventory overrides (keep sample only)
 */inventory/hosts.local.ini
@@ -11,3 +12,7 @@ output/
 
 # WorkBuddy project data
 .workbuddy/
+
+# Python virtual environments
+.venv/
+venv/

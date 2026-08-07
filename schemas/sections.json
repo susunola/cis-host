@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CIS section titles",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["chapters", "subsections"],
+      "properties": {
+        "chapters": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]+$": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "subsections": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]+(\\.[0-9]+)*$": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "levels": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["L1", "L2"] }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  ]
+}

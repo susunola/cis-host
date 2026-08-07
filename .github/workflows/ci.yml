@@ -1,0 +1,43 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest jsonschema jinja2 ansible-core
+
+      - name: Compile Python engines
+        run: |
+          python -m py_compile cis_cli.py
+          for engine in cis-*-ansible/roles/cis_*/files/cis_engine.py; do
+            python -m py_compile "$engine"
+          done
+
+      - name: Run pytest
+        run: pytest -v
+
+      - name: Validate JSON catalogs
+        run: python scripts/validate_json.py
+
+      - name: Ansible syntax check
+        run: |
+          for pb in cis-*-ansible/scan.yml cis-*-ansible/apply.yml; do
+            ansible-playbook --syntax-check "$pb"
+          done
