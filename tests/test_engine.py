@@ -114,6 +114,57 @@ class TestBackup:
         engine.backup(ctx, str(tmp_path / "nope"))
         assert ctx.notes == []
 
+    def test_backup_directory_is_0700_and_file_is_0600(self, tmp_path):
+        src = tmp_path / "secret"
+        src.write_text("data")
+        backup_root = tmp_path / "backups"
+        ctx = _ctx(tmp_path, backup_dir=backup_root)
+        engine.backup(ctx, str(src))
+        rel = str(src).lstrip("/")
+        backup = backup_root / rel
+        assert backup.exists()
+        assert stat.S_IMODE(backup.stat().st_mode) == 0o600
+        assert stat.S_IMODE(backup.parent.stat().st_mode) == 0o700
+
+    def test_backup_enforces_permissions_on_existing_backup(self, tmp_path):
+        src = tmp_path / "secret"
+        src.write_text("data")
+        backup_root = tmp_path / "backups"
+        # The backup destination mirrors the absolute source path under backup_root.
+        rel = str(src).lstrip("/")
+        existing = backup_root / rel
+        existing.parent.mkdir(parents=True)
+        existing.write_text("old")
+        os.chmod(existing, 0o644)
+        ctx = _ctx(tmp_path, backup_dir=backup_root)
+        engine.backup(ctx, str(src))
+        assert stat.S_IMODE(existing.stat().st_mode) == 0o600
+
+
+class TestRestoreFromBackup:
+    def test_restores_file_from_backup(self, tmp_path):
+        src = tmp_path / "config"
+        src.write_text("original")
+        backup_root = tmp_path / "backups"
+        ctx = _ctx(tmp_path, backup_dir=backup_root)
+        engine.backup(ctx, str(src))
+        src.write_text("modified")
+        ok = engine.restore_from_backup(ctx, str(src))
+        assert ok is True
+        assert src.read_text() == "original"
+
+    def test_returns_false_when_no_backup(self, tmp_path):
+        src = tmp_path / "config"
+        src.write_text("original")
+        ctx = _ctx(tmp_path, backup_dir=tmp_path / "backups")
+        ok = engine.restore_from_backup(ctx, str(src))
+        assert ok is False
+
+    def test_skips_path_traversal(self, tmp_path):
+        ctx = _ctx(tmp_path, backup_dir=tmp_path / "backups")
+        ok = engine.restore_from_backup(ctx, str(tmp_path / ".." / "etc" / "passwd"))
+        assert ok is False
+
 
 class TestWriteFile:
     def test_writes_and_records_change(self, tmp_path):

@@ -147,13 +147,37 @@ def backup(ctx, path):
         ctx.notes.append("backup skipped (path traversal): %s" % path)
         return
     dest = os.path.join(ctx.backup_dir, rel)
-    if os.path.exists(dest):
-        return
     try:
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        d = os.path.dirname(dest)
+        os.makedirs(d, exist_ok=True)
+        os.chmod(d, 0o700)
+        if os.path.exists(dest):
+            os.chmod(dest, 0o600)
+            return
         shutil.copy2(path, dest)
+        os.chmod(dest, 0o600)
     except Exception as exc:
         ctx.notes.append("backup %s: %s" % (path, exc))
+
+
+def restore_from_backup(ctx, path):
+    """Restore `path` from its backup if one exists."""
+    if not ctx.backup_dir:
+        return False
+    rel = path
+    while rel.startswith("/"):
+        rel = rel[1:]
+    if ".." in rel.split(os.sep):
+        return False
+    src = os.path.join(ctx.backup_dir, rel)
+    if not os.path.isfile(src):
+        return False
+    try:
+        shutil.copy2(src, path)
+        return True
+    except Exception as exc:
+        ctx.notes.append("restore %s: %s" % (path, exc))
+        return False
 
 
 def atomic_write(path, content, mode=None, preserve_owner=True):
@@ -474,7 +498,13 @@ def f_mount_opt(ctx, p):
     mp, opt = p["mount"], p["option"]
     if mp not in _mounts(ctx):
         return False, "%s is not a separate mount point; cannot remediate" % mp
-    # 1. persist in /etc/fstab
+    # 1. apply live first so a bad option does not persist in /etc/fstab
+    if not ctx.dry:
+        rc, _, err = sh(["mount", "-o", "remount," + opt, mp])
+        ctx.invalidate("mounts")
+        if rc != 0:
+            return False, "live remount failed: %s" % err
+    # 2. persist in /etc/fstab
     changed = False
     if exists("/etc/fstab"):
         backup(ctx, "/etc/fstab")
@@ -496,11 +526,6 @@ def f_mount_opt(ctx, p):
             with open("/etc/fstab", "w", encoding="utf-8") as fh:
                 fh.write("\n".join(res).rstrip("\n") + "\n")
             ctx.changed_files.append("/etc/fstab")
-    # 2. apply live
-    rc, _, err = sh(["mount", "-o", "remount," + opt, mp])
-    ctx.invalidate("mounts")
-    if rc != 0:
-        return False, "fstab updated but live remount failed: %s" % err
     return True, "added %s to %s (fstab%s + remount)" % (
         opt, mp, "" if changed else " already ok")
 
@@ -1512,6 +1537,10 @@ def _sshd_write(ctx, pairs):
     supports_dropin = os.path.isdir("/etc/ssh/sshd_config.d") or \
         bool(re.search(r"^\s*Include\s+/etc/ssh/sshd_config\.d/",
                        read("/etc/ssh/sshd_config") or "", re.M | re.I))
+    # snapshot current state so we can roll back if sshd refuses to reload
+    if supports_dropin:
+        backup(ctx, SSHD_DROPIN)
+    backup(ctx, "/etc/ssh/sshd_config")
     if supports_dropin:
         os.makedirs("/etc/ssh/sshd_config.d", exist_ok=True)
         body = ["# Managed by CIS Ansible hardening"]
@@ -1539,8 +1568,15 @@ def _sshd_write(ctx, pairs):
         tgt = "/etc/ssh/sshd_config"
     rc, _, err = sh(["sshd", "-t"], 30)
     if rc != 0:
+        restore_from_backup(ctx, SSHD_DROPIN)
+        restore_from_backup(ctx, "/etc/ssh/sshd_config")
         return tgt, err
-    sh(["systemctl", "reload", "sshd"], 60)
+    rc, _, err = sh(["systemctl", "reload", "sshd"], 60)
+    if rc != 0:
+        restore_from_backup(ctx, SSHD_DROPIN)
+        restore_from_backup(ctx, "/etc/ssh/sshd_config")
+        ctx.invalidate("sshd_T")
+        return tgt, "systemctl reload sshd failed: %s" % err
     ctx.invalidate("sshd_T")
     return tgt, None
 
