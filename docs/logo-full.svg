@@ -43,10 +43,10 @@
       SECX SERIES
     </text>
 
-    <!-- cis-os main wordmark -->
+    <!-- cis-bulwark main wordmark -->
     <text x="0" y="76" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
           font-size="56" font-weight="800" letter-spacing="-1.5" fill="url(#text-grad)">
-      cis-os
+      cis-bulwark
     </text>
 
     <!-- Subtitle -->

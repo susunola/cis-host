@@ -1,4 +1,4 @@
-# cis-os — Python dependencies
+# cis-bulwark — Python dependencies
 # Engine itself (cis_engine.py): zero third-party dependencies (Python 3 stdlib only).
 # cis_cli.py report generation requires Jinja2.
 

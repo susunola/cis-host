@@ -43,9 +43,9 @@ def to_sarif(data):
         "runs": [{
             "tool": {
                 "driver": {
-                    "name": "cis-os",
+                    "name": "cis-bulwark",
                     "version": data.get("engine_version", "1.0.0"),
-                    "informationUri": "https://github.com/susunola/cis-os"
+                    "informationUri": "https://github.com/susunola/cis-bulwark"
                 }
             },
             "results": results,
