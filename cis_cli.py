@@ -633,6 +633,27 @@ def get_rule_detail(args, rule_id):
 
 # ─── Main commands ────────────────────────────────────────────────────
 
+def has_residual_failures(data, mode):
+    """Return True if the result still contains failing checks."""
+    s = data.get("summary", {}).get("all", {})
+    if mode == "scan":
+        return s.get("fail", 0) > 0 or s.get("error", 0) > 0
+    return s.get("fail", 0) > 0 or s.get("error", 0) > 0 or s.get("apply_failed", 0) > 0
+
+
+def cmd_list_os(args):
+    """List supported OS presets."""
+    print("\nSupported OS presets:\n")
+    print(f"{'OS':<14} {'Engine':<10} {'Benchmark'}")
+    print("-" * 70)
+    for os_id, preset in sorted(OS_PRESETS.items()):
+        engine_ext = os.path.splitext(preset["engine"])[1]
+        engine_type = "powershell" if engine_ext == ".ps1" else "python"
+        print(f"{os_id:<14} {engine_type:<10} {preset['name']}")
+    print()
+    return 0
+
+
 def cmd_scan(args):
     """SCAN mode: check compliance, generate HTML report and CLI table."""
     print(f"\n╔══ CIS Benchmark — SCAN ══╗")
@@ -657,7 +678,7 @@ def cmd_scan(args):
     if args.format in ("html", "both"):
         out_path = render_report(result_data, args, "scan", result_file)
         print(f"Report saved: {out_path}")
-    return out_path
+    return {"data": result_data, "path": out_path}
 
 
 def cmd_apply(args):
@@ -709,7 +730,7 @@ def cmd_apply(args):
     if args.format in ("html", "both"):
         out_path = render_report(post_data, args, "apply", post_file)
         print(f"\nReport saved: {out_path}")
-    return out_path
+    return {"data": post_data, "path": out_path}
 
 
 def cmd_check(args):
@@ -735,7 +756,7 @@ def cmd_check(args):
 
     out_path = render_report(scan_data, args, "scan", scan_file)
     print(f"\nReport saved: {out_path}")
-    return out_path
+    return {"data": scan_data, "path": out_path}
 
 
 def cmd_info(args):
@@ -888,8 +909,11 @@ Examples:
         """
     )
 
-    sub = ap.add_subparsers(dest="command", help="Mode: scan | apply | check | info")
+    sub = ap.add_subparsers(dest="command", help="Mode: list-os | scan | apply | check | info")
     sub.required = True
+
+    # ── list-os ──
+    p_list = sub.add_parser("list-os", help="List supported OS presets")
 
     # ── Common args shared by all commands ──
     def add_common_args(p):
@@ -937,6 +961,8 @@ Examples:
                        help="Engine execution timeout in seconds (default: 600)")
         p.add_argument("--no-prescan", action="store_true",
                        help="Skip pre-scan baseline in apply mode")
+        p.add_argument("--strict", action="store_true",
+                       help="Exit non-zero when residual failures remain")
 
     # ── Apply-specific args ──
     def add_apply_args(p):
@@ -983,7 +1009,7 @@ Examples:
     args = ap.parse_args()
 
     # ── Resolve --os preset ──
-    if args.os:
+    if getattr(args, "os", None):
         preset = OS_PRESETS[args.os]
         args.engine = args.engine or os.path.join(_SCRIPT_DIR, preset["engine"])
         args.catalog = args.catalog or os.path.join(_SCRIPT_DIR, preset["catalog"])
@@ -993,18 +1019,19 @@ Examples:
         if not args.name or args.name == "CIS Benchmark":
             args.name = preset["name"]
 
-    # Validate required paths
-    if not args.engine or not args.catalog:
+    # Validate required paths (not needed for list-os/info-only modes)
+    if args.command not in ("list-os",) and (not args.engine or not args.catalog):
         print("Error: --engine and --catalog are required (or use --os)", file=sys.stderr)
         sys.exit(1)
 
     # Validate template exists if specified
-    if args.template and not os.path.exists(args.template):
+    if getattr(args, "template", None) and not os.path.exists(args.template):
         print(f"Template not found: {args.template}", file=sys.stderr)
         sys.exit(1)
 
     # Dispatch
     commands = {
+        "list-os": cmd_list_os,
         "scan": cmd_scan,
         "apply": cmd_apply,
         "check": cmd_check,
@@ -1012,9 +1039,18 @@ Examples:
     }
 
     try:
-        report_path = commands[args.command](args)
-        if report_path:
-            print(f"\nDone. Open: {report_path}")
+        result = commands[args.command](args)
+        if isinstance(result, dict):
+            out_path = result.get("path")
+            data = result.get("data")
+            if out_path:
+                print(f"\nDone. Open: {out_path}")
+            if getattr(args, "strict", False) and args.command in ("scan", "apply", "check"):
+                mode = "apply" if args.command == "apply" else "scan"
+                if data and has_residual_failures(data, mode):
+                    sys.exit(2)
+        elif isinstance(result, str) and result:
+            print(f"\nDone. Open: {result}")
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
         sys.exit(130)
