@@ -40,13 +40,21 @@ cis_report_open_sections: 2    # chapters expanded by default in the HTML report
 cis_report_embed_remediation: true   # show CIS remediation text for findings
 
 # --- Execution --------------------------------------------------------------
-cis_python: /usr/bin/python3   # interpreter used for the engine on the target
+cis_python: /usr/bin/python3   # fallback interpreter; Ansible's auto-discovered
+                                # ansible_python_interpreter is preferred when set
 cis_remote_tmp: /tmp           # parent directory for the temporary work dir
 cis_keep_remote_artifacts: false
 cis_engine_timeout: 1800       # seconds
 cis_backup_dir: /var/backups/cis-tencentos4   # apply mode writes .bak files here
 cis_fail_on_findings: false    # make the play fail when findings remain
 cis_min_score: 0               # or fail when the L1/L2 score drops below this
+
+# --- Playbook orchestration (overridden in scan.yml / apply.yml / site.yml) ---
+# cis_hosts is the inventory group targeted by scan.yml / apply.yml / site.yml.
+# cis_serial controls rolling execution.  scan.yml defaults to 100%,
+# apply.yml defaults to 25% for safer batch remediation.
+# cis_hosts: tencentos4
+# cis_serial: "100%"
 
 # --- Static metadata --------------------------------------------------------
 cis_benchmark_name: "CIS TencentOS Linux 4 Benchmark"

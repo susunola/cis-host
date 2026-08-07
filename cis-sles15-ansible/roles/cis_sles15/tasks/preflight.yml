@@ -14,24 +14,24 @@
     msg: "cis_platform must be 'server', 'workstation', or 'all', got: {{ cis_platform }}"
   when: cis_platform not in ['server', 'workstation', 'all']
 
-- name: Locate Python 3 interpreter
-  ansible.builtin.shell: |
-    for py in /usr/bin/python3 /usr/libexec/platform-python /usr/bin/python3.6 /usr/bin/python3.8 /usr/bin/python3.9 /usr/bin/python3.10 /usr/bin/python3.11 /usr/bin/python3.12 /usr/bin/python3.13 /usr/bin/python3.14; do
-      if [ -x "$py" ]; then echo "$py"; exit 0; fi
-    done
-    echo "NOT_FOUND"; exit 1
-  register: _py_probe
-  changed_when: false
-  failed_when: false
-
-- name: Verify Python 3 found
-  ansible.builtin.fail:
-    msg: "Python 3.6+ not found on target"
-  when: "_py_probe.stdout == 'NOT_FOUND' or _py_probe.rc != 0"
-
-- name: Set Python path
+- name: Determine the Python 3 interpreter to use on the target
   ansible.builtin.set_fact:
-    cis_python_real: "{{ _py_probe.stdout.strip() }}"
+    cis_python_real: >-
+      {{ ansible_python_interpreter | default(cis_python) }}
+    cis_python_major: >-
+      {{ ansible_python.version.major | default(0) | int }}
+    cis_python_minor: >-
+      {{ ansible_python.version.minor | default(0) | int }}
+
+- name: Verify Python 3.6+ is available
+  ansible.builtin.fail:
+    msg: >-
+      Python 3.6+ is required on the target, found
+      {{ cis_python_major }}.{{ cis_python_minor }}
+      ({{ cis_python_real }}).
+  when: >-
+    (cis_python_major | int) < 3 or
+    ((cis_python_major | int) == 3 and (cis_python_minor | int) < 6)
 
 - name: Probe effective user ID on the target
   ansible.builtin.command: id -u

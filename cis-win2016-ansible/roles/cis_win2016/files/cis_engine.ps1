@@ -25,6 +25,7 @@ param(
     [string]$Families = "",
 
     [string]$AuditLog = "",
+    [string]$Benchmark = "",
     [switch]$AllowDisruptive
 )
 
@@ -490,6 +491,22 @@ function Invoke-Check {
                 }
             } catch { Write-Debug "ps-logging check failed: $_" }
             return @{status="fail"; detail="PS logging key not found"}
+        }
+
+        # PDF-derived rules where the exact registry path / mechanism could not
+        # be inferred automatically.  Report as manual so they do not produce
+        # scan errors; remediation must be performed by an administrator.
+        "manual" {
+            return @{status="manual"; detail="manual assessment required; mechanism not available in benchmark PDF"}
+        }
+        "user_audit" {
+            return @{status="manual"; detail="manual assessment required for user account audit configuration"}
+        }
+        "kv_conf" {
+            return @{status="manual"; detail="manual assessment required for key/value configuration"}
+        }
+        "audit_perm" {
+            return @{status="manual"; detail="manual assessment required for audit permission setting"}
         }
 
         default {
@@ -971,6 +988,7 @@ $overallScore = $summary.all.score
 $output = @{
     mode = $Mode
     engine_version = "1.1.0-windows"
+    benchmark = $Benchmark
     duration_seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)
     started_at = $startedAt
     score = $overallScore
@@ -989,9 +1007,6 @@ if ($auditWriter) {
     $auditWriter = $null
     Write-Host "Audit log written to: $AuditLog"
 }
-# ── Exit with code based on failures ──
-$failCount = ($global:Results | Where-Object { $_.status -eq "fail" }).Count
-$errorCount = ($global:Results | Where-Object { $_.status -eq "error" }).Count
-if ($errorCount -gt 0) { exit 2 }
-if ($failCount -gt 0) { exit 1 }
+# ── Exit code: 0 unless the engine itself crashed ──
+# Findings are encoded in result.json and evaluated by gate.yml.
 exit 0

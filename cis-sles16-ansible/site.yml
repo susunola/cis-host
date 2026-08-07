@@ -1,6 +1,22 @@
 ---
-- name: CIS Benchmark Assessment
-  hosts: all
+# =============================================================================
+# CIS SUSE Linux Enterprise Server 16 Benchmark
+#
+#   ansible-playbook -i inventory/hosts.ini site.yml                       # L1 scan
+#   ansible-playbook -i inventory/hosts.ini site.yml -e cis_profile=L2     # L2 scan
+#   ansible-playbook -i inventory/hosts.ini site.yml -e cis_mode=apply     # L1 remediate
+#   ansible-playbook -i inventory/hosts.ini site.yml \
+#       -e cis_mode=apply -e cis_profile=L2 -e cis_allow_disruptive=true
+#
+# scan.yml / apply.yml set cis_mode explicitly with appropriate safety defaults.
+# This site.yml defaults to scan; use -e cis_mode=apply for remediation.
+# =============================================================================
+- name: "CIS SUSE Linux Enterprise Server 16 - {{ cis_mode | default('scan') }} ({{ cis_profile | default('L1') }})"
+  hosts: "{{ cis_hosts | default('sles16') }}"
   gather_facts: true
+  become: true
+  any_errors_fatal: false
+  serial: "{{ cis_serial | default('100%') }}"
+
   roles:
-    - cis_sles16
+    - role: cis_sles16

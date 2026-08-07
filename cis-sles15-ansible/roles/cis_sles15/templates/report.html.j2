@@ -72,6 +72,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CIS compliance report for {{ cis_host.hostname | e }} ({{ cis_profile }} {{ cis_mode_effective }})">
 <title>{{ cis_benchmark_name | e }} {{ cis_benchmark_version | e }} · {{ cis_host.hostname | e }}</title>
 <style>
 :root{
@@ -571,26 +572,26 @@ footer b{color:var(--ink2)}
     <span class="chip" data-st="manual">{{ 'Manual' }} <span class="c">{{ a_man }}</span></span>
     {% if a_err %}<span class="chip" data-st="error">{{ 'Error' }} <span class="c">{{ a_err }}</span></span>{% endif %}
     {% if IS_APPLY %}<span class="chip" data-st="applied">{{ 'Fixed' }} <span class="c">{{ a_appl + a_pend }}</span></span>{% endif %}
-    <select id="frisk">
+    <select id="frisk" aria-label="{{ 'Filter by risk tier' }}">
       <option value="">{{ 'All risks' }}</option>
       <option value="safe">{{ 'Low · auto' }}</option>
       <option value="disruptive">{{ 'High risk' }}</option>
       <option value="none">{{ 'N/A' }}</option>
     </select>
-    <select id="flv">
+    <select id="flv" aria-label="{{ 'Filter by CIS level' }}">
       <option value="">{{ 'All levels' }}</option>
       <option value="1">{{ 'Only L1' }}</option>
       <option value="2">{{ 'Only L2' }}</option>
     </select>
-    <select id="fch">
+    <select id="fch" aria-label="{{ 'Filter by chapter' }}">
       <option value="">{{ 'All chapters' }}</option>
       {% for ch in chorder | sort %}
       <option value="{{ ch }}">{{ ch }}. {{ SEC.chapters.get(ch, '') | e }}</option>
       {% endfor %}
     </select>
-    <input type="search" id="fq" placeholder="{{ 'Search ID, title or keyword…' }}">
-    <button class="tbtn" id="bex">{{ 'Expand' }}</button>
-    <button class="tbtn" id="bpr">{{ 'Print / Export' }}</button>
+    <input type="search" id="fq" placeholder="{{ 'Search ID, title or keyword…' }}" aria-label="{{ 'Search findings' }}">
+    <button class="tbtn" id="bex" aria-label="{{ 'Expand or collapse all findings' }}">{{ 'Expand' }}</button>
+    <button class="tbtn" id="bpr" aria-label="{{ 'Print or export this report' }}">{{ 'Print / Export' }}</button>
   </div>
 
   <div class="tblwrap">

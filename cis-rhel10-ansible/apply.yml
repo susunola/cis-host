@@ -1,16 +1,42 @@
 ---
-- name: CIS Benchmark Apply
-  hosts: all
-  become: true
+# Assess, remediate everything that fails, then re-assess to confirm.
+# Remediations that could interrupt service are skipped unless
+# cis_allow_disruptive=true is passed explicitly.
+#
+#   ansible-playbook -i inventory/hosts.ini apply.yml
+#   ansible-playbook -i inventory/hosts.ini apply.yml -e cis_profile=L2
+#   ansible-playbook -i inventory/hosts.ini apply.yml -e cis_allow_disruptive=true
+#
+# Always run scan.yml first and read the report before applying to production.
+- name: "CIS Red Hat Enterprise Linux 10 - apply ({{ cis_profile | default('L1') }})"
+  hosts: "{{ cis_hosts | default('rhel10') }}"
   gather_facts: true
-  serial: 25%
-  max_fail_percentage: 0
-  vars:
-    cis_mode: apply
-    cis_allow_disruptive: false
+  become: true
+  serial: "{{ cis_serial | default('25%') }}"
+  max_fail_percentage: "{{ cis_max_fail_percentage | default(0) }}"
+
+
+# ---------------------------------------------------------------------------
+# SELF-LOCKOUT SAFETY
+#
+# By default disruptive remediations (e.g. PermitRootLogin no, firewall
+# changes that require a reboot) are SKIPPED.  If you pass
+# -e cis_allow_disruptive=true while logged in as root, you CAN lock yourself
+# out of the host.  Always ensure out-of-band/console access before enabling
+# disruptive remediations, and run scan.yml first to review the findings.
+# ---------------------------------------------------------------------------
+
   pre_tasks:
-    - name: WARNING - Apply mode will make changes
+    - name: Confirm the operator understands apply mode
       ansible.builtin.debug:
-        msg: "⚠️  APPLY MODE: This WILL modify system configuration. Set cis_allow_disruptive=true to include disruptive changes."
+        msg: >-
+          APPLY on {{ inventory_hostname }} - profile {{ cis_profile | default('L1') }},
+          disruptive remediations
+          {{ 'ENABLED' if cis_allow_disruptive | default(false) | bool else 'disabled' }}.
+          Modified files are backed up under
+          {{ cis_backup_dir | default('/var/backups/cis-rhel10') }}.
+
   roles:
-    - cis_rhel10
+    - role: cis_rhel10
+      vars:
+        cis_mode: apply

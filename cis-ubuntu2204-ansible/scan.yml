@@ -1,9 +1,14 @@
 ---
-- name: CIS Benchmark Scan
-  hosts: all
+# Read-only assessment. Nothing on the target is modified.
+#   ansible-playbook -i inventory/hosts.ini scan.yml
+#   ansible-playbook -i inventory/hosts.ini scan.yml -e cis_profile=L2
+- name: "CIS Ubuntu 22.04 LTS - scan ({{ cis_profile | default('L1') }})"
+  hosts: "{{ cis_hosts | default('ubuntu2204') }}"
   gather_facts: true
   become: true
-  vars:
-    cis_mode: scan
+  serial: "{{ cis_serial | default('100%') }}"
+
   roles:
-    - cis_ubuntu2204
+    - role: cis_ubuntu2204
+      vars:
+        cis_mode: scan
