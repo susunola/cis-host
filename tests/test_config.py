@@ -149,7 +149,7 @@ hosts = ["web1", "web2"]
 remote = true
 user = "admin"
 key = "~/.ssh/id_rsa"
-remote_engine = "/opt/cis-os/cis_engine.py"
+remote_engine = "/opt/cis-bulwark/cis_engine.py"
 """)
     args = _args()
     merged = ciscvm_config.merge(args, str(p))
@@ -164,7 +164,7 @@ remote_engine = "/opt/cis-os/cis_engine.py"
         "remote": True,
         "user": "admin",
         "key": "~/.ssh/id_rsa",
-        "remote_engine": "/opt/cis-os/cis_engine.py",
+        "remote_engine": "/opt/cis-bulwark/cis_engine.py",
     }
 
 
