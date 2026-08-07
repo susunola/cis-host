@@ -64,6 +64,22 @@ def fix(*names):
     return deco
 
 
+# Risk weights for hardening index and priority sorting.
+RISK_WEIGHTS = {
+    "sshd_access": 4,
+    "root_access": 3,
+    "bootloader_password": 3,
+    "disruptive": 3,
+    "partition": 2,
+    "medium": 2,
+    "low": 1,
+    "safe": 1,
+    "none": 0,
+    "info_only": 0,
+    "manual": 0,
+}
+
+
 class Ctx(object):
     """Execution context / shared caches."""
 
@@ -72,6 +88,9 @@ class Ctx(object):
         self.dry = opts.mode != "apply"
         self.allow_disruptive = opts.allow_disruptive
         self.backup_dir = opts.backup_dir
+        self.variables = getattr(opts, "variables", {}) or {}
+        self.waivers = getattr(opts, "waivers", {}) or {}
+        self.simulate = getattr(opts, "simulate", False)
         self._cache = {}
         self.changed_files = []
         self.notes = []
@@ -3716,7 +3735,12 @@ def _audit_entry(rule_result, mode, profile, hostname, version):
 
 def run_rule(ctx, rule, audit_fh=None):
     fam = rule["family"]
-    params = rule.get("params") or {}
+    # Merge tailoring variables on top of rule params.
+    params = dict(rule.get("params") or {})
+    if ctx.variables:
+        for k, v in ctx.variables.items():
+            if k in params:
+                params[k] = v
     res = {
         "id": rule["id"],
         "title": rule["title"],
@@ -3726,6 +3750,7 @@ def run_rule(ctx, rule, audit_fh=None):
         "assessment": rule.get("assessment") or "Automated",
         "family": fam,
         "risk": rule.get("risk") or "none",
+        "priority": RISK_WEIGHTS.get(rule.get("risk") or "none", 1),
         "page": rule.get("page"),
         "status": "error",
         "detail": "",
@@ -3733,7 +3758,25 @@ def run_rule(ctx, rule, audit_fh=None):
         "apply_detail": "",
         "status_before": None,
         "duration_ms": 0,
+        "waived": False,
+        "waiver": None,
     }
+
+    # Waiver handling: if a rule is waived, mark it and skip execution.
+    waiver = ctx.waivers.get(rule["id"])
+    if waiver:
+        res["waived"] = True
+        res["waiver"] = waiver if isinstance(waiver, dict) else {"reason": str(waiver)}
+        res["status"] = "waived"
+        res["detail"] = "waived: %s" % res["waiver"].get("reason", "")
+        res["duration_ms"] = 0
+        if audit_fh is not None:
+            audit_fh.write(json.dumps(_audit_entry(
+                res, ctx.opts.mode, ctx.opts.profile,
+                ctx._hostname, VERSION), ensure_ascii=False) + "\n")
+            audit_fh.flush()
+        return res
+
     t0 = time.time()
     fn = CHECKS.get(fam)
     if fn is None:
@@ -3757,6 +3800,9 @@ def run_rule(ctx, rule, audit_fh=None):
             res["apply_status"] = "skipped_disruptive"
             res["apply_detail"] = ("remediation may interrupt services or require a "
                                    "reboot; re-run with cis_allow_disruptive=true")
+        elif ctx.simulate:
+            res["apply_status"] = "simulated"
+            res["apply_detail"] = "dry-run: remediation would be attempted"
         else:
             try:
                 ok, adetail = ffn(ctx, params)
@@ -3783,11 +3829,27 @@ def run_rule(ctx, rule, audit_fh=None):
     return res
 
 
+def _weighted_score(results, level=None):
+    """Return (weighted_pass, weighted_total) for hardening index."""
+    total, passed = 0, 0
+    for r in results:
+        if level is not None and r["level"] != level:
+            continue
+        if r.get("waived"):
+            continue
+        w = r.get("priority", 1)
+        total += w
+        if r["status"] == "pass":
+            passed += w
+    return passed, total
+
+
 def summarize(results, skipped_count):
     def blank():
         return {"total": 0, "pass": 0, "fail": 0, "manual": 0, "error": 0,
-                "notapplicable": 0, "applied": 0, "applied_pending": 0,
-                "apply_failed": 0, "skipped_disruptive": 0, "unsupported": 0,
+                "notapplicable": 0, "waived": 0, "applied": 0,
+                "applied_pending": 0, "apply_failed": 0,
+                "skipped_disruptive": 0, "unsupported": 0, "simulated": 0,
                 "already": 0}
     s = {"all": blank(), "L1": blank(), "L2": blank()}
     for r in results:
@@ -3802,8 +3864,28 @@ def summarize(results, skipped_count):
         scored = b["pass"] + b["fail"]
         b["score"] = round(100.0 * b["pass"] / scored, 1) if scored else 0.0
         b["assessed"] = scored
+        lvl = None if b is s["all"] else (1 if b is s["L1"] else 2)
+        passed, total = _weighted_score(results, level=lvl)
+        b["hardening_index"] = round(100.0 * passed / total, 1) if total else 0.0
+        b["weighted_total"] = total
     s["all"]["skipped_by_selection"] = skipped_count
     return s
+
+
+def _load_json_arg(path_or_inline):
+    """Load a JSON object from a file path or inline JSON string."""
+    if not path_or_inline:
+        return {}
+    text = path_or_inline
+    if os.path.isfile(path_or_inline):
+        with open(path_or_inline, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    try:
+        data = json.loads(text)
+        return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError as exc:
+        sys.stderr.write("invalid JSON argument: %s\n" % exc)
+        return {}
 
 
 def main():
@@ -3822,6 +3904,12 @@ def main():
     ap.add_argument("--out", default="-")
     ap.add_argument("--audit-log", default="")
     ap.add_argument("--benchmark", default="")
+    ap.add_argument("--variables", default="",
+                    help="JSON file or inline JSON with rule variable overrides")
+    ap.add_argument("--waivers", default="",
+                    help="JSON file or inline JSON mapping rule IDs to waiver reasons/objects")
+    ap.add_argument("--simulate", action="store_true",
+                    help="Dry-run apply mode: report what would be remediated without changing the system")
     opts = ap.parse_args()
 
     def csv(x):
@@ -3836,6 +3924,9 @@ def main():
     sel, skipped = select(rules, opts.profile, opts.platform,
                           csv(opts.include), csv(opts.exclude),
                           csv(opts.sections), csv(opts.families))
+
+    opts.variables = _load_json_arg(opts.variables)
+    opts.waivers = _load_json_arg(opts.waivers)
 
     if opts.mode == "apply" and os.geteuid() != 0:
         sys.stderr.write("apply mode requires root privileges\n")
@@ -3876,6 +3967,7 @@ def main():
         "profile": opts.profile,
         "platform": opts.platform,
         "allow_disruptive": bool(opts.allow_disruptive),
+        "simulate": bool(opts.simulate),
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(started)),
         "duration_seconds": round(elapsed, 2),
         "host": host_facts(),
@@ -3883,6 +3975,8 @@ def main():
         "results": results,
         "excluded": [{"id": r["id"], "title": r["title"], "reason": why}
                      for r, why in skipped],
+        "waivers": opts.waivers,
+        "variables": opts.variables,
         "changed_files": sorted(set(ctx.changed_files)),
         "engine_notes": ctx.notes,
     }

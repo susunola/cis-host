@@ -28,3 +28,28 @@ timeout = 600
 allow_disruptive = false
 backup_dir = ""
 audit_log = ""
+
+# Tailor rule inputs. Keys must match param names in the rule catalog.
+[variables]
+# min_len = 14
+# max_login_retries = 3
+
+# Waive specific rules. Value may be a plain string (reason) or a table.
+[waivers]
+# "1.1.1.1" = "legacy application requirement"
+# "5.2.10" = { reason = "managed by another tool", approved_by = "security@example.com", expires = "2025-12-31" }
+
+# Alternative waiver layout (choose one style):
+# [waivers.rules]
+# "1.1.1.1" = { reason = "legacy app" }
+
+[audit]
+strict = true          # audit mode always exits non-zero on findings by default
+
+[fleet]
+hosts = []             # e.g. ["web1", "web2"]
+remote = false         # set true to run engine over SSH on each host
+user = "root"
+key = "~/.ssh/id_rsa"
+remote_engine = "/opt/cis-os/cis_engine.py"
+remote_catalog = "/opt/cis-os/rules.json"

@@ -47,6 +47,8 @@
 {%- set a_appl   = SA.applied          | default(0) | int -%}
 {%- set a_pend   = SA.applied_pending  | default(0) | int -%}
 {%- set score    = SA.score            | default(0) | float -%}
+{%- set h_index  = SA.hardening_index  | default(0) | float -%}
+{%- set w_total  = SA.weighted_total   | default(0) | float -%}
 {%- set tone     = 'ok' if score >= 90 else ('warn' if score >= 70 else 'bad') -%}
 {#- chapter roll-up -#}
 {%- set chapters = {} -%}
@@ -213,6 +215,7 @@ h2.sec::before{content:"";width:4px;height:18px;background:linear-gradient(180de
 .pill.man{background:var(--manbg);color:var(--man);border-color:var(--manln)}
 .pill.err{background:var(--errbg);color:var(--err);border-color:var(--errln)}
 .pill.na{background:var(--nabg);color:var(--na);border-color:var(--naln)}
+.pill.waived{background:#f3e8ff;color:#7c3aed;border-color:#d8b4fe}
 
 .notice{margin-top:16px;padding:11px 14px;border-radius:var(--radius-sm);font-size:12.5px;
   background:var(--manbg);color:#163a8a;border:1px solid var(--manln);line-height:1.7}
@@ -462,6 +465,11 @@ footer b{color:var(--ink2)}
         <div><span class="dot" style="background:#8b3dd4"></span>{{ 'Error' }}<b>{{ a_err }}</b></div>
         <div><span class="dot" style="background:#cbd5e1"></span>{{ 'N/A' }}<b>{{ a_na }}</b></div>
       </div>
+      <div style="text-align:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--line2)">
+        <div style="font-size:11px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.6px">{{ 'Hardening Index' }}</div>
+        <div style="font-size:26px;font-weight:800;color:var(--brand);line-height:1.2;margin-top:4px">{{ h_index }}<span style="font-size:15px">%</span></div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:3px">{{ 'weighted total' }} {{ w_total }}</div>
+      </div>
     </div>
 
     {% for lv in ['L1', 'L2'] %}
@@ -590,6 +598,7 @@ footer b{color:var(--ink2)}
       {% endfor %}
     </select>
     <input type="search" id="fq" placeholder="{{ 'Search ID, title or keyword…' }}" aria-label="{{ 'Search findings' }}">
+    <button class="tbtn" id="bsort" aria-label="{{ 'Sort by ID or priority' }}">{{ 'Sort: ID' }}</button>
     <button class="tbtn" id="bex" aria-label="{{ 'Expand or collapse all findings' }}">{{ 'Expand' }}</button>
     <button class="tbtn" id="bpr" aria-label="{{ 'Print or export this report' }}">{{ 'Print / Export' }}</button>
   </div>
@@ -614,9 +623,13 @@ footer b{color:var(--ink2)}
         <tr class="r" data-id="{{ did }}" data-st="{{ r.status | e }}" data-risk="{{ r.risk | e }}"
             data-ap="{{ 'applied' if r.apply_status in ['applied', 'applied_pending'] else '' | e }}"
             data-lv="{{ r.level | e }}" data-ch="{{ r.id.split('.')[0] | e }}"
+            data-priority="{{ r.priority | default(0) | int }}"
             data-q="{{ (r.id ~ ' ' ~ r.title ~ ' ' ~ r.family ~ ' ' ~ SEC.subsections.get(r.section, '')) | lower | e }}">
           <td class="id">{{ r.id | e }}</td>
        <td class="ti">{{ r.title | e }}
+          {% if r.waived | default(false) %}
+          <span class="pill waived" title="{{ ((r.waiver | default({})).reason | default('Waived')) | e }}">{{ 'Waived' }}</span>
+          {% endif %}
           <span class="fam">{{ SEC.subsections.get(r.section, SEC.chapters.get(r.id.split('.')[0], '')) | e }}
      · {{ r.assessment | e }} · {{ r.family | e }}</span>
     </td>
@@ -635,6 +648,14 @@ footer b{color:var(--ink2)}
             <div class="det">
               <h4>{{ 'Finding' }}</h4>
               <div class="obs {{ sinfo.cls if sinfo.cls in ['bad', 'ok', 'warn'] else '' }}">{{ (r.detail or '(no output)') | e }}</div>
+              {% if IS_APPLY and r.status_before | default('') %}
+              <h4>{{ 'Before / After' }}</h4>
+              <p>{{ 'Status before' }}: <code>{{ r.status_before | e }}</code> → <code>{{ r.status | e }}</code></p>
+              {% endif %}
+              {% if r.waived | default(false) %}
+              <h4>{{ 'Waiver' }}</h4>
+              <p>{{ ((r.waiver | default({})).reason | default('(no reason)')) | e }}</p>
+              {% endif %}
               {% if r.apply_status not in ['n/a', 'already'] %}
               <h4>{{ 'Remediation' }} · {{ ainfo.en }}</h4>
               <div class="obs {{ ainfo.cls if ainfo.cls in ['bad', 'ok', 'warn'] else '' }}">{{ (r.apply_detail or '—') | e }}</div>
@@ -712,7 +733,9 @@ footer b{color:var(--ink2)}
   var ch = document.getElementById('fch');
   var rk = document.getElementById('frisk');
   var none = document.getElementById('none');
+  var bsort = document.getElementById('bsort');
   var state = 'all';
+  var sortBy = 'id';
 
   function apply() {
     var text = q.value.trim().toLowerCase();
@@ -768,6 +791,24 @@ footer b{color:var(--ink2)}
   });
 
   document.getElementById('bpr').addEventListener('click', function () { window.print(); });
+
+  bsort.addEventListener('click', function () {
+    sortBy = sortBy === 'id' ? 'priority' : 'id';
+    bsort.textContent = sortBy === 'id' ? ('Sort: ID') : ('Sort: Priority \u2193');
+    var pairs = rows.map(function (tr) {
+      return {r: tr, d: document.getElementById(tr.dataset.id),
+              pri: parseInt(tr.dataset.priority || '0', 10), id: tr.dataset.id};
+    });
+    pairs.sort(function (a, b) {
+      if (sortBy === 'priority' && b.pri !== a.pri) { return b.pri - a.pri; }
+      return a.id.localeCompare(b.id);
+    });
+    pairs.forEach(function (p) {
+      body.appendChild(p.r);
+      if (p.d) { body.appendChild(p.d); }
+    });
+    rows = [].slice.call(body.querySelectorAll('tr.r'));
+  });
 </script>
 </body>
 </html>

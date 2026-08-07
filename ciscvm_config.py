@@ -2,7 +2,6 @@
 """Load and merge ciscvm.toml configuration with CLI arguments."""
 
 import os
-import sys
 
 
 def _import_tomllib():
@@ -113,5 +112,34 @@ def merge(args, config_path=None):
         _set_if_none(args, "allow_disruptive", _normalize_bool(engine_cfg.get("allow_disruptive")) if "allow_disruptive" in engine_cfg else None)
         _set_if_none(args, "backup_dir", engine_cfg.get("backup_dir", ""))
         _set_if_none(args, "audit_log", engine_cfg.get("audit_log", ""))
+
+    # Tailoring: rule input variables and waivers/exception tracking.
+    variables_cfg = _get(cfg, "variables", default={})
+    if variables_cfg:
+        _set_if_none(args, "variables", variables_cfg)
+
+    waivers_cfg = _get(cfg, "waivers", default={})
+    if waivers_cfg:
+        # Support both:
+        #   [waivers]
+        #   "1.1.1.1" = "legacy app"
+        # and:
+        #   [waivers.rules]
+        #   "1.1.1.1" = { reason = "legacy app", approved_by = "..." }
+        if "rules" in waivers_cfg and isinstance(waivers_cfg["rules"], dict):
+            _set_if_none(args, "waivers", waivers_cfg["rules"])
+        else:
+            _set_if_none(args, "waivers", waivers_cfg)
+
+    # Audit gate configuration (mostly for documentation/defaults).
+    audit_cfg = _get(cfg, "audit", default={})
+    if audit_cfg:
+        if "strict" in audit_cfg:
+            _set_if_none(args, "strict", _normalize_bool(audit_cfg.get("strict")))
+
+    # Fleet scan configuration.
+    fleet_cfg = _get(cfg, "fleet", default={})
+    if fleet_cfg:
+        _set_if_none(args, "fleet", fleet_cfg)
 
     return args
