@@ -1,4 +1,4 @@
-# cis-os
+# cis-bulwark
 
 [English](README.md) | [简体中文](README.zh.md) | [日本語](README.ja.md) | **ภาษาไทย**
 
@@ -17,7 +17,7 @@ Ansible playbooks และ CLI แบบローカルที่ใช้ดำเ
 ## สถาปัตยกรรม
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="cis-os architecture" width="800">
+  <img src="docs/architecture.svg" alt="cis-bulwark architecture" width="800">
 </p>
 
 Engine เป็นสคริปต์ไฟล์เดียวที่ไม่มีการพึ่งพาไลบรารีภายนอก (Python 3 บน Linux, PowerShell บน Windows) Ansible ทำหน้าที่จัดการเฉพาะการถ่ายโอนไฟล์ การเรียกใช้คำสั่ง และการสร้างรายงาน แต่ละ Engine สร้างทั้ง `result.json` ที่มีโครงสร้าง และ `audit.log` (JSON-lines) ซึ่งเหมาะสำหรับการตรวจสอบด้านการปฏิบัติตามข้อกำหนด และการนำเข้าสู่ระบบ SIEM
@@ -180,7 +180,7 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## โครงสร้างไดเรกทอรี
 
 ```
-cis-os/
+cis-bulwark/
 ├── README.md
 ├── README.zh.md
 ├── README.ja.md

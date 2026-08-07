@@ -1,4 +1,4 @@
-# cis-os
+# cis-bulwark
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
@@ -17,7 +17,7 @@
 ## 架构
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="cis-os 架构图" width="800">
+  <img src="docs/architecture.svg" alt="cis-bulwark 架构图" width="800">
 </p>
 
 引擎是单文件脚本（Linux 为 Python 3，Windows 为 PowerShell），无第三方依赖。Ansible 只负责文件拷贝、命令执行、报告渲染。每个引擎产出 `result.json`（结构化结果）和可选的 `audit.log`（JSON-lines 审计日志），便于合规审查与 SIEM 接入。
@@ -180,7 +180,7 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## 目录结构
 
 ```
-cis-os/
+cis-bulwark/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
 ├── cis_cli.py                      # 本地 CLI（--os 切换目标）

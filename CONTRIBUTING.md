@@ -1,4 +1,4 @@
-# Contributing to cis-os
+# Contributing to cis-bulwark
 
 Thanks for your interest in contributing.
 

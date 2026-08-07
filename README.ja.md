@@ -1,4 +1,4 @@
-# cis-os
+# cis-bulwark
 
 [English](README.md) | [简体中文](README.zh.md) | **日本語** | [ภาษาไทย](README.th.md)
 
@@ -17,7 +17,7 @@
 ## アーキテクチャ
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="cis-os architecture" width="800">
+  <img src="docs/architecture.svg" alt="cis-bulwark architecture" width="800">
 </p>
 
 エンジンは単一ファイルのスクリプトであり、サードパーティの依存関係は一切ありません（Linux では Python 3、Windows では PowerShell）。Ansible はファイル転送、コマンド実行、レポートのレンダリングのみを担当します。各エンジンは、構造化された `result.json` と、準拠レビューや SIEM 取り込みに適したオプションの `audit.log`（JSON 行形式）の両方を生成します。
@@ -180,7 +180,7 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## ディレクトリ構成
 
 ```
-cis-os/
+cis-bulwark/
 ├── README.md
 ├── README.zh.md
 ├── README.ja.md

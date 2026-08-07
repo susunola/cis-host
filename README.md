@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@9a25072/docs/logo-full.png" alt="cis-os — SecX Series" width="600">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/logo-full.png" alt="cis-bulwark — SecX Series" width="600">
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/deps-zero-00B4D8" alt="Zero third-party dependencies">
 </p>
 
-# cis-os
+# cis-bulwark
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Two modes — `scan` (read-only assessment) and `apply` (remediate) — each producing per-host HTML reports with structured audit logs. **4,400+ rules, zero third-party dependencies.**
 
@@ -25,8 +25,8 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 ### Install from source (recommended)
 
 ```bash
-git clone https://github.com/susunola/cis-os.git
-cd cis-os
+git clone https://github.com/susunola/cis-bulwark.git
+cd cis-bulwark
 pip install -e .
 ```
 
@@ -124,7 +124,7 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini cis-rhel9-ansible/appl
 ## Architecture
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@9a25072/docs/architecture.svg" alt="cis-os architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/architecture.svg" alt="cis-bulwark architecture" width="800">
 </p>
 
 Each suite ships a single-file engine (Python 3 on Linux, PowerShell on Windows) with **zero third-party dependencies**. Ansible handles file transfer, remote execution, and Jinja2 report rendering. The engine produces `result.json` and an optional `audit.log` (JSON-lines) suitable for SIEM ingestion.
@@ -222,11 +222,11 @@ A `findings.csv.j2` template is also available — enable with `cis_report_csv=t
 - Per-host score bar, pass/fail pills, applied counts, deep-link to per-host report
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@9a25072/docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
 </p>
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-os@9a25072/docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
 </p>
 
 ## Fine-Grained Execution
@@ -331,7 +331,7 @@ Scan works as non-Admin with `RemoteSigned` execution policy. Apply requires Adm
 ## Directory Structure
 
 ```
-cis-os/
+cis-bulwark/
 ├── cis_cli.py                      # Local CLI (--os switches targets)
 ├── docs/
 │   ├── architecture.svg

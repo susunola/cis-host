@@ -43,9 +43,9 @@ dev = [
 ciscvm = "cis_cli:main"
 
 [project.urls]
-Homepage = "https://github.com/susunola/cis-os"
-Repository = "https://github.com/susunola/cis-os"
-Issues = "https://github.com/susunola/cis-os/issues"
+Homepage = "https://github.com/susunola/cis-bulwark"
+Repository = "https://github.com/susunola/cis-bulwark"
+Issues = "https://github.com/susunola/cis-bulwark/issues"
 
 [tool.setuptools]
 py-modules = ["cis_cli", "ciscvm_config"]
