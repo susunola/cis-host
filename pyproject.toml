@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ciscvm"
+version = "1.2.0"
+description = "CIS benchmark scan/apply engine and CLI for Linux & Windows server images"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "susunola"},
+]
+keywords = ["cis", "benchmark", "hardening", "security", "compliance", "ansible"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "Jinja2>=2.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "jsonschema>=4.0",
+    "ansible-core>=2.12",
+]
+
+[project.scripts]
+ciscvm = "cis_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/susunola/cis-os"
+Repository = "https://github.com/susunola/cis-os"
+Issues = "https://github.com/susunola/cis-os/issues"
+
+[tool.setuptools]
+py-modules = ["cis_cli", "ciscvm_config"]

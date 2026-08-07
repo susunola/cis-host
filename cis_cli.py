@@ -2,21 +2,23 @@
 """
 CIS Benchmark CLI — scan, apply, show rule detail, with HTML + CLI output.
 
+Installable as the `ciscvm` command after `pip install ciscvm`.
+
 Usage:
   # Scan only (check compliance)
-  python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+  ciscvm scan --os rhel9 --profile L1 --output output/
 
   # Apply then re-scan (combined)
-  python3 cis_cli.py apply --os rhel9 --profile L1 --output output/
+  ciscvm apply --os rhel9 --profile L1 --output output/
 
   # Fine-grained: run specific rules by ID
-  python3 cis_cli.py scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
+  ciscvm scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
+
+  # Use a config file (ciscvm.toml)
+  ciscvm scan --config ciscvm.toml
 
   # View rule detail (CLI)
-  python3 cis_cli.py info --os rhel9 --id 1.1.1.1
-
-  # View rule detail (HTML)
-  python3 cis_cli.py info --os rhel9 --id 1.1.1.1 --format html --output output/
+  ciscvm info --os rhel9 --id 1.1.1.1
 
 Supported --os values:
   tencentos3, tencentos4
@@ -35,6 +37,8 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+
+import ciscvm_config
 
 # ─── OS Presets ──────────────────────────────────────────────────────
 
@@ -759,6 +763,33 @@ def cmd_check(args):
     return {"data": scan_data, "path": out_path}
 
 
+def _apply_defaults(args):
+    """Apply hard-coded defaults for args that were not set via CLI or config."""
+    defaults = {
+        "profile": "L1",
+        "platform": "server",
+        "name": "CIS Benchmark",
+        "version": "v1.0.0",
+        "org": "",
+        "include": "",
+        "exclude": "",
+        "sections_filter": "",
+        "families": "",
+        "output": "./output",
+        "format": "both",
+        "copy_json": False,
+        "strict": False,
+        "timeout": 600,
+        "allow_disruptive": False,
+        "backup_dir": "",
+        "audit_log": "",
+    }
+    for key, value in defaults.items():
+        if getattr(args, key, None) is None:
+            setattr(args, key, value)
+    return args
+
+
 def cmd_info(args):
     """INFO mode: show rule detail by ID, CLI or HTML."""
     rule_id = args.id.strip()
@@ -909,11 +940,14 @@ Examples:
         """
     )
 
-    sub = ap.add_subparsers(dest="command", help="Mode: list-os | scan | apply | check | info")
+    ap.add_argument("--config", default="",
+                    help="Path to ciscvm.toml config file (default: ./ciscvm.toml or $CISCVM_CONFIG)")
+
+    sub = ap.add_subparsers(dest="command", help="Mode: list | scan | apply | check | info")
     sub.required = True
 
-    # ── list-os ──
-    p_list = sub.add_parser("list-os", help="List supported OS presets")
+    # ── list (alias list-os for backward compatibility) ──
+    p_list = sub.add_parser("list", aliases=["list-os"], help="List supported OS presets")
 
     # ── Common args shared by all commands ──
     def add_common_args(p):
@@ -930,43 +964,45 @@ Examples:
                        help="Path to sections.json (for report rendering)")
         p.add_argument("--template", default="",
                        help="Path to report.html.j2 template")
-        p.add_argument("--profile", default="L1", choices=["L1", "L2"],
+        # Defaults are intentionally None here so that ciscvm.toml can supply
+        # values; hard-coded fallbacks are applied after config merging.
+        p.add_argument("--profile", default=None, choices=["L1", "L2"],
                        help="Benchmark profile level (default: L1)")
-        p.add_argument("--platform", default="server",
+        p.add_argument("--platform", default=None,
                        choices=["server", "workstation", "all"],
                        help="Target platform (default: server)")
-        p.add_argument("--name", default="CIS Benchmark",
+        p.add_argument("--name", default=None,
                        help="Benchmark display name")
-        p.add_argument("--version", default="v1.0.0",
+        p.add_argument("--version", default=None,
                        help="Benchmark version for report footer")
-        p.add_argument("--org", default="",
+        p.add_argument("--org", default=None,
                        help="Organization name for report header")
-        p.add_argument("--include", default="",
+        p.add_argument("--include", default=None,
                        help="Comma-separated rule IDs to include (e.g. 1.1.1,1.1.2)")
-        p.add_argument("--exclude", default="",
+        p.add_argument("--exclude", default=None,
                        help="Comma-separated rule IDs to exclude")
-        p.add_argument("--sections-filter", default="",
+        p.add_argument("--sections-filter", default=None,
                        help="Comma-separated section prefixes to filter (e.g. 1.1,5)")
-        p.add_argument("--families", default="",
+        p.add_argument("--families", default=None,
                        help="Comma-separated rule families to filter")
-        p.add_argument("--output", default="./output",
+        p.add_argument("--output", default=None,
                        help="Output directory for reports (default: ./output)")
-        p.add_argument("--format", default="both", choices=["html", "cli", "both"],
+        p.add_argument("--format", default=None, choices=["html", "cli", "both"],
                        help="Output format: html, cli, or both (default: both)")
-        p.add_argument("--copy-json", action="store_true",
+        p.add_argument("--copy-json", default=None, action="store_true",
                        help="Also save result JSON alongside the HTML report")
-        p.add_argument("--audit-log", default="",
+        p.add_argument("--audit-log", default=None,
                        help="Write audit log (JSON-lines) to this path")
-        p.add_argument("--timeout", type=int, default=600,
+        p.add_argument("--timeout", type=int, default=None,
                        help="Engine execution timeout in seconds (default: 600)")
         p.add_argument("--no-prescan", action="store_true",
                        help="Skip pre-scan baseline in apply mode")
-        p.add_argument("--strict", action="store_true",
+        p.add_argument("--strict", default=None, action="store_true",
                        help="Exit non-zero when residual failures remain")
 
     # ── Apply-specific args ──
     def add_apply_args(p):
-        p.add_argument("--allow-disruptive", action="store_true",
+        p.add_argument("--allow-disruptive", default=None, action="store_true",
                        help="Allow potentially disruptive rules to be applied")
         p.add_argument("--backup-dir", default="",
                        help="Directory to store backup files before changes")
@@ -1019,8 +1055,12 @@ Examples:
         if not args.name or args.name == "CIS Benchmark":
             args.name = preset["name"]
 
-    # Validate required paths (not needed for list-os/info-only modes)
-    if args.command not in ("list-os",) and (not args.engine or not args.catalog):
+    # Merge ciscvm.toml defaults; CLI args always win
+    args = ciscvm_config.merge(args, args.config if args.config else None)
+    args = _apply_defaults(args)
+
+    # Validate required paths (not needed for list/list-os/info-only modes)
+    if args.command not in ("list", "list-os") and (not args.engine or not args.catalog):
         print("Error: --engine and --catalog are required (or use --os)", file=sys.stderr)
         sys.exit(1)
 
@@ -1031,6 +1071,7 @@ Examples:
 
     # Dispatch
     commands = {
+        "list": cmd_list_os,
         "list-os": cmd_list_os,
         "scan": cmd_scan,
         "apply": cmd_apply,

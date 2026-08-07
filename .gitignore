@@ -16,3 +16,8 @@ output/
 # Python virtual environments
 .venv/
 venv/
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
