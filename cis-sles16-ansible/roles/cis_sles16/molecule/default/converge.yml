@@ -1,0 +1,13 @@
+---
+# Converge: run the CIS role in scan mode against the Molecule platform.
+# NOTE: This role targets SUSE Linux Enterprise Server 16. No convenient public Docker image
+# is available, so the platform below uses a generic Ubuntu 22.04 image
+# for syntax/structure validation only.
+- name: Converge
+  hosts: all
+  roles:
+    - role: cis_sles16
+      vars:
+        cis_mode: scan
+        # Advisory flag; this role does not perform reboots during scan mode.
+        cis_skip_reboot: true

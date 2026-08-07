@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CIS Benchmark CLI — scan, apply, show rule detail, with HTML + CLI output.
+CIS Benchmark CLI — scan, apply, audit, fleet scan, with HTML + CLI output.
 
 Installable as the `ciscvm` command after `pip install ciscvm`.
 
@@ -11,8 +11,20 @@ Usage:
   # Apply then re-scan (combined)
   ciscvm apply --os rhel9 --profile L1 --output output/
 
+  # Audit / gate mode (exit non-zero on findings)
+  ciscvm audit --os rhel9 --profile L1 --output output/
+
+  # Fleet scan across multiple hosts
+  ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2 --output output/
+
   # Fine-grained: run specific rules by ID
   ciscvm scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
+
+  # Tailor rule inputs and waive exceptions
+  ciscvm scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
+
+  # Dry-run remediation
+  ciscvm apply --os rhel9 --simulate
 
   # Use a config file (ciscvm.toml)
   ciscvm scan --config ciscvm.toml
@@ -33,6 +45,7 @@ import html
 import json
 import os
 import random
+import shutil
 import subprocess
 import sys
 import time
@@ -183,17 +196,65 @@ def _engine_is_windows(args):
     return False
 
 
+def _materialize_json_arg(value, label, output_dir):
+    """Return a path to a JSON file containing `value`.
+
+    `value` may already be a filesystem path, an inline JSON string, or a
+    Python dict (from a config file).  The engine accepts both files and
+    inline JSON; normalising to a file keeps long payloads out of the command
+    line and avoids shell-quoting mistakes.
+    """
+    if value is None or value == "":
+        return ""
+    if isinstance(value, dict):
+        data = value
+    elif isinstance(value, str):
+        v = value.strip()
+        if os.path.isfile(v):
+            return os.path.abspath(v)
+        try:
+            data = json.loads(v)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{label} is not a valid JSON string or file: {exc}")
+    else:
+        raise ValueError(f"{label} must be a JSON string, file path, or dict")
+
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, f"{label}-{int(time.time())}-{random.randint(0, 9999):04d}.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+    return path
+
+
 def run_engine(args, mode):
     """Run cis_engine (Python or PowerShell) and return parsed JSON result."""
     engine = os.path.abspath(args.engine)
     catalog = os.path.abspath(args.catalog)
     engine_dir = os.path.dirname(os.path.abspath(args.engine))
+    output_dir = os.path.abspath(args.output)
 
     result_file = os.path.join(
-        os.path.abspath(args.output),
+        output_dir,
         f"result-{mode}-{int(time.time())}-{random.randint(0, 9999):04d}.json"
     )
     os.makedirs(os.path.dirname(result_file), exist_ok=True)
+
+    # Normalise tailoring arguments to JSON files so the engine can load them
+    # reliably.  We do this even for scan mode so shared helpers stay simple.
+    variables_path = ""
+    waivers_path = ""
+    if getattr(args, "variables", None):
+        try:
+            variables_path = _materialize_json_arg(args.variables, "variables", output_dir)
+        except ValueError as exc:
+            print(f"[{mode.upper()}] {exc}", file=sys.stderr)
+            sys.exit(1)
+    if getattr(args, "waivers", None):
+        try:
+            waivers_path = _materialize_json_arg(args.waivers, "waivers", output_dir)
+        except ValueError as exc:
+            print(f"[{mode.upper()}] {exc}", file=sys.stderr)
+            sys.exit(1)
 
     if not _engine_is_windows(args):
         # Linux: run cis_engine.py with python3
@@ -220,6 +281,12 @@ def run_engine(args, mode):
             cmd += ["--backup-dir", os.path.abspath(args.backup_dir)]
         if args.audit_log:
             cmd += ["--audit-log", os.path.abspath(args.audit_log)]
+        if variables_path:
+            cmd += ["--variables", variables_path]
+        if waivers_path:
+            cmd += ["--waivers", waivers_path]
+        if getattr(args, "simulate", False):
+            cmd.append("--simulate")
     else:
         # Windows: run cis_engine.ps1 with powershell
         cmd = [
@@ -245,6 +312,7 @@ def run_engine(args, mode):
             cmd += ["-BackupDir", os.path.abspath(args.backup_dir)]
         if args.audit_log:
             cmd += ["-AuditLog", os.path.abspath(args.audit_log)]
+        # Note: Windows PowerShell engine does not yet support variables/waivers/simulate.
 
     print(f"[{mode.upper()}] Running: {' '.join(cmd)}")
     started = time.time()
@@ -416,7 +484,6 @@ def render_report(result_data, args, mode, scan_result_file):
     # Also copy result JSON alongside
     if args.copy_json:
         json_path = out_path.rsplit(".", 1)[0] + ".json"
-        import shutil
         shutil.copy2(scan_result_file, json_path)
         print(f"  JSON saved: {json_path}")
 
@@ -436,30 +503,38 @@ def print_summary(data, mode):
 
     if mode == "scan":
         score = s.get("score") or 0
+        idx = s.get("hardening_index") or 0
         passed = s.get("pass", 0)
         failed = s.get("fail", 0)
         manual = s.get("manual", 0)
         error = s.get("error", 0)
         na = s.get("notapplicable", 0)
-        print(f"  Score:    {score:.1f}%")
-        print(f"  Pass:     {passed}")
-        print(f"  Fail:     {failed}")
-        print(f"  Manual:   {manual}")
-        print(f"  Error:    {error}")
-        print(f"  N/A:      {na}")
+        waived = s.get("waived", 0)
+        print(f"  Score:           {score:.1f}%")
+        print(f"  Hardening index: {idx:.1f}%")
+        print(f"  Pass:            {passed}")
+        print(f"  Fail:            {failed}")
+        print(f"  Manual:          {manual}")
+        print(f"  Error:           {error}")
+        print(f"  N/A:             {na}")
+        if waived:
+            print(f"  Waived:          {waived}")
         if total:
-            print(f"  Total:    {total}")
+            print(f"  Total:           {total}")
     else:
         applied = s.get("applied", 0)
         pending = s.get("applied_pending", 0)
         already = s.get("already", 0)
         failed = s.get("failed", 0)
         skipped = s.get("skipped_disruptive", 0)
+        simulated = s.get("simulated", 0)
         print(f"  Applied:         {applied}")
         print(f"  Pending reboot:  {pending}")
         print(f"  Already ok:      {already}")
         print(f"  Apply failed:    {failed}")
         print(f"  Skipped (risk):  {skipped}")
+        if simulated:
+            print(f"  Simulated:       {simulated}")
         if total:
             print(f"  Total:           {total}")
 
@@ -477,7 +552,7 @@ def print_result_table(data):
         print("  (no results)")
         return
 
-    STATUS_SYM = {"pass": "✓", "fail": "✗", "manual": "?", "error": "!", "notapplicable": "-"}
+    STATUS_SYM = {"pass": "✓", "fail": "✗", "manual": "?", "error": "!", "notapplicable": "-", "waived": "W"}
     FAMILY_ABBR = {
         "kmod": "kmod", "sysctl": "sysctl", "pkg": "pkg", "svc": "svc",
         "ssh": "ssh", "pam": "pam", "sudo": "sudo", "perm": "perm",
@@ -489,6 +564,18 @@ def print_result_table(data):
         "audit-policy": "audit", "user-right": "uright",
         "reg-dword": "reg", "adv-audit": "adv",
     }
+
+    # Sort by priority (desc) then by ID for actionable ordering
+    def _sort_key(r):
+        parts = []
+        for n in r.get("id", "").split("."):
+            try:
+                parts.append(int(n))
+            except ValueError:
+                parts.append(n)
+        return (-int(r.get("priority", 1) or 1), parts)
+
+    results = sorted(results, key=_sort_key)
 
     # Determine column widths — ID could be 1.1.1.1 or longer
     id_lens = [len(r.get("id", "")) for r in results]
@@ -509,6 +596,10 @@ def print_result_table(data):
         symb = STATUS_SYM.get(status, "?")
         fam = FAMILY_ABBR.get(r.get("family", ""), r.get("family", ""))[:max_fam]
         title = (r.get("title", "") or "")[:title_w]
+        if r.get("waived"):
+            title = "[waived] " + title
+        if r.get("status_before"):
+            title += f" (was {r['status_before']})"
 
         if status == "fail":
             line = click_style(f"[{symb}]", "red") + f" {rid:<{max_id}}  "
@@ -518,6 +609,8 @@ def print_result_table(data):
             line = click_style(f"[{symb}]", "yellow") + f" {rid:<{max_id}}  "
         elif status == "error":
             line = click_style(f"[{symb}]", "red") + f" {rid:<{max_id}}  "
+        elif status == "waived":
+            line = click_style(f"[{symb}]", "cyan") + f" {rid:<{max_id}}  "
         else:
             line = f"  [{symb}] {rid:<{max_id}}  "
 
@@ -526,7 +619,7 @@ def print_result_table(data):
 
     print(sep)
     counts = {}
-    for r in results:
+    for r in data.get("results", []):
         s = r.get("status", "?")
         counts[s] = counts.get(s, 0) + 1
     parts = []
@@ -538,9 +631,11 @@ def print_result_table(data):
         parts.append(click_style(f"? {counts['manual']} manual", "yellow"))
     if counts.get("error"):
         parts.append(click_style(f"! {counts['error']} error", "red"))
+    if counts.get("waived"):
+        parts.append(click_style(f"W {counts['waived']} waived", "cyan"))
     if counts.get("notapplicable"):
         parts.append(f"- {counts['notapplicable']} n/a")
-    print(f"  {'  '.join(parts)}  |  total: {len(results)}")
+    print(f"  {'  '.join(parts)}  |  total: {len(data.get('results', []))}")
     print()
 
 
@@ -685,6 +780,62 @@ def cmd_scan(args):
     return {"data": result_data, "path": out_path}
 
 
+def cmd_audit(args):
+    """AUDIT mode: scan-only compliance gate with exit-code policy.
+
+    Behaves like `scan` but defaults to strict (exit non-zero on findings) and
+    writes a concise audit artifact suitable for CI gates.
+    """
+    print(f"\n╔══ CIS Benchmark — AUDIT / GATE ══╗")
+    print(f"║ Target:  {args.name}")
+    print(f"║ Profile: {args.profile}")
+    print(f"║ Platform:{args.platform}")
+    if args.include:
+        print(f"║ Include: {args.include}")
+    if args.exclude:
+        print(f"║ Exclude: {args.exclude}")
+    print(f"╚{'═'*26}╝\n")
+
+    result_data, result_file = run_engine(args, "scan")
+    print_summary(result_data, "scan")
+    print_result_table(result_data)
+
+    out_path = None
+    if args.format in ("html", "both"):
+        out_path = render_report(result_data, args, "scan", result_file)
+        print(f"Report saved: {out_path}")
+
+    s = result_data.get("summary", {}).get("all", {})
+    fail = s.get("fail", 0)
+    err = s.get("error", 0)
+    score = s.get("score", 0.0)
+    gate_pass = fail == 0 and err == 0
+
+    audit_summary = {
+        "started_at": result_data.get("started_at"),
+        "host": result_data.get("host", {}),
+        "mode": "audit",
+        "profile": result_data.get("profile"),
+        "platform": result_data.get("platform"),
+        "score": score,
+        "hardening_index": s.get("hardening_index", 0.0),
+        "fail": fail,
+        "error": err,
+        "waived": s.get("waived", 0),
+        "gate_pass": gate_pass,
+    }
+    audit_path = os.path.join(os.path.abspath(args.output),
+                              f"audit-gate-{result_data.get('host', {}).get('hostname', 'localhost')}-{args.profile}.json")
+    os.makedirs(os.path.dirname(audit_path), exist_ok=True)
+    with open(audit_path, "w", encoding="utf-8") as fh:
+        json.dump(audit_summary, fh, indent=2)
+    print(f"Audit gate saved: {audit_path}")
+
+    status = click_style("PASS", "green") if gate_pass else click_style("FAIL", "red")
+    print(f"\nGate: {status}  (fail={fail}, error={err}, score={score:.1f}%)")
+    return {"data": result_data, "path": out_path, "audit_path": audit_path, "gate_pass": gate_pass}
+
+
 def cmd_apply(args):
     """APPLY mode: pre-scan, apply fixes, post-scan, generate report."""
     print(f"\n╔══ CIS Benchmark — APPLY ══╗")
@@ -695,6 +846,8 @@ def cmd_apply(args):
         print(f"║ Include: {args.include}")
     if not args.allow_disruptive:
         print(f"║ Note:    Disruptive rules skipped (use --allow-disruptive)")
+    if args.simulate:
+        print(f"║ Mode:    SIMULATE (dry-run, no changes)")
     print(f"╚{'═'*26}╝\n")
 
     # Step 1: Pre-scan (baseline) — skip with --no-prescan
@@ -712,13 +865,17 @@ def cmd_apply(args):
     apply_data, apply_file = run_engine(args, "apply")
     print_summary(apply_data, "apply")
 
-    # Step 3: Post-apply scan (always — verify fixes)
-    print("── Step 3/3: Post-apply scan (verify) ──")
-    post_data, post_file = run_engine(args, "scan")
-    print_summary(post_data, "scan")
-    print_result_table(post_data)
+    # Step 3: Post-apply scan (always — verify fixes, unless simulating)
+    if args.simulate:
+        print("── Step 3/3: Post-apply scan skipped in simulate mode ──")
+        post_data = apply_data
+        post_file = apply_file
+    else:
+        print("── Step 3/3: Post-apply scan (verify) ──")
+        post_data, post_file = run_engine(args, "scan")
+        print_summary(post_data, "scan")
+        print_result_table(post_data)
 
-    # Generate report from post-apply scan
     if pre_scan and not args.no_prescan:
         pre_score = pre_scan.get("summary", {}).get("all", {}).get("score") or 0
         post_score = post_data.get("summary", {}).get("all", {}).get("score") or 0
@@ -763,6 +920,216 @@ def cmd_check(args):
     return {"data": scan_data, "path": out_path}
 
 
+# ─── Fleet scan ───────────────────────────────────────────────────────
+
+def _load_fleet_hosts(args):
+    """Return a list of host identifiers from CLI or config."""
+    hosts = []
+    if getattr(args, "fleet_hosts", None):
+        hosts = [h.strip() for h in args.fleet_hosts.split(",") if h.strip()]
+    fleet_cfg = getattr(args, "fleet", {}) or {}
+    if not hosts and fleet_cfg.get("hosts"):
+        hosts = _normalize_list(fleet_cfg.get("hosts"))
+        hosts = [h.strip() for h in hosts.split(",") if h.strip()]
+    return hosts
+
+
+def _normalize_list(value):
+    """Accept str, list, or None and return a comma-separated string."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return ",".join(str(v) for v in value)
+    return str(value)
+
+
+def _run_remote_scan(host, args, fleet_cfg):
+    """SSH to a host and run the engine remotely.  Returns parsed JSON or None."""
+    user = fleet_cfg.get("user", "root")
+    key = fleet_cfg.get("key", "")
+    remote_engine = fleet_cfg.get("remote_engine", "/opt/cis-os/cis_engine.py")
+    remote_catalog = fleet_cfg.get("remote_catalog", "/opt/cis-os/rules.json")
+    remote_guidance = fleet_cfg.get("remote_guidance", "")
+    remote_sections = fleet_cfg.get("remote_sections", "")
+    remote_template = fleet_cfg.get("remote_template", "")
+    ssh_opts = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=accept-new"]
+    if key:
+        ssh_opts += ["-i", os.path.expanduser(key)]
+    target = f"{user}@{host}"
+
+    cmd = ["ssh"] + ssh_opts + [target, "sudo", "python3", remote_engine,
+           "--catalog", remote_catalog,
+           "--mode", "scan",
+           "--profile", args.profile,
+           "--platform", args.platform,
+           "--benchmark", args.name,
+           "--out", "-"]
+    if args.include:
+        cmd += ["--include", args.include]
+    if args.exclude:
+        cmd += ["--exclude", args.exclude]
+    if args.sections_filter:
+        cmd += ["--sections", args.sections_filter]
+    if args.families:
+        cmd += ["--families", args.families]
+
+    print(f"[FLEET] ssh {target}: {' '.join(cmd[3 + len(ssh_opts):])}")
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=args.timeout,
+                              stdin=subprocess.DEVNULL)
+    except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
+        print(f"[FLEET] {host}: connection failed: {exc}", file=sys.stderr)
+        return None
+
+    if proc.returncode != 0:
+        print(f"[FLEET] {host}: engine error: {proc.stderr[:500]}", file=sys.stderr)
+        return None
+
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        print(f"[FLEET] {host}: result JSON corrupt: {exc}", file=sys.stderr)
+        return None
+
+    # Ensure host identity reflects the fleet target
+    data["host"] = data.get("host", {})
+    data["host"]["hostname"] = host
+    return data
+
+
+def _aggregate_fleet_results(host_results):
+    """Combine per-host result dicts into a fleet summary."""
+    fleet_results = []
+    summaries = []
+    for host, data in host_results:
+        if not data:
+            continue
+        for r in data.get("results", []):
+            r["_fleet_host"] = host
+            fleet_results.append(r)
+        s = data.get("summary", {}).get("all", {})
+        s["_host"] = host
+        summaries.append(s)
+
+    # Roll up counts
+    blank = {"total": 0, "pass": 0, "fail": 0, "manual": 0, "error": 0,
+             "notapplicable": 0, "waived": 0}
+    for s in summaries:
+        for k in blank:
+            blank[k] += s.get(k, 0)
+    scored = blank["pass"] + blank["fail"]
+    blank["score"] = round(100.0 * blank["pass"] / scored, 1) if scored else 0.0
+
+    return {
+        "mode": "fleet_scan",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "fleet_size": len(host_results),
+        "reachable": len(summaries),
+        "summaries": summaries,
+        "summary": {"all": blank},
+        "results": fleet_results,
+    }
+
+
+def _render_fleet_report(aggregate, args):
+    """Render a simple fleet HTML summary if a template is available."""
+    now = datetime.now(timezone.utc).astimezone()
+    out_dir = os.path.abspath(args.output)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"fleet-report-{args.profile}-{now.strftime('%Y%m%d-%H%M%S')}.html")
+
+    rows = ""
+    for s in aggregate.get("summaries", []):
+        host = html.escape(s.get("_host", "?"))
+        rows += (f"<tr><td>{host}</td><td>{s.get('score', 0):.1f}%</td>"
+                 f"<td>{s.get('pass', 0)}</td><td>{s.get('fail', 0)}</td>"
+                 f"<td>{s.get('error', 0)}</td><td>{s.get('manual', 0)}</td></tr>")
+
+    alls = aggregate.get("summary", {}).get("all", {})
+    html_doc = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CIS Fleet Report — {html.escape(args.name)}</title>
+<style>
+body {{ font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       max-width: 1100px; margin: 40px auto; padding: 0 20px; color: #1a2332; background: #f8f9fa; }}
+h1 {{ font-size: 24px; }}
+table {{ width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }}
+th, td {{ padding: 10px 12px; border: 1px solid #e1e6ef; text-align: left; font-size: 13px; }}
+th {{ background: #1e3a6e; color: #fff; }}
+tr:nth-child(even) {{ background: #f8f9fa; }}
+.bad {{ color: #c42a1e; font-weight: 700; }}
+.ok {{ color: #0d7a53; font-weight: 700; }}
+</style>
+</head>
+<body>
+<h1>Fleet Compliance Report</h1>
+<p><strong>{html.escape(args.name)}</strong> · Profile {args.profile} · {aggregate['fleet_size']} host(s) · {aggregate['reachable']} reachable</p>
+<p>Aggregate score: <span class="{'ok' if alls.get('score',0) >= 90 else 'bad'}">{alls.get('score',0):.1f}%</span></p>
+<table>
+<thead><tr><th>Host</th><th>Score</th><th>Pass</th><th>Fail</th><th>Error</th><th>Manual</th></tr></thead>
+<tbody>{rows}</tbody>
+</table>
+</body>
+</html>"""
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(html_doc)
+    return out_path
+
+
+def cmd_fleet_scan(args):
+    """FLEET SCAN mode: scan multiple hosts and aggregate a fleet report."""
+    hosts = _load_fleet_hosts(args)
+    if not hosts:
+        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in ciscvm.toml",
+              file=sys.stderr)
+        sys.exit(1)
+
+    fleet_cfg = getattr(args, "fleet", {}) or {}
+    remote = getattr(args, "fleet_remote", False) or fleet_cfg.get("remote", False)
+
+    print(f"\n╔══ CIS Benchmark — FLEET SCAN ══╗")
+    print(f"║ Target:  {args.name}")
+    print(f"║ Profile: {args.profile}")
+    print(f"║ Hosts:   {', '.join(hosts)}")
+    print(f"║ Remote:  {'SSH' if remote else 'local (tagged)'}")
+    print(f"╚{'═'*26}╝\n")
+
+    host_results = []
+    for host in hosts:
+        print(f"── Host: {host} ──")
+        if remote:
+            data = _run_remote_scan(host, args, fleet_cfg)
+        else:
+            # Local mode: run on this machine but tag results with the host label.
+            # Useful for testing and for CI fleets that run ciscvm inside each node.
+            data, _ = run_engine(args, "scan")
+            if data:
+                data["host"] = data.get("host", {})
+                data["host"]["hostname"] = host
+        host_results.append((host, data))
+        if data:
+            s = data.get("summary", {}).get("all", {})
+            print(f"  score={s.get('score', 0):.1f}% pass={s.get('pass', 0)} fail={s.get('fail', 0)}")
+
+    aggregate = _aggregate_fleet_results(host_results)
+    out_path = _render_fleet_report(aggregate, args)
+    print(f"\nFleet report saved: {out_path}")
+
+    # Save aggregate JSON
+    json_path = out_path.replace(".html", ".json")
+    with open(json_path, "w", encoding="utf-8") as fh:
+        json.dump(aggregate, fh, indent=2)
+    print(f"Fleet JSON saved:   {json_path}")
+
+    return {"data": aggregate, "path": out_path}
+
+
+# ─── Defaults & helpers ───────────────────────────────────────────────
+
 def _apply_defaults(args):
     """Apply hard-coded defaults for args that were not set via CLI or config."""
     defaults = {
@@ -783,6 +1150,12 @@ def _apply_defaults(args):
         "allow_disruptive": False,
         "backup_dir": "",
         "audit_log": "",
+        "variables": None,
+        "waivers": None,
+        "simulate": False,
+        "fleet": {},
+        "fleet_hosts": "",
+        "fleet_remote": False,
     }
     for key, value in defaults.items():
         if getattr(args, key, None) is None:
@@ -854,7 +1227,7 @@ def _render_info_html(detail, args):
     template_path = os.path.abspath(args.template)
     template_dir = os.path.dirname(template_path)
 
-    html = f"""<!DOCTYPE html>
+    html_doc = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -893,21 +1266,21 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
                         ("Assessment", "assessment"), ("Remediation", "remediation")]:
         val = detail.get(key, "")
         if val:
-            html += f'<div class="section-title">{html.escape(label)}</div>\n<div class="content">{html.escape(val)}</div>\n'
+            html_doc += f'<div class="section-title">{html.escape(label)}</div>\n<div class="content">{html.escape(val)}</div>\n'
 
     if detail.get("params"):
-        html += '<div class="section-title">Parameters</div>\n<table class="params-table">\n'
+        html_doc += '<div class="section-title">Parameters</div>\n<table class="params-table">\n'
         for k, v in detail["params"].items():
-            html += f'<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>\n'
-        html += '</table>\n'
+            html_doc += f'<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>\n'
+        html_doc += '</table>\n'
 
-    html += "</body></html>"
+    html_doc += "</body></html>"
 
     os.makedirs(os.path.abspath(args.output), exist_ok=True)
     out_path = os.path.join(os.path.abspath(args.output),
                             f"info-{detail['id'].replace('.', '-')}.html")
     with open(out_path, "w", encoding="utf-8") as fh:
-        fh.write(html)
+        fh.write(html_doc)
     print(f"Info HTML saved: {out_path}")
     return out_path
 
@@ -916,7 +1289,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 
 def main():
     ap = argparse.ArgumentParser(
-        description="CIS Benchmark local CLI — scan, apply, view rules",
+        description="CIS Benchmark local CLI — scan, apply, audit, fleet scan, view rules",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -926,8 +1299,20 @@ Examples:
   # Apply + auto re-scan (combined)
   python3 cis_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
 
+  # Audit / gate mode (exit non-zero on findings)
+  python3 cis_cli.py audit --os rhel9 --profile L1 --output ./out/
+
+  # Fleet scan across hosts
+  python3 cis_cli.py fleet scan --os rhel9 --fleet-hosts web1,web2 --output ./out/
+
   # Fine-grained: only specific rules
   python3 cis_cli.py scan --os rhel8 --include "1.1.1.1,1.1.1.2,5.1.1" --output ./out/
+
+  # Tailor rule inputs and waive exceptions
+  python3 cis_cli.py scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
+
+  # Dry-run remediation
+  python3 cis_cli.py apply --os rhel9 --simulate
 
   # CLI-only output (no HTML)
   python3 cis_cli.py scan --os rhel9 --format cli
@@ -943,13 +1328,13 @@ Examples:
     ap.add_argument("--config", default="",
                     help="Path to ciscvm.toml config file (default: ./ciscvm.toml or $CISCVM_CONFIG)")
 
-    sub = ap.add_subparsers(dest="command", help="Mode: list | scan | apply | check | info")
+    sub = ap.add_subparsers(dest="command", help="Mode: list | scan | apply | audit | check | fleet | info")
     sub.required = True
 
     # ── list (alias list-os for backward compatibility) ──
     p_list = sub.add_parser("list", aliases=["list-os"], help="List supported OS presets")
 
-    # ── Common args shared by all commands ──
+    # ── Common args shared by most commands ──
     def add_common_args(p):
         p.add_argument("--os", default="",
                        choices=sorted(OS_PRESETS.keys()),
@@ -1000,25 +1385,55 @@ Examples:
         p.add_argument("--strict", default=None, action="store_true",
                        help="Exit non-zero when residual failures remain")
 
+    # ── Tailoring args ──
+    def add_tailoring_args(p):
+        p.add_argument("--variables", default=None,
+                       help="JSON file or inline JSON with rule variable overrides")
+        p.add_argument("--waivers", default=None,
+                       help="JSON file or inline JSON mapping rule IDs to waiver reasons/objects")
+
     # ── Apply-specific args ──
     def add_apply_args(p):
         p.add_argument("--allow-disruptive", default=None, action="store_true",
                        help="Allow potentially disruptive rules to be applied")
         p.add_argument("--backup-dir", default="",
                        help="Directory to store backup files before changes")
+        p.add_argument("--simulate", default=None, action="store_true",
+                       help="Dry-run apply mode: report what would be remediated without changing the system")
+
     # ── scan ──
     p_scan = sub.add_parser("scan", help="Check compliance only, generate HTML report")
     add_common_args(p_scan)
+    add_tailoring_args(p_scan)
+
+    # ── audit ──
+    p_audit = sub.add_parser("audit", help="Scan-only compliance gate (exit non-zero on findings)")
+    add_common_args(p_audit)
+    add_tailoring_args(p_audit)
 
     # ── apply ──
     p_apply = sub.add_parser("apply", help="Apply fixes, re-scan, generate report")
     add_common_args(p_apply)
     add_apply_args(p_apply)
+    add_tailoring_args(p_apply)
 
     # ── check ──
     p_check = sub.add_parser("check", help="Dry-run: scan + show what would change")
     add_common_args(p_check)
     add_apply_args(p_check)
+    add_tailoring_args(p_check)
+
+    # ── fleet ──
+    p_fleet = sub.add_parser("fleet", help="Fleet scan across multiple hosts")
+    fleet_sub = p_fleet.add_subparsers(dest="fleet_command", help="Fleet subcommand")
+    fleet_sub.required = True
+    p_fleet_scan = fleet_sub.add_parser("scan", help="Scan multiple hosts and aggregate report")
+    add_common_args(p_fleet_scan)
+    add_tailoring_args(p_fleet_scan)
+    p_fleet_scan.add_argument("--fleet-hosts", default=None,
+                              help="Comma-separated fleet host list (or use [fleet] hosts in ciscvm.toml)")
+    p_fleet_scan.add_argument("--fleet-remote", default=None, action="store_true",
+                              help="Run engine over SSH on each host (requires [fleet] remote config)")
 
     # ── info ──
     p_info = sub.add_parser("info", help="Show rule detail by ID (CLI or HTML)")
@@ -1074,8 +1489,10 @@ Examples:
         "list": cmd_list_os,
         "list-os": cmd_list_os,
         "scan": cmd_scan,
+        "audit": cmd_audit,
         "apply": cmd_apply,
         "check": cmd_check,
+        "fleet": cmd_fleet_scan,
         "info": cmd_info,
     }
 
@@ -1086,9 +1503,16 @@ Examples:
             data = result.get("data")
             if out_path:
                 print(f"\nDone. Open: {out_path}")
-            if getattr(args, "strict", False) and args.command in ("scan", "apply", "check"):
+            # Audit mode is always strict by default: fail the gate if findings remain.
+            strict = getattr(args, "strict", False) or args.command == "audit"
+            if strict and args.command in ("scan", "apply", "check", "audit"):
                 mode = "apply" if args.command == "apply" else "scan"
                 if data and has_residual_failures(data, mode):
+                    sys.exit(2)
+            # Fleet scan can also be strict
+            if strict and args.command == "fleet" and data:
+                s = data.get("summary", {}).get("all", {})
+                if s.get("fail", 0) > 0 or s.get("error", 0) > 0:
                     sys.exit(2)
         elif isinstance(result, str) and result:
             print(f"\nDone. Open: {result}")

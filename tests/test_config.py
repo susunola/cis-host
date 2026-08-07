@@ -33,6 +33,12 @@ def _args(**kwargs):
         "allow_disruptive": None,
         "backup_dir": None,
         "audit_log": None,
+        "variables": None,
+        "waivers": None,
+        "simulate": None,
+        "fleet": None,
+        "fleet_hosts": None,
+        "fleet_remote": None,
     }
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)
@@ -122,6 +128,55 @@ profile = "L2"
     merged = ciscvm_config.merge(args, str(p))
     assert merged.os == "rhel9"
     assert merged.profile == "L1"
+
+
+def test_merge_tailoring_and_fleet(tmp_path):
+    p = tmp_path / "ciscvm.toml"
+    p.write_text("""
+[variables]
+min_len = 14
+max_login_retries = 3
+
+[waivers]
+"1.1.1.1" = "legacy app"
+"5.2.10" = { reason = "managed elsewhere", approved_by = "sec@example.com" }
+
+[audit]
+strict = true
+
+[fleet]
+hosts = ["web1", "web2"]
+remote = true
+user = "admin"
+key = "~/.ssh/id_rsa"
+remote_engine = "/opt/cis-os/cis_engine.py"
+""")
+    args = _args()
+    merged = ciscvm_config.merge(args, str(p))
+    assert merged.variables == {"min_len": 14, "max_login_retries": 3}
+    assert merged.waivers == {
+        "1.1.1.1": "legacy app",
+        "5.2.10": {"reason": "managed elsewhere", "approved_by": "sec@example.com"},
+    }
+    assert merged.strict is True
+    assert merged.fleet == {
+        "hosts": ["web1", "web2"],
+        "remote": True,
+        "user": "admin",
+        "key": "~/.ssh/id_rsa",
+        "remote_engine": "/opt/cis-os/cis_engine.py",
+    }
+
+
+def test_merge_waivers_rules_subtable(tmp_path):
+    p = tmp_path / "ciscvm.toml"
+    p.write_text("""
+[waivers.rules]
+"1.1.1.1" = { reason = "legacy app" }
+""")
+    args = _args()
+    merged = ciscvm_config.merge(args, str(p))
+    assert merged.waivers == {"1.1.1.1": {"reason": "legacy app"}}
 
 
 def test_merge_without_config_returns_args(tmp_path):

@@ -44,6 +44,19 @@ ciscvm scan --os rhel9 --profile L1 --output output/
 # L1 apply (remediate)
 ciscvm apply --os ubuntu2204 --profile L1 --output output/
 
+# Audit / gate mode (exit non-zero on findings)
+ciscvm audit --os rhel9 --profile L1 --output output/
+
+# Fleet scan across multiple hosts (local tagged mode by default)
+ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2,db1 --output output/
+
+# Tailor rule inputs and waive exceptions
+ciscvm scan --os rhel9 --variables '{"min_len": 14}' \
+  --waivers '{"1.1.1.1": "legacy app exception"}'
+
+# Dry-run remediation
+ciscvm apply --os rhel9 --simulate
+
 # L2 full apply + allow disruptive rules + audit log
 ciscvm apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
@@ -80,6 +93,21 @@ strict = false      # exit non-zero when residual failures remain
 timeout = 600
 allow_disruptive = false
 backup_dir = ""
+
+# Tailor rule inputs (keys must match rule params)
+[variables]
+# min_len = 14
+
+# Waive specific rules
+[waivers]
+# "1.1.1.1" = "legacy app"
+
+# Fleet scan defaults
+[fleet]
+hosts = []
+remote = false
+user = "root"
+remote_engine = "/opt/cis-os/cis_engine.py"
 ```
 
 CLI arguments always override config-file values.
@@ -179,10 +207,14 @@ A `findings.csv.j2` template is also available — enable with `cis_report_csv=t
 
 **Per-host report** — a single host's complete compliance posture:
 - Score banner with traffic-light coloring (green ≥ 90, amber ≥ 70, red otherwise)
+- **Hardening Index** — a weighted score that reflects the risk of each rule, so high-impact failures stand out
 - System facts (hostname, IP, MAC, OS, kernel, arch, virtualization, uptime)
 - Findings table with status, family, level, evidence, remediation hint, and CIS page reference
+- Sort by rule ID or by priority (risk weight) for faster triage
 - Filters by status / family / level / section
 - Regression block in `apply` mode for rules that fail post-remediation re-check
+- **Waived** badge with reason when a rule is excepted via `--waivers` or `[waivers]`
+- **Before/After diff** in apply mode showing each remediated rule's prior status
 
 **Fleet index** — multi-host compliance dashboard:
 - Aggregate pass percentage across all hosts
@@ -210,6 +242,56 @@ A `findings.csv.j2` template is also available — enable with `cis_report_csv=t
 | `--audit-log audit.log` | Write structured audit trail |
 
 When using Ansible, corresponding variables are in each suite's README under "Key Variables."
+
+## Audit / Gate Mode
+
+`ciscvm audit` is a strict, CI-friendly scan that exits non-zero when any rule fails or errors. It produces the same HTML/JSON reports as `scan` plus a concise `audit-gate-<host>-<profile>.json` artifact:
+
+```bash
+ciscvm audit --os rhel9 --profile L1 --output output/
+# exit 0 if fully compliant, exit 2 if failures remain
+```
+
+## Fleet Scan
+
+`ciscvm fleet scan` repeats a scan across multiple hosts and aggregates the results into a single fleet HTML report and JSON file.
+
+```bash
+# Local tagged mode — runs on this machine, tags each result with the host name
+ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2,db1
+
+# Remote SSH mode — run engine on each host (configure [fleet] in ciscvm.toml)
+ciscvm fleet scan --os rhel9 --fleet-remote
+```
+
+Remote mode requires the engine and catalog to already exist on the target hosts. See `ciscvm.toml.example` for the `[fleet]` layout.
+
+## Tailoring, Waivers, and Dry-Run
+
+- **Variables** — override rule parameters without editing the catalog:
+  ```bash
+  ciscvm scan --os rhel9 --variables '{"min_len": 14}'
+  ```
+- **Waivers** — mark specific rules as excepted with an audit reason:
+  ```bash
+  ciscvm scan --os rhel9 --waivers '{"1.1.1.1": "legacy app exception"}'
+  ```
+- **Simulate** — dry-run apply mode that reports what would change without touching the system:
+  ```bash
+  ciscvm apply --os rhel9 --simulate
+  ```
+
+## Export Formats
+
+Result JSON can be converted to common compliance / CI formats:
+
+```bash
+python3 scripts/export_sarif.py   output/result-scan-*.json output/findings.sarif
+python3 scripts/export_xccdf.py   output/result-scan-*.json output/findings.xccdf.xml
+python3 scripts/export_junit.py   output/result-scan-*.json output/findings.junit.xml
+python3 scripts/export_prometheus.py output/result-scan-*.json
+python3 scripts/append_history.py output/result-scan-*.json history.jsonl
+```
 
 ## Privilege Modes
 
@@ -289,8 +371,9 @@ cis-os/
 ## Roadmap
 
 - CI pipeline for per-suite regression testing
-- `cisos diff` — compare two scan results and show drift between runs
-- `cisos watch` — periodic scan mode with alerting on new failures
+- `ciscvm diff` — compare two scan results and show drift between runs
+- `ciscvm watch` — periodic scan mode with alerting on new failures
+- Molecule-based integration tests for every Linux role (`molecule test` in each role directory)
 - macOS CIS benchmark support
 
 ## License

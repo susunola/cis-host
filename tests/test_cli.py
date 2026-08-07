@@ -46,3 +46,15 @@ def test_check_help():
 def test_info_help():
     result = run(["info", "--help"])
     assert "--id" in result.stdout
+
+
+def test_audit_help():
+    result = run(["audit", "--help"])
+    assert "--engine" in result.stdout
+    assert "--variables" in result.stdout
+
+
+def test_fleet_scan_help():
+    result = run(["fleet", "scan", "--help"])
+    assert "--fleet-hosts" in result.stdout
+    assert "--fleet-remote" in result.stdout

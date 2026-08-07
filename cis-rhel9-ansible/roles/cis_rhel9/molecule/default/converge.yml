@@ -1,0 +1,10 @@
+---
+# Converge: run the CIS role in scan mode against the Molecule platform.
+- name: Converge
+  hosts: all
+  roles:
+    - role: cis_rhel9
+      vars:
+        cis_mode: scan
+        # Advisory flag; this role does not perform reboots during scan mode.
+        cis_skip_reboot: true
