@@ -949,8 +949,8 @@ def _run_remote_scan(host, args, fleet_cfg):
     """SSH to a host and run the engine remotely.  Returns parsed JSON or None."""
     user = fleet_cfg.get("user", "root")
     key = fleet_cfg.get("key", "")
-    remote_engine = fleet_cfg.get("remote_engine", "/opt/cis-os/cis_engine.py")
-    remote_catalog = fleet_cfg.get("remote_catalog", "/opt/cis-os/rules.json")
+    remote_engine = fleet_cfg.get("remote_engine", "/opt/cis-bulwark/cis_engine.py")
+    remote_catalog = fleet_cfg.get("remote_catalog", "/opt/cis-bulwark/rules.json")
     remote_guidance = fleet_cfg.get("remote_guidance", "")
     remote_sections = fleet_cfg.get("remote_sections", "")
     remote_template = fleet_cfg.get("remote_template", "")

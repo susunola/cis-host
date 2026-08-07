@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/logo-full.png" alt="cis-bulwark — SecX Series" width="600">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/logo-full.png" alt="cis-bulwark — SecX Series" width="600">
 </p>
 
 <p align="center">
@@ -107,7 +107,7 @@ backup_dir = ""
 hosts = []
 remote = false
 user = "root"
-remote_engine = "/opt/cis-os/cis_engine.py"
+remote_engine = "/opt/cis-bulwark/cis_engine.py"
 ```
 
 CLI arguments always override config-file values.
@@ -124,7 +124,7 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini cis-rhel9-ansible/appl
 ## Architecture
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/architecture.svg" alt="cis-bulwark architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/architecture.svg" alt="cis-bulwark architecture" width="800">
 </p>
 
 Each suite ships a single-file engine (Python 3 on Linux, PowerShell on Windows) with **zero third-party dependencies**. Ansible handles file transfer, remote execution, and Jinja2 report rendering. The engine produces `result.json` and an optional `audit.log` (JSON-lines) suitable for SIEM ingestion.
@@ -222,11 +222,11 @@ A `findings.csv.j2` template is also available — enable with `cis_report_csv=t
 - Per-host score bar, pass/fail pills, applied counts, deep-link to per-host report
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
 </p>
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@9a25072/docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
 </p>
 
 ## Fine-Grained Execution
