@@ -52,6 +52,7 @@ import time
 from datetime import datetime, timezone
 
 import ciscvm_config
+import ciscvm_diff
 
 # ─── OS Presets ──────────────────────────────────────────────────────
 
@@ -255,6 +256,20 @@ def run_engine(args, mode):
         except ValueError as exc:
             print(f"[{mode.upper()}] {exc}", file=sys.stderr)
             sys.exit(1)
+
+    # Waiver hygiene: warn on expired / malformed waiver metadata, and on
+    # waiver ids that do not exist in the catalog (a typo'd id is a silent
+    # no-op exception). Expired exceptions should not linger silently.
+    if waivers_path:
+        try:
+            with open(waivers_path, "r", encoding="utf-8") as fh:
+                waivers_doc = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            waivers_doc = None
+        if waivers_doc is not None:
+            for problem in ciscvm_diff.waiver_problems(
+                    waivers_doc, _waiver_catalog_ids(args)):
+                print(f"  [waivers] {problem}", file=sys.stderr)
 
     if not _engine_is_windows(args):
         # Linux: run cis_engine.py with python3
@@ -882,6 +897,49 @@ def cmd_apply(args):
         print(f"\n  Score change: {pre_score:.1f}% → {post_score:.1f}%  "
               f"({post_score - pre_score:+.1f}%)")
 
+    # Apply + verify: compare pre/post scans so the user sees what was
+    # actually fixed, what is still failing, and what regressed.
+    verify = ciscvm_diff.verify_remediation(pre_scan, post_data)
+    post_data["_verify"] = verify.to_dict()
+    if not verify.is_empty():
+        print("\n  ── Verification (pre vs post apply) ──")
+        c = verify.counts()
+        print(f"  {click_style('✔', 'green')} Fixed:       {c['fixed']}")
+        print(f"  {click_style('✗', 'red')} Still fail:  {c['still_fail']}")
+        if c["regressed"]:
+            print(f"  {click_style('!', 'red')} Regressed:   {c['regressed']}  "
+                  f"← remediation may have broken these")
+        if c["waived"]:
+            print(f"  {click_style('W', 'cyan')} Newly waived:{c['waived']}")
+
+        def _dump(label, items, style=None):
+            if not items:
+                return
+            print(f"    {click_style(label, style) if style else label} ({len(items)})")
+            for chg in items[:30]:
+                print(f"      {chg.rule_id}  {chg.title[:60]}")
+            if len(items) > 30:
+                print(f"      ... and {len(items) - 30} more")
+
+        _dump("fixed", verify.fixed, "green")
+        _dump("still failing", verify.still_fail, "red")
+        _dump("regressed", verify.regressed, "red")
+        _dump("newly waived", verify.waived, "cyan")
+        print()
+
+        # Standalone verification report (apply + verify, audit-ready).
+        verify_path = os.path.join(
+            os.path.abspath(args.output),
+            f"verify-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
+        os.makedirs(os.path.dirname(verify_path), exist_ok=True)
+        with open(verify_path, "w", encoding="utf-8") as fh:
+            fh.write(ciscvm_diff.render_verify_html(
+                verify, name=args.name, profile=args.profile, org=args.org))
+        print(f"Verification report saved: {verify_path}")
+    elif verify.warnings:
+        for w in verify.warnings:
+            print(f"  {w}")
+
     post_data["_apply_stats"] = apply_data.get("summary", {})
     post_data["_apply_changed_files"] = apply_data.get("changed_files", [])
     if pre_scan:
@@ -920,7 +978,119 @@ def cmd_check(args):
     return {"data": scan_data, "path": out_path}
 
 
-# ─── Fleet scan ───────────────────────────────────────────────────────
+# ─── Drift detection, verification & periodic watch ───────────────
+#
+# Pure logic lives in ciscvm_diff.py (unit-testable, dataclass-typed);
+# this file only wires CLI arguments to it.
+
+def _load_result_json(path):
+    """Load an engine result JSON and fail with a clear message on error."""
+    if not os.path.isfile(path):
+        print(f"Result file not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"Cannot read result JSON {path}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _waiver_catalog_ids(args):
+    """Known rule ids for the target catalog, so a typo'd waiver id (a
+    silent no-op exception) can be flagged. Returns None when unknown."""
+    catalog_path = getattr(args, "catalog", None)
+    if not catalog_path or not os.path.isfile(catalog_path):
+        return None
+    try:
+        with open(catalog_path, "r", encoding="utf-8") as fh:
+            catalog = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return None
+    rules = catalog if isinstance(catalog, list) else catalog.get("rules", [])
+    ids = {str(r["id"]) for r in rules if isinstance(r, dict) and r.get("id")}
+    return ids or None
+
+
+def cmd_diff(args):
+    """DIFF mode: compare two scan results and report configuration drift."""
+    before = _load_result_json(args.before)
+    after = _load_result_json(args.after)
+    report = ciscvm_diff.diff_results(before, after)
+
+    if args.format in ("cli", "both"):
+        print(ciscvm_diff.render_cli(report))
+
+    out_path = None
+    if args.format in ("html", "both"):
+        out_path = os.path.join(
+            os.path.abspath(args.output),
+            f"drift-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(ciscvm_diff.render_html(report, name=args.name,
+                                             profile=args.profile, org=args.org))
+        print(f"Drift report saved: {out_path}")
+
+    if report.has_drift():
+        hint = " — use --exit-code to fail CI" if not args.exit_code else ""
+        print(f"\nGate: {click_style('FAIL', 'red')}  "
+              f"({report.drift_count()} drift/failing rules{hint})")
+        if args.exit_code:
+            sys.exit(2)
+    else:
+        print(f"\nGate: {click_style('PASS', 'green')}  (no drift)")
+    return {"path": out_path}
+
+
+def _scan_alert_cmd(cmd):
+    """Wrap a shell command as a WatchSession alert callback."""
+    def _fire(event):
+        print(f"  Running alert: {cmd}")
+        try:
+            subprocess.run(cmd, shell=True, timeout=60,
+                           stdin=subprocess.DEVNULL)
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            print(f"  Alert command failed: {exc}", file=sys.stderr)
+    return _fire
+
+
+def cmd_watch(args):
+    """WATCH mode: periodic scan with change-only, de-duplicated alerting."""
+    interval = max(int(getattr(args, "interval", 3600)), 30)
+    baseline = None
+    if getattr(args, "baseline", "") and os.path.isfile(args.baseline):
+        baseline = _load_result_json(args.baseline)
+        print(f"Baseline loaded: {args.baseline}")
+
+    alert = _scan_alert_cmd(args.alert_cmd) if getattr(args, "alert_cmd", "") else None
+
+    print(f"\n╔══ CIS Benchmark — WATCH ══╗")
+    print(f"║ Target:  {args.name}")
+    print(f"║ Profile: {args.profile}")
+    print(f"║ Interval:{interval}s  Runs: "
+          f"{'∞' if getattr(args, 'max_runs', 0) <= 0 else args.max_runs}")
+    if alert:
+        print(f"║ Alert:   {args.alert_cmd}")
+    print(f"╚{'═'*26}╝\n")
+
+    session = ciscvm_diff.WatchSession(
+        scan=lambda: run_engine(args, "scan")[0],
+        interval=interval,
+        max_runs=getattr(args, "max_runs", 0),
+        baseline=baseline,
+        alert=alert,
+        json_events=bool(getattr(args, "json", False)),
+        output_dir=os.path.abspath(args.output),
+        name=args.name,
+        profile=args.profile,
+        org=getattr(args, "org", "") or "",
+    )
+    session.run()
+    return None
+
+
+# ─── Fleet scan ─# ─── Fleet scan ───────────────────────────────────────────────────────
 
 def _load_fleet_hosts(args):
     """Return a list of host identifiers from CLI or config."""
@@ -1435,6 +1605,38 @@ Examples:
     p_fleet_scan.add_argument("--fleet-remote", default=None, action="store_true",
                               help="Run engine over SSH on each host (requires [fleet] remote config)")
 
+    # ── diff (drift detection) ──
+    p_diff = sub.add_parser("diff", help="Compare two scan result JSONs and report configuration drift")
+    p_diff.add_argument("before", metavar="BEFORE_JSON",
+                        help="Baseline scan result JSON (e.g. from --copy-json or audit)")
+    p_diff.add_argument("after", metavar="AFTER_JSON",
+                        help="Latest scan result JSON")
+    p_diff.add_argument("--name", default="CIS Benchmark",
+                        help="Benchmark display name for the report")
+    p_diff.add_argument("--profile", default="L1", help="Profile label for the report")
+    p_diff.add_argument("--org", default="", help="Organization name for the report")
+    p_diff.add_argument("--output", default="./output",
+                        help="Output directory for the drift report (default: ./output)")
+    p_diff.add_argument("--format", default="both", choices=["html", "cli", "both"],
+                        help="Output format: html, cli, or both (default: both)")
+    p_diff.add_argument("--exit-code", action="store_true",
+                        help="Exit non-zero (2) when drift or failing rules remain — CI gate")
+
+    # ── watch (periodic scan with drift alerting) ──
+    p_watch = sub.add_parser("watch", help="Periodic scan; reports only when configuration drifts")
+    add_common_args(p_watch)
+    add_tailoring_args(p_watch)
+    p_watch.add_argument("--interval", type=int, default=3600,
+                         help="Seconds between scans (min 30, default 3600)")
+    p_watch.add_argument("--max-runs", type=int, default=0,
+                         help="Stop after N runs (0 = run forever, default 0)")
+    p_watch.add_argument("--baseline", default="",
+                         help="Baseline result JSON to diff against; first scan if omitted")
+    p_watch.add_argument("--alert-cmd", default="",
+                         help="Shell command executed when drift is detected")
+    p_watch.add_argument("--json", action="store_true",
+                         help="Emit one JSON event per line (SIEM/automation friendly)")
+
     # ── info ──
     p_info = sub.add_parser("info", help="Show rule detail by ID (CLI or HTML)")
     p_info.add_argument("--os", default="",
@@ -1474,8 +1676,9 @@ Examples:
     args = ciscvm_config.merge(args, args.config if args.config else None)
     args = _apply_defaults(args)
 
-    # Validate required paths (not needed for list/list-os/info-only modes)
-    if args.command not in ("list", "list-os") and (not args.engine or not args.catalog):
+    # Validate required paths (not needed for list/list-os/diff; diff only
+    # compares two existing result JSONs and needs no engine)
+    if args.command not in ("list", "list-os", "diff") and (not args.engine or not args.catalog):
         print("Error: --engine and --catalog are required (or use --os)", file=sys.stderr)
         sys.exit(1)
 
@@ -1492,6 +1695,8 @@ Examples:
         "audit": cmd_audit,
         "apply": cmd_apply,
         "check": cmd_check,
+        "diff": cmd_diff,
+        "watch": cmd_watch,
         "fleet": cmd_fleet_scan,
         "info": cmd_info,
     }
