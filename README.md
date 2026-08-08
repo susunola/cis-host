@@ -272,6 +272,29 @@ ciscvm fleet scan --os rhel9 --fleet-remote
 
 Remote mode requires the engine and catalog to already exist on the target hosts. See `ciscvm.toml.example` for the `[fleet]` layout.
 
+## Drift Detection, Verification & Watch
+
+**`ciscvm diff`** compares two scan result JSONs and classifies every rule change — new failures (drift), regressions, recoveries, and waiver transitions — as a CLI summary and a self-contained HTML report. Use `--exit-code` in CI to fail the pipeline when drift appears:
+
+```bash
+ciscvm diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
+```
+
+**Apply verification** — after `ciscvm apply`, a pre/post scan comparison reports which rules were actually fixed, which are still failing, and — critically — which rules **regressed** because the remediation itself broke them. A standalone `verify-*.html` report is written alongside the apply report.
+
+**`ciscvm watch`** runs a periodic scan loop with change-only, de-duplicated alerting (edge-triggered like Wazuh SCA): a rule is alerted when it starts failing and only again when it clears — a persistent failure never re-pages. Quiet runs print a single line; `--json` emits one machine-readable event per line for SIEM/automation:
+
+```bash
+ciscvm watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+ciscvm watch --os rhel9 --interval 3600 --json          # event stream
+```
+
+**Waiver hygiene** — waivers may carry approval metadata; expired or malformed entries are flagged at scan time, and a waiver whose rule id does not exist in the catalog (a silent no-op) is called out:
+
+```bash
+ciscvm scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+```
+
 ## Tailoring, Waivers, and Dry-Run
 
 - **Variables** — override rule parameters without editing the catalog:
