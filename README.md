@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
-    <img src="https://img.shields.io/badge/version-1.2.0-006EFF" alt="v1.2.0">
+    <img src="https://img.shields.io/badge/version-1.3.0-006EFF" alt="v1.3.0">
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/powershell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+">
   <img src="https://img.shields.io/badge/suites-14-00B4D8" alt="14 suites">
@@ -362,9 +362,13 @@ Scan works as non-Admin with `RemoteSigned` execution policy. Apply requires Adm
 ```
 cis-bulwark/
 ├── cis_cli.py                      # Local CLI (--os switches targets)
+├── ciscvm_diff.py                  # Drift detection / verification / watch logic
+├── ciscvm_config.py                # ciscvm.toml loader & merge
 ├── docs/
 │   ├── architecture.svg
 │   └── screenshots/
+├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus exporters
+├── tests/                          # pytest suite (engine, CLI, drift, exporters)
 ├── cis-tencentos3-ansible/         # TencentOS 3
 ├── cis-tencentos4-ansible/         # TencentOS 4
 ├── cis-rhel8-ansible/              # RHEL 8

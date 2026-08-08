@@ -106,6 +106,12 @@ python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
 
 # 特定のルールのみをスキャン
 python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+
+# ドリフト検出：2 つのスキャン結果を比較（CI では --exit-code で失敗）
+python3 cis_cli.py diff output/result-before.json output/result-after.json --exit-code
+
+# 定期監視：6 時間ごとにスキャン、設定ドリフト時のみ報告
+python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 ```
 
 `--os` の値: `tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -186,6 +192,10 @@ cis-bulwark/
 ├── README.ja.md
 ├── README.th.md
 ├── cis_cli.py                      # ローカル CLI（--os でターゲットを切り替え）
+├── ciscvm_diff.py                  # ドリフト検出 / 検証 / 監視ロジック
+├── ciscvm_config.py                # ciscvm.toml のロードとマージ
+├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus エクスポーター
+├── tests/                          # pytest テスト（エンジン、CLI、ドリフト、エクスポート）
 ├── docs/architecture.svg           # アーキテクチャ図
 ├── cis-tencentos3-ansible/         # TencentOS 3
 ├── cis-tencentos4-ansible/         # TencentOS 4
@@ -246,6 +256,18 @@ cis-bulwark/
 ## マルチホスト
 
 1 回のプレイがインベントリ内の全ホストに対して実行されます。各ホストには固有の `reports/HOST-L1-scan.html` が生成されます。インベントリに複数のホストが含まれる場合、ロールは `reports/index.html` もレンダリングします。これは各ノードの準拠スコア、合格/不合格数、ホスト別レポートへのリンクを含むクラスタ概要です。
+
+## ドリフト検出・検証・監視
+
+- **`ciscvm diff`** — 2 つのスキャン結果 JSON を比較し、ルールごとの変化（新規失敗＝ドリフト、回帰、回復、waiver 変更）を分類して CLI サマリと自己完結型 HTML レポートを出力。CI では `--exit-code` でドリフト時に失敗させられます。
+- **適用検証** — `ciscvm apply` 後に前後スキャンを比較し、実際に修正されたルール・未修正のルール・**修正によって回帰したルール**を報告。`verify-*.html` レポートを生成します。
+- **`ciscvm watch`** — 周期スキャンループ。変更時のみ・重複排除のアラート（Wazuh SCA と同様のエッジトリガー方式）。`--json` で SIEM / 自動化向けに 1 行 1 イベントを出力。
+- **waiver 衛生** — waiver に承認者・有効期限を付与可能。期限切れ・不正なエントリや、カタログに存在しないルール ID（黙って無効になる waiver）をスキャン時に警告します。
+
+```bash
+python3 cis_cli.py watch --os rhel9 --interval 3600 --json
+python3 cis_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+```
 
 ## 注意事項
 

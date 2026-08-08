@@ -106,6 +106,12 @@ python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
 
 # 只跑部分规则
 python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+
+# 漂移检测：对比两份扫描结果（基线 vs 最新），CI 中加 --exit-code 有漂移即退出
+python3 cis_cli.py diff output/result-before.json output/result-after.json --exit-code
+
+# 周期监控：每 6 小时扫描一次，仅在配置漂移时报告
+python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 ```
 
 `--os` 取值：`tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -184,6 +190,10 @@ cis-bulwark/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
 ├── cis_cli.py                      # 本地 CLI（--os 切换目标）
+├── ciscvm_diff.py                  # 漂移检测 / 修复验证 / 周期监控逻辑
+├── ciscvm_config.py                # ciscvm.toml 加载与合并
+├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus 导出
+├── tests/                          # pytest 测试（引擎、CLI、漂移、导出）
 ├── docs/architecture.svg           # 架构图
 ├── cis-tencentos3-ansible/         # TencentOS 3
 ├── cis-tencentos4-ansible/         # TencentOS 4
@@ -244,6 +254,29 @@ cis-bulwark/
 ## 多主机
 
 一次 play 把 inventory 里的所有主机都跑一遍。每台主机生成独立的 `reports/HOST-L1-scan.html`。当主机数大于 1 时，role 会额外渲染 `reports/index.html` —— 一个集群总览页，列出每台节点的合规分、通过/未通过计数，并附返回单主机报告的链接。
+
+## 漂移检测、验证与监控
+
+**`ciscvm diff`** 对比两份扫描结果 JSON，把每条规则的变更分类——新增失败（漂移）、回退、恢复、豁免变化——输出 CLI 摘要与自包含的 HTML 报告。CI 里加 `--exit-code`，出现漂移就让流水线失败：
+
+```bash
+python3 cis_cli.py diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
+```
+
+**Apply 验证** —— `ciscvm apply` 之后，前后两次扫描对比会报告哪些规则真正被修复、哪些仍然失败，以及最关键的一点：哪些规则因修复本身而**回退（regressed）**。独立的 `verify-*.html` 报告与 apply 报告一同生成。
+
+**`ciscvm watch`** 周期扫描循环，采用「仅变化 + 去重告警」（边沿触发，类似 Wazuh SCA）：规则开始失败时告警一次，恢复之后才会再次告警——持续失败不会反复打扰。静默轮次只输出一行；`--json` 每行输出一条机器可读事件，便于接入 SIEM / 自动化：
+
+```bash
+python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+python3 cis_cli.py watch --os rhel9 --interval 3600 --json          # 事件流
+```
+
+**豁免卫生（Waiver hygiene）** —— 豁免可携带审批元数据（`approved_by`、`expires`）；过期或格式错误的条目在扫描时会被标记，引用了目录中不存在的规则 ID（即静默失效的豁免）也会被点名：
+
+```bash
+python3 cis_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+```
 
 ## 注意事项
 

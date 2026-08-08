@@ -106,6 +106,12 @@ python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
 
 # สแกนเฉพาะกฎที่ระบุ
 python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+
+# ตรวจจับความเบี่ยงเบน (drift): เปรียบเทียบผลสแกน 2 ไฟล์ (CI: ใช้ --exit-code เพื่อให้ fail)
+python3 cis_cli.py diff output/result-before.json output/result-after.json --exit-code
+
+# เฝ้าระวังแบบรอบ: สแกนทุก 6 ชม. รายงานเมื่อ config เบี่ยงเบนเท่านั้น
+python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 ```
 
 ค่าของ `--os`: `tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -185,7 +191,11 @@ cis-bulwark/
 ├── README.zh.md
 ├── README.ja.md
 ├── README.th.md
-├── cis_cli.py                      # CLI แบบローカル (--os สลับเป้าหมาย)
+├── cis_cli.py                      # CLI ในเครื่อง (--os สลับเป้าหมาย)
+├── ciscvm_diff.py                  # ตรรกะ drift detection / verify / watch
+├── ciscvm_config.py                # โหลดและ merge ciscvm.toml
+├── scripts/                        # ตัวส่งออก SARIF/XCCDF/JUnit/Prometheus
+├── tests/                          # ชุดทดสอบ pytest (engine, CLI, drift, exporters)
 ├── docs/architecture.svg           # แผนผังสถาปัตยกรรม
 ├── cis-tencentos3-ansible/         # TencentOS 3
 ├── cis-tencentos4-ansible/         # TencentOS 4
@@ -246,6 +256,18 @@ cis-bulwark/
 ## หลายโฮสต์
 
 หนึ่ง play ทำงานกับทุกโฮสต์ใน inventory แต่ละโฮสต์ได้รับ `reports/HOST-L1-scan.html` ของตัวเอง เมื่อ inventory มีมากกว่าหนึ่งโฮสต์ role จะสร้าง `reports/index.html` ด้วย — ภาพรวมคลัสเตอร์ที่แสดงคะแนนการปฏิบัติตามข้อกำหนดของแต่ละโหนด จำนวนผ่าน/ไม่ผ่าน และลิงก์ไปยังรายงานต่อโฮสต์
+
+## การตรวจจับ drift, การตรวจสอบ & การเฝ้าระวัง
+
+- **`ciscvm diff`** — เปรียบเทียบผลสแกน JSON 2 ไฟล์ และจำแนกการเปลี่ยนแปลงของแต่ละกฎ (ใหม่ล้มเหลว = drift, regressed, recovered, การเปลี่ยนแปลง waiver) เป็นสรุป CLI + รายงาน HTML ในตัว ใช้ `--exit-code` ใน CI เพื่อให้ pipeline ล้มเหลวเมื่อมี drift
+- **การตรวจสอบหลัง apply** — หลัง `ciscvm apply` เปรียบเทียบสแกนก่อน/หลัง: กฎที่แก้ไขจริง, ยังล้มเหลว, และ **regressed (กฎที่เคยผ่านแล้วพังเพราะการแก้ไข)** พร้อมรายงาน `verify-*.html`
+- **`ciscvm watch`** — ลูปสแกนแบบรอบ แจ้งเตือนเฉพาะเมื่อมีการเปลี่ยนแปลง (edge-triggered แบบ Wazuh SCA) `--json` เอาต์พุตเหตุการณ์ 1 บรรทัดต่อ 1 ระเบียนสำหรับ SIEM/อัตโนมัติ
+- **สุขอนามัยของ waiver** — waiver ระบุ `approved_by` / `expires` ได้; รายการหมดอายุหรือ rule id ที่ไม่มีใน catalog (waiver ที่เงียบไร้ผล) จะถูกเตือนตอนสแกน
+
+```bash
+python3 cis_cli.py watch --os rhel9 --interval 3600 --json
+python3 cis_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+```
 
 ## หมายเหตุ
 
