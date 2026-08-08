@@ -52,6 +52,7 @@ import time
 from datetime import datetime, timezone
 
 import ciscvm_config
+import ciscvm_diff
 
 # ─── OS Presets ──────────────────────────────────────────────────────
 
@@ -256,14 +257,19 @@ def run_engine(args, mode):
             print(f"[{mode.upper()}] {exc}", file=sys.stderr)
             sys.exit(1)
 
-    # Waiver hygiene: warn on expired / malformed waiver metadata. Expired
-    # exceptions should not silently linger (exceptions-as-code practice).
+    # Waiver hygiene: warn on expired / malformed waiver metadata, and on
+    # waiver ids that do not exist in the catalog (a typo'd id is a silent
+    # no-op exception). Expired exceptions should not linger silently.
     if waivers_path:
         try:
             with open(waivers_path, "r", encoding="utf-8") as fh:
-                validate_waivers(json.load(fh), label="waivers")
+                waivers_doc = json.load(fh)
         except (OSError, json.JSONDecodeError):
-            pass  # engine will surface any malformed waivers itself
+            waivers_doc = None
+        if waivers_doc is not None:
+            for problem in ciscvm_diff.waiver_problems(
+                    waivers_doc, _waiver_catalog_ids(args)):
+                print(f"  [waivers] {problem}", file=sys.stderr)
 
     if not _engine_is_windows(args):
         # Linux: run cis_engine.py with python3
@@ -893,11 +899,46 @@ def cmd_apply(args):
 
     # Apply + verify: compare pre/post scans so the user sees what was
     # actually fixed, what is still failing, and what regressed.
-    verify = verify_remediation(pre_scan, post_data)
-    post_data["_verify"] = verify
-    if verify and any(verify.values()):
+    verify = ciscvm_diff.verify_remediation(pre_scan, post_data)
+    post_data["_verify"] = verify.to_dict()
+    if not verify.is_empty():
         print("\n  ── Verification (pre vs post apply) ──")
-        print_verify(verify)
+        c = verify.counts()
+        print(f"  {click_style('✔', 'green')} Fixed:       {c['fixed']}")
+        print(f"  {click_style('✗', 'red')} Still fail:  {c['still_fail']}")
+        if c["regressed"]:
+            print(f"  {click_style('!', 'red')} Regressed:   {c['regressed']}  "
+                  f"← remediation may have broken these")
+        if c["waived"]:
+            print(f"  {click_style('W', 'cyan')} Newly waived:{c['waived']}")
+
+        def _dump(label, items, style=None):
+            if not items:
+                return
+            print(f"    {click_style(label, style) if style else label} ({len(items)})")
+            for chg in items[:30]:
+                print(f"      {chg.rule_id}  {chg.title[:60]}")
+            if len(items) > 30:
+                print(f"      ... and {len(items) - 30} more")
+
+        _dump("fixed", verify.fixed, "green")
+        _dump("still failing", verify.still_fail, "red")
+        _dump("regressed", verify.regressed, "red")
+        _dump("newly waived", verify.waived, "cyan")
+        print()
+
+        # Standalone verification report (apply + verify, audit-ready).
+        verify_path = os.path.join(
+            os.path.abspath(args.output),
+            f"verify-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
+        os.makedirs(os.path.dirname(verify_path), exist_ok=True)
+        with open(verify_path, "w", encoding="utf-8") as fh:
+            fh.write(ciscvm_diff.render_verify_html(
+                verify, name=args.name, profile=args.profile, org=args.org))
+        print(f"Verification report saved: {verify_path}")
+    elif verify.warnings:
+        for w in verify.warnings:
+            print(f"  {w}")
 
     post_data["_apply_stats"] = apply_data.get("summary", {})
     post_data["_apply_changed_files"] = apply_data.get("changed_files", [])
@@ -937,103 +978,10 @@ def cmd_check(args):
     return {"data": scan_data, "path": out_path}
 
 
-# ─── Drift detection (diff) ───────────────────────────────────────────
+# ─── Drift detection, verification & periodic watch ───────────────
 #
-# Inspired by OpenSCAP's `oscap xccdf compare` and Wazuh SCA's change-only
-# alerting: compare two scan result documents and classify per-rule change.
-# `new_fail` is drift (a rule that used to pass now fails); `regressed` is a
-# rule that was compliant and became non-compliant after remediation.
-
-CHANGE_STATUS_ORDER = ["new_fail", "regressed", "recovered", "still_fail",
-                       "now_waived", "unwaived", "new_pass", "before_only",
-                       "after_only"]
-
-
-def _result_status(r):
-    """Return the effective status of a rule result dict (None-safe)."""
-    if not isinstance(r, dict):
-        return "?"
-    return r.get("status", "?")
-
-
-def _is_failing(status):
-    return status in ("fail", "error")
-
-
-def _waived(r):
-    """True when a rule result is waived (either the waived flag or a
-    status of 'waived' — both appear in real engine output)."""
-    if not isinstance(r, dict):
-        return False
-    return bool(r.get("waived")) or r.get("status") == "waived"
-
-
-def diff_results(before, after):
-    """Classify per-rule changes between two scan result documents.
-
-    Returns a dict with the same shape consumed by print_diff and the HTML
-    renderer. Rules are matched by ID; entries present in only one side are
-    reported separately so a changed profile / benchmark does not silently
-    skew the drift summary.
-    """
-    b_map = {r.get("id"): r for r in before.get("results", []) if isinstance(r, dict)}
-    a_map = {r.get("id"): r for r in after.get("results", []) if isinstance(r, dict)}
-
-    changes = {k: [] for k in CHANGE_STATUS_ORDER}
-    for rid, ar in a_map.items():
-        br = b_map.get(rid)
-        if br is None:
-            changes["after_only"].append((rid, ar))
-            continue
-
-        b_stat = _result_status(br)
-        a_stat = _result_status(ar)
-        b_w, a_w = _waived(br), _waived(ar)
-
-        if a_w and not b_w:
-            changes["now_waived"].append((rid, ar))
-        if b_w and not a_w:
-            changes["unwaived"].append((rid, ar))
-
-        # Compare only rules that are not waived on either side, so waiving a
-        # rule is not double-counted as a status change.
-        if a_w or b_w:
-            continue
-        if _is_failing(a_stat) and not _is_failing(b_stat):
-            changes["new_fail"].append((rid, ar))
-        elif _is_failing(b_stat) and not _is_failing(a_stat):
-            changes["recovered"].append((rid, ar))
-        elif _is_failing(a_stat) and _is_failing(b_stat):
-            changes["still_fail"].append((rid, ar))
-        elif a_stat == "pass" and b_stat != "pass":
-            changes["new_pass"].append((rid, ar))
-
-    for rid, br in b_map.items():
-        if rid not in a_map:
-            changes["before_only"].append((rid, br))
-
-    b_sum = before.get("summary", {}).get("all", {}) or {}
-    a_sum = after.get("summary", {}).get("all", {}) or {}
-    return {
-        "before": {"score": b_sum.get("score", 0.0),
-                   "hardening_index": b_sum.get("hardening_index", 0.0),
-                   "fail": b_sum.get("fail", 0),
-                   "started_at": before.get("started_at", ""),
-                   "host": before.get("host", {})},
-        "after": {"score": a_sum.get("score", 0.0),
-                  "hardening_index": a_sum.get("hardening_index", 0.0),
-                  "fail": a_sum.get("fail", 0),
-                  "started_at": after.get("started_at", ""),
-                  "host": after.get("host", {})},
-        "changes": changes,
-    }
-
-
-def diff_has_drift(diff):
-    """Return True if the diff contains drift that should fail a gate."""
-    ch = diff.get("changes", {})
-    return bool(ch.get("new_fail") or ch.get("regressed") or ch.get("still_fail"))
-
+# Pure logic lives in ciscvm_diff.py (unit-testable, dataclass-typed);
+# this file only wires CLI arguments to it.
 
 def _load_result_json(path):
     """Load an engine result JSON and fail with a clear message on error."""
@@ -1048,356 +996,101 @@ def _load_result_json(path):
         sys.exit(1)
 
 
-def print_diff(diff):
-    """Print a human-readable drift summary."""
-    ch = diff.get("changes", {})
-    before, after = diff["before"], diff["after"]
-    host = before.get("host", {}) or after.get("host", {}) or {}
-    hostname = host.get("hostname", "?") if isinstance(host, dict) else "?"
-
-    print(f"\n{'='*60}")
-    print(f"  Drift: {hostname}")
-    print(f"  Before: {before.get('started_at', '?')}  score={before.get('score', 0):.1f}%  fail={before.get('fail', 0)}")
-    print(f"  After:  {after.get('started_at', '?')}  score={after.get('score', 0):.1f}%  fail={after.get('fail', 0)}")
-    print(f"  Score delta: {after.get('score', 0) - before.get('score', 0):+.1f}%")
-    print(f"{'='*60}")
-
-    def _dump(label, items, style=None):
-        if not items:
-            return
-        print(f"\n  {click_style(label, style) if style else label} ({len(items)})")
-        for rid, r in items[:50]:
-            title = (r.get("title", "") or "")[:70]
-            print(f"    {click_style('✗', 'red') if _is_failing(_result_status(r)) else ' '} {rid}  {title}")
-        if len(items) > 50:
-            print(f"    ... and {len(items) - 50} more")
-
-    _dump("NEW FAILURES (drift)", ch.get("new_fail"), "red")
-    _dump("REGRESSED after apply", ch.get("regressed"), "red")
-    _dump("Recovered", ch.get("recovered"), "green")
-    _dump("Still failing", ch.get("still_fail"))
-    _dump("Now waived", ch.get("now_waived"), "cyan")
-    _dump("No longer waived", ch.get("unwaived"), "yellow")
-    _dump("Now passing", ch.get("new_pass"), "green")
-    _dump("Only in baseline", ch.get("before_only"))
-    _dump("Only in latest", ch.get("after_only"))
-
-    total_changed = sum(len(v) for v in ch.values())
-    print(f"\n  Changed rules: {total_changed}"
-          f"  |  drift: {len(ch.get('new_fail', [])) + len(ch.get('regressed', [])) + len(ch.get('still_fail', []))}")
-    print(f"{'='*60}\n")
-
-
-def _render_diff_report(diff, output_dir, name="CIS Benchmark", profile="", org=""):
-    """Render a self-contained HTML drift report."""
-    ch = diff.get("changes", {})
-    before, after = diff["before"], diff["after"]
-    now = datetime.now(timezone.utc).astimezone()
-
-    def _rows(label, items, badge):
-        if not items:
-            return ""
-        rows = "".join(
-            f'<tr><td>{html.escape(r.get("id", ""))}</td>'
-            f'<td>{html.escape((r.get("title", "") or "")[:90])}</td>'
-            f'<td><span class="badge {badge}">{_result_status(r)}</span></td></tr>'
-            for _, r in items
-        )
-        return (f'<h3>{html.escape(label)} <span class="count">({len(items)})</span></h3>'
-                f'<table><thead><tr><th>ID</th><th>Rule</th><th>Status</th></tr></thead>'
-                f'<tbody>{rows}</tbody></table>')
-
-    sections = "".join([
-        _rows("New failures (drift)", ch.get("new_fail"), "bad"),
-        _rows("Regressed after apply", ch.get("regressed"), "bad"),
-        _rows("Recovered", ch.get("recovered"), "ok"),
-        _rows("Still failing", ch.get("still_fail"), "warn"),
-        _rows("Now waived", ch.get("now_waived"), "ok"),
-        _rows("No longer waived", ch.get("unwaived"), "warn"),
-        _rows("Now passing", ch.get("new_pass"), "ok"),
-        _rows("Only in baseline", ch.get("before_only"), "warn"),
-        _rows("Only in latest", ch.get("after_only"), "warn"),
-    ])
-
-    delta = after.get("score", 0.0) - before.get("score", 0.0)
-    doc = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>CIS Drift Report — {html.escape(name)}</title>
-<style>
-body {{ font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-       max-width: 1100px; margin: 40px auto; padding: 0 20px; color: #1a2332; background: #f8f9fa; }}
-h1 {{ font-size: 24px; }}
-h3 {{ font-size: 16px; margin: 28px 0 8px; }}
-table {{ width: 100%; border-collapse: collapse; margin-top: 8px; background: #fff; }}
-th, td {{ padding: 8px 10px; border: 1px solid #e1e6ef; text-align: left; font-size: 13px; }}
-th {{ background: #1e3a6e; color: #fff; }}
-tr:nth-child(even) {{ background: #f8f9fa; }}
-.badge {{ padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }}
-.bad {{ background: #fde8e8; color: #c42a1e; }}
-.ok {{ background: #e4f4ec; color: #0d7a53; }}
-.warn {{ background: #fdf3d7; color: #9a6b00; }}
-.count {{ color: #64748b; font-weight: 400; }}
-.summary {{ display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }}
-.card {{ background: #fff; border: 1px solid #e1e6ef; border-radius: 8px;
-        padding: 12px 18px; min-width: 140px; }}
-.card .num {{ font-size: 22px; font-weight: 700; }}
-.card .lbl {{ font-size: 12px; color: #64748b; }}
-.delta-up {{ color: #0d7a53; }} .delta-down {{ color: #c42a1e; }}
-</style>
-</head>
-<body>
-<h1>Configuration Drift Report</h1>
-<p><strong>{html.escape(name)}</strong> · Profile {html.escape(profile)}{(' · ' + html.escape(org)) if org else ''}</p>
-<div class="summary">
-  <div class="card"><div class="num">{before.get('score', 0):.1f}%</div><div class="lbl">Baseline score</div></div>
-  <div class="card"><div class="num {('delta-up' if delta >= 0 else 'delta-down')}">{delta:+.1f}%</div><div class="lbl">Score delta</div></div>
-  <div class="card"><div class="num">{len(ch.get('new_fail', [])) + len(ch.get('regressed', []))}</div><div class="lbl">Drift (new/regressed)</div></div>
-  <div class="card"><div class="num">{len(ch.get('still_fail', []))}</div><div class="lbl">Still failing</div></div>
-  <div class="card"><div class="num">{len(ch.get('recovered', []))}</div><div class="lbl">Recovered</div></div>
-</div>
-{sections}
-<p style="color:#94a3b8; font-size:12px; margin-top:32px;">Generated {now.strftime('%Y-%m-%d %H:%M:%S')} · cis-bulwark</p>
-</body>
-</html>"""
-    os.makedirs(output_dir, exist_ok=True)
-    out_path = os.path.join(output_dir, f"drift-{now.strftime('%Y%m%d-%H%M%S')}.html")
-    with open(out_path, "w", encoding="utf-8") as fh:
-        fh.write(doc)
-    return out_path
+def _waiver_catalog_ids(args):
+    """Known rule ids for the target catalog, so a typo'd waiver id (a
+    silent no-op exception) can be flagged. Returns None when unknown."""
+    catalog_path = getattr(args, "catalog", None)
+    if not catalog_path or not os.path.isfile(catalog_path):
+        return None
+    try:
+        with open(catalog_path, "r", encoding="utf-8") as fh:
+            catalog = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return None
+    rules = catalog if isinstance(catalog, list) else catalog.get("rules", [])
+    ids = {str(r["id"]) for r in rules if isinstance(r, dict) and r.get("id")}
+    return ids or None
 
 
 def cmd_diff(args):
     """DIFF mode: compare two scan results and report configuration drift."""
     before = _load_result_json(args.before)
     after = _load_result_json(args.after)
-    diff = diff_results(before, after)
-    print_diff(diff)
+    report = ciscvm_diff.diff_results(before, after)
+
+    if args.format in ("cli", "both"):
+        print(ciscvm_diff.render_cli(report))
 
     out_path = None
     if args.format in ("html", "both"):
-        out_path = _render_diff_report(diff, os.path.abspath(args.output),
-                                       name=args.name, profile=args.profile, org=args.org)
+        out_path = os.path.join(
+            os.path.abspath(args.output),
+            f"drift-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(ciscvm_diff.render_html(report, name=args.name,
+                                             profile=args.profile, org=args.org))
         print(f"Drift report saved: {out_path}")
 
-    if args.exit_code and diff_has_drift(diff):
-        n = (len(diff["changes"].get("new_fail", []))
-             + len(diff["changes"].get("regressed", []))
-             + len(diff["changes"].get("still_fail", [])))
-        print(f"\nGate: {click_style('FAIL', 'red')}  ({n} drift/failing rules)")
-        sys.exit(2)
-    if diff_has_drift(diff):
-        n = (len(diff["changes"].get("new_fail", []))
-             + len(diff["changes"].get("regressed", []))
-             + len(diff["changes"].get("still_fail", [])))
-        print(f"\nGate: {click_style('FAIL', 'red')}  ({n} drift/failing rules — use --exit-code to fail CI)")
+    if report.has_drift():
+        hint = " — use --exit-code to fail CI" if not args.exit_code else ""
+        print(f"\nGate: {click_style('FAIL', 'red')}  "
+              f"({report.drift_count()} drift/failing rules{hint})")
+        if args.exit_code:
+            sys.exit(2)
     else:
         print(f"\nGate: {click_style('PASS', 'green')}  (no drift)")
     return {"path": out_path}
 
 
-# ─── Periodic watch ───────────────────────────────────────────────────
-#
-# Inspired by Wazuh SCA's continuous monitoring: scan on an interval, compare
-# with the previous result, and surface output ONLY when something changed —
-# a quiet run prints a single line, a drifted run prints the diff and may
-# fire an alert command.
+def _scan_alert_cmd(cmd):
+    """Wrap a shell command as a WatchSession alert callback."""
+    def _fire(event):
+        print(f"  Running alert: {cmd}")
+        try:
+            subprocess.run(cmd, shell=True, timeout=60,
+                           stdin=subprocess.DEVNULL)
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            print(f"  Alert command failed: {exc}", file=sys.stderr)
+    return _fire
+
 
 def cmd_watch(args):
-    """WATCH mode: periodic scan with drift alerting (change-only output)."""
+    """WATCH mode: periodic scan with change-only, de-duplicated alerting."""
     interval = max(int(getattr(args, "interval", 3600)), 30)
-    max_runs = int(getattr(args, "max_runs", 0))
-    alert_cmd = getattr(args, "alert_cmd", "") or ""
-    output_dir = os.path.abspath(args.output)
+    baseline = None
+    if getattr(args, "baseline", "") and os.path.isfile(args.baseline):
+        baseline = _load_result_json(args.baseline)
+        print(f"Baseline loaded: {args.baseline}")
+
+    alert = _scan_alert_cmd(args.alert_cmd) if getattr(args, "alert_cmd", "") else None
 
     print(f"\n╔══ CIS Benchmark — WATCH ══╗")
     print(f"║ Target:  {args.name}")
     print(f"║ Profile: {args.profile}")
-    print(f"║ Interval:{interval}s  Runs: {'∞' if max_runs <= 0 else max_runs}")
-    if alert_cmd:
-        print(f"║ Alert:   {alert_cmd}")
+    print(f"║ Interval:{interval}s  Runs: "
+          f"{'∞' if getattr(args, 'max_runs', 0) <= 0 else args.max_runs}")
+    if alert:
+        print(f"║ Alert:   {args.alert_cmd}")
     print(f"╚{'═'*26}╝\n")
 
-    # Baseline: use an explicit --baseline result file, else the first scan.
-    baseline_path = getattr(args, "baseline", "") or ""
-    previous = None
-    if baseline_path and os.path.isfile(baseline_path):
-        previous = _load_result_json(baseline_path)
-        print(f"Baseline loaded: {baseline_path}")
-
-    runs = 0
-    try:
-        while max_runs <= 0 or runs < max_runs:
-            runs += 1
-            stamp = datetime.now().strftime("%H:%M:%S")
-            print(f"[{stamp}] scan #{runs} ...", end="", flush=True)
-            result_data, _ = run_engine(args, "scan")
-            print(f" score={result_data.get('summary', {}).get('all', {}).get('score', 0):.1f}%")
-
-            if previous is None:
-                previous = result_data
-                print("  (baseline established)")
-                _persist_watch_result(result_data, output_dir, runs)
-                if max_runs > 0 and runs >= max_runs:
-                    break
-                time.sleep(interval)
-                continue
-
-            diff = diff_results(previous, result_data)
-            if diff_has_drift(diff):
-                print(click_style("\n  ⚠ DRIFT DETECTED", "red"))
-                print_diff(diff)
-                out_path = _render_diff_report(diff, output_dir,
-                                               name=args.name, profile=args.profile,
-                                               org=getattr(args, "org", "") or "")
-                print(f"Drift report saved: {out_path}")
-                if alert_cmd:
-                    print(f"  Running alert: {alert_cmd}")
-                    try:
-                        subprocess.run(alert_cmd, shell=True, timeout=60,
-                                       stdin=subprocess.DEVNULL)
-                    except (subprocess.TimeoutExpired, OSError) as exc:
-                        print(f"  Alert command failed: {exc}", file=sys.stderr)
-            else:
-                print("  no drift (quiet)")
-
-            previous = result_data
-            _persist_watch_result(result_data, output_dir, runs)
-            if max_runs > 0 and runs >= max_runs:
-                break
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        print("\nWatch stopped.")
+    session = ciscvm_diff.WatchSession(
+        scan=lambda: run_engine(args, "scan")[0],
+        interval=interval,
+        max_runs=getattr(args, "max_runs", 0),
+        baseline=baseline,
+        alert=alert,
+        json_events=bool(getattr(args, "json", False)),
+        output_dir=os.path.abspath(args.output),
+        name=args.name,
+        profile=args.profile,
+        org=getattr(args, "org", "") or "",
+    )
+    session.run()
     return None
 
 
-def _persist_watch_result(data, output_dir, runs):
-    """Keep the latest watch scan result so history is inspectable."""
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, f"watch-run-{runs:04d}.json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2)
-
-
-# ─── Apply verification (apply + verify) ──────────────────────────────
-#
-# Inspired by the dev-sec hardening pattern of pairing remediation with an
-# independent verification pass: after apply, compare pre/post scans so the
-# user sees which rules were actually fixed, which are still failing, and —
-# critically — which rules REGRESSED because of the remediation itself.
-
-def verify_remediation(pre, post):
-    """Compare pre-apply and post-apply scans.
-
-    Returns a dict of rule-ID lists:
-      fixed      : was failing, now passing
-      still_fail : was failing, still failing (remediation did not work)
-      regressed  : was passing, now failing (remediation broke something)
-      waived     : now waived (explicit exception)
-    """
-    if pre is None or post is None:
-        return {"fixed": [], "still_fail": [], "regressed": [], "waived": []}
-
-    pre_map = {r.get("id"): r for r in pre.get("results", []) if isinstance(r, dict)}
-    out = {"fixed": [], "still_fail": [], "regressed": [], "waived": []}
-    for r in post.get("results", []):
-        if not isinstance(r, dict):
-            continue
-        rid = r.get("id")
-        if rid is None:
-            continue
-        post_stat = _result_status(r)
-        if _waived(r):
-            if not _waived(pre_map.get(rid, {})):
-                out["waived"].append((rid, r))
-            continue
-        pre_stat = _result_status(pre_map.get(rid, {}))
-        if _is_failing(pre_stat) and post_stat == "pass":
-            out["fixed"].append((rid, r))
-        elif _is_failing(pre_stat) and _is_failing(post_stat):
-            out["still_fail"].append((rid, r))
-        elif not _is_failing(pre_stat) and _is_failing(post_stat):
-            out["regressed"].append((rid, r))
-    return out
-
-
-def print_verify(verify):
-    """Print the apply verification summary."""
-    total_fixed = len(verify["fixed"])
-    total_still = len(verify["still_fail"])
-    total_regr = len(verify["regressed"])
-    print(f"\n  {click_style('✔', 'green')} Fixed:       {total_fixed}")
-    print(f"  {click_style('✗', 'red')} Still fail:  {total_still}")
-    if total_regr:
-        print(f"  {click_style('!', 'red')} Regressed:   {total_regr}  ← remediation may have broken these")
-    if verify["waived"]:
-        print(f"  {click_style('W', 'cyan')} Newly waived:{len(verify['waived'])}")
-
-    def _dump(label, items, style=None):
-        if not items:
-            return
-        print(f"    {click_style(label, style) if style else label} ({len(items)})")
-        for rid, r in items[:30]:
-            print(f"      {rid}  {(r.get('title', '') or '')[:60]}")
-        if len(items) > 30:
-            print(f"      ... and {len(items) - 30} more")
-
-    _dump("fixed", verify["fixed"], "green")
-    _dump("still failing", verify["still_fail"], "red")
-    _dump("regressed", verify["regressed"], "red")
-    _dump("newly waived", verify["waived"], "cyan")
-    print()
-
-
-# ─── Waiver hygiene ───────────────────────────────────────────────────
-#
-# Inspired by the "exceptions as code" practice (Chef InSpec / OpenSCAP
-# tailoring): a waiver can carry an approver and an expiry date. Expired
-# waivers are flagged so exceptions do not silently linger forever.
-
-def validate_waivers(waivers, label="waivers"):
-    """Validate waiver metadata; warn about expired entries.
-
-    Accepts the existing formats:
-      {"1.1.1.1": "reason string"}
-      {"1.1.1.1": {"reason": "...", "approved_by": "...", "expires": "2026-12-31"}}
-    Returns the number of problems found (0 = clean).
-    """
-    if not waivers:
-        return 0
-    problems = 0
-    if isinstance(waivers, str):
-        # May be a file path or inline JSON — resolve to dict when possible.
-        try:
-            waivers = json.loads(waivers)
-        except json.JSONDecodeError:
-            return 0
-    if not isinstance(waivers, dict):
-        return 0
-    today = datetime.now().date()
-    for rid, entry in waivers.items():
-        if not isinstance(entry, dict):
-            continue
-        expires = entry.get("expires")
-        if not expires:
-            continue
-        try:
-            exp = datetime.strptime(str(expires), "%Y-%m-%d").date()
-        except ValueError:
-            print(f"  [{label}] rule {rid}: invalid expires '{expires}' (want YYYY-MM-DD)",
-                  file=sys.stderr)
-            problems += 1
-            continue
-        if exp < today:
-            print(f"  [{label}] rule {rid}: waiver EXPIRED on {exp} "
-                  f"(approved by {entry.get('approved_by', '?')})",
-                  file=sys.stderr)
-            problems += 1
-    return problems
-
-
-# ─── Fleet scan ───────────────────────────────────────────────────────
+# ─── Fleet scan ─# ─── Fleet scan ───────────────────────────────────────────────────────
 
 def _load_fleet_hosts(args):
     """Return a list of host identifiers from CLI or config."""
@@ -1941,6 +1634,8 @@ Examples:
                          help="Baseline result JSON to diff against; first scan if omitted")
     p_watch.add_argument("--alert-cmd", default="",
                          help="Shell command executed when drift is detected")
+    p_watch.add_argument("--json", action="store_true",
+                         help="Emit one JSON event per line (SIEM/automation friendly)")
 
     # ── info ──
     p_info = sub.add_parser("info", help="Show rule detail by ID (CLI or HTML)")
