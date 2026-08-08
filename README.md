@@ -57,6 +57,12 @@ ciscvm scan --os rhel9 --variables '{"min_len": 14}' \
 # Dry-run remediation
 ciscvm apply --os rhel9 --simulate
 
+# Drift detection: compare two scan results (baseline vs latest)
+ciscvm diff output/result-before.json output/result-after.json --exit-code
+
+# Periodic watch: scan every 6h, report only when configuration drifts
+ciscvm watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+
 # L2 full apply + allow disruptive rules + audit log
 ciscvm apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
@@ -371,8 +377,8 @@ cis-bulwark/
 ## Roadmap
 
 - CI pipeline for per-suite regression testing
-- `ciscvm diff` — compare two scan results and show drift between runs
-- `ciscvm watch` — periodic scan mode with alerting on new failures
+- `ciscvm diff` — compare two scan results and show drift between runs ✅ *(implemented)*
+- `ciscvm watch` — periodic scan mode with alerting on new failures ✅ *(implemented)*
 - Molecule-based integration tests for every Linux role (`molecule test` in each role directory)
 - macOS CIS benchmark support
 
