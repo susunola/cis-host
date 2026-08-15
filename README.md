@@ -27,6 +27,27 @@
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Two modes — `scan` (read-only assessment) and `apply` (remediate) — each producing per-host HTML reports with structured audit logs. **4,400+ rules, zero third-party dependencies.**
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Workflow](#workflow)
+- [Suites](#suites)
+- [Audit Logging](#audit-logging)
+- [Reports](#reports)
+- [Fine-Grained Execution](#fine-grained-execution)
+- [Audit / Gate Mode](#audit-gate-mode)
+- [Fleet Scan](#fleet-scan)
+- [Drift Detection, Verification & Watch](#drift-detection-verification-watch)
+- [Tailoring, Waivers, and Dry-Run](#tailoring-waivers-and-dry-run)
+- [Export Formats](#export-formats)
+- [Privilege Modes](#privilege-modes)
+- [Directory Structure](#directory-structure)
+- [Notes](#notes)
+- [Roadmap](#roadmap)
+- [CIS Benchmarks Disclaimer](#cis-benchmarks-disclaimer)
+- [License](#license)
+
 ## Quick Start
 
 ### Install from source (recommended)
