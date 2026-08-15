@@ -19,12 +19,39 @@ through the faked sh() exactly as they would on a real host.
 """
 
 import fnmatch
+import io
 import re
 
 _SYSTEMCTL_VERBS = (
     "is-enabled", "is-active", "list-unit-files",
     "stop", "disable", "enable", "mask", "unmask",
 )
+
+
+class _FakeFileHandle(io.StringIO):
+    """A StringIO that, on close/exit, commits its contents back into
+    FakeSystem.files -- lets code that calls the real builtin open()
+    directly (bypassing atomic_write()) still land in the same in-memory
+    store, without ever touching a real path on disk.
+    """
+
+    def __init__(self, fs, path, initial="", append=False):
+        super().__init__(initial if append else "")
+        if append:
+            self.seek(0, io.SEEK_END)
+        self._fs = fs
+        self._path = path
+
+    def _commit(self):
+        self._fs.files[self._path] = self.getvalue()
+
+    def close(self):
+        self._commit()
+        super().close()
+
+    def __exit__(self, exc_type, exc, tb):
+        self._commit()
+        return super().__exit__(exc_type, exc, tb)
 
 
 class FakeSystem:
@@ -36,6 +63,7 @@ class FakeSystem:
         self.sysctls = {}     # key -> str value
         self.packages = set()  # installed package names
         self.pkg_manager = "apt-get"
+        self.dirs = set()      # directories that "exist" for os.path.isdir()
         self._extra_handlers = []
 
     # -- filesystem -----------------------------------------------------
@@ -47,7 +75,38 @@ class FakeSystem:
         return self.files.get(path)
 
     def exists(self, path):
+        return path in self.files or path in self.dirs
+
+    def isfile(self, path):
         return path in self.files
+
+    def isdir(self, path):
+        return path in self.dirs
+
+    def glob(self, pattern):
+        """Fake stand-in for glob.glob(): matches against known file AND
+        directory paths, mirroring real glob semantics closely enough
+        for the check/fix functions that call globmod.glob() directly.
+        """
+        candidates = set(self.files) | self.dirs
+        return sorted(p for p in candidates if fnmatch.fnmatch(p, pattern))
+
+    def open(self, path, mode="r", encoding=None, **kwargs):
+        """Fake stand-in for the builtin open(), for the handful of
+        check/fix functions that call open() directly instead of going
+        through read()/atomic_write(). Returns an in-memory file object
+        whose contents are committed to self.files on close/__exit__.
+        """
+        if "r" in mode and "+" not in mode:
+            content = self.files.get(path)
+            if content is None:
+                raise FileNotFoundError(
+                    "[FakeSystem] No such file: %r" % path)
+            return _FakeFileHandle(self, path, content)
+        if "a" in mode:
+            return _FakeFileHandle(self, path, self.files.get(path, ""), append=True)
+        # "w" (and "w+"): start empty, like a real truncating open().
+        return _FakeFileHandle(self, path)
 
     def conf_values(self, files, key, seps=(r"\s+", r"\s*=\s*")):
         """Fake stand-in for cis_engine.py's conf_values(): scans
@@ -100,6 +159,11 @@ class FakeSystem:
             "zypper": self._zypper,
             "dnf": self._dnf_yum,
             "yum": self._dnf_yum,
+            "mount": self._mount,
+            "chown": self._noop_ok,
+            "chmod": self._noop_ok,
+            "auditctl": self._auditctl,
+            "augenrules": self._augenrules,
         }
         fn = dispatch.get(cmd[0]) if cmd else None
         if fn is None:
@@ -242,4 +306,70 @@ class FakeSystem:
             pkgs = [c for c in cmd[cmd.index(remove_verb) + 1:] if not c.startswith("-")]
             self.packages.difference_update(pkgs)
             return 0, "", ""
+        return 0, "", ""
+
+    # -- misc commands used by mount_opt / audit_immutable / file_perm-ish
+    # families beyond the initial 5 --------------------------------------
+
+    def _noop_ok(self, cmd):
+        """Fake stand-in for chown/chmod invoked via sh() (as opposed to
+        os.chmod()/os.chown(), which check/fix functions call directly on
+        the real, unfaked os module for some families -- those are outside
+        this fake's reach and are exercised only by families whose
+        FixtureGenerator avoids relying on real ownership/mode bits).
+        """
+        return 0, "", ""
+
+    def _mount(self, cmd):
+        """Fake stand-in for `mount -o remount,<opt> <mountpoint>`, used by
+        f_mount_opt() to apply the live remount before persisting to
+        /etc/fstab. Rewrites the fake /proc/mounts line for that mount
+        point to include the new option, mirroring how a real remount
+        changes the live mount table -- this is what lets the immediate
+        post-apply re-check (same FakeSystem, ctx.invalidate("mounts"))
+        see the option as already applied, exactly like a real host.
+        """
+        if "-o" not in cmd:
+            return 0, "", ""
+        opts_arg = cmd[cmd.index("-o") + 1]
+        mp = cmd[-1]
+        new_opts = [o for o in opts_arg.split(",") if o != "remount"]
+        content = self.files.get("/proc/mounts", "")
+        lines = content.splitlines()
+        updated = False
+        for i, ln in enumerate(lines):
+            f = ln.split()
+            if len(f) >= 4 and f[1] == mp:
+                cur = [o for o in f[3].split(",") if o]
+                for o in new_opts:
+                    if o not in cur:
+                        cur.append(o)
+                f[3] = ",".join(cur)
+                lines[i] = " ".join(f)
+                updated = True
+        if updated:
+            self.files["/proc/mounts"] = "\n".join(lines) + "\n"
+        return 0, "", ""
+
+    def _auditctl(self, cmd):
+        """Fake stand-in for `auditctl -s` (status) used by
+        c_audit_immutable(). Reports "enabled 2" once f_audit_immutable()
+        has written the finalize rule, mirroring how a real reboot would
+        pick up "-e 2" from /etc/audit/rules.d/99-finalize.rules.
+        """
+        if "-s" in cmd:
+            finalized = any(
+                re.search(r"^\s*-e\s+2\s*$", ln)
+                for content in self.files.values()
+                for ln in content.splitlines())
+            return 0, "enabled %s" % ("2" if finalized else "1"), ""
+        return 0, "", ""
+
+    def _augenrules(self, cmd):
+        """Fake stand-in for `augenrules --load`/`--check`, used by
+        audit_rule/audit_immutable/audit_running_sync fixes. Always
+        reports success; the actual on-disk rules.d content (written via
+        the faked atomic_write()) is what c_audit_immutable() actually
+        inspects, not this command's output.
+        """
         return 0, "", ""
