@@ -3,7 +3,7 @@
   <rect width="1200" height="630" fill="#0E1A28"/>
 
   <!-- honey badger mark (scaled 0.8, placed left) -->
-  <g transform="translate(110,195) scale(0.8)">
+  <g transform="translate(140,235) scale(0.55)">
     <circle cx="56" cy="56" r="13" fill="#16273A"/>
     <circle cx="244" cy="56" r="13" fill="#16273A"/>
     <path d="M50 62 Q50 26 88 24 L212 24 Q250 26 250 62 L250 112 L240 144 L224 176 L200 196 L150 204 L100 196 L76 176 L60 144 L50 112 Z" fill="#E9EEF5"/>
