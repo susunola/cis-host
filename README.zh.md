@@ -114,6 +114,15 @@ python3 cis_cli.py diff output/result-before.json output/result-after.json --exi
 
 # 周期监控：每 6 小时扫描一次，仅在配置漂移时报告
 python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+
+# 仅对上次扫描中失败（fail/error）的规则应用修复
+python3 cis_cli.py remediate --os rhel9 --result output/result-scan-*.json
+
+# 打包单次运行的证据（结果 JSON、配置、主机信息、逐条详情）
+python3 cis_cli.py scan --os rhel9 --evidence-dir output/evidence
+
+# 运行后推送 JSON 摘要到 webhook（fire-and-warn，不阻塞运行）
+python3 cis_cli.py scan --os rhel9 --webhook https://hooks.example.com/hook
 ```
 
 `--os` 取值：`tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
