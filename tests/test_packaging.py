@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Guard against pyproject.toml py-modules drifting from the actual local
 modules reachable (transitively) from cis_cli.py's entrypoint. Regression
-test for a bug where ciscvm_diff (and later presets/catalog/engine/display)
+test for a bug where cis_host_diff (and later presets/catalog/engine/display)
 were importable from a source checkout but missing from the packaged
 distribution, causing `pip install .` + `cis-host` to fail with
 ModuleNotFoundError in a clean environment.

@@ -1,6 +1,6 @@
 # cis-host
 
-**金汤·守城 (Keep)** — 固若金汤 · cis-* 家族:cis-image(镜像源头)、cis-host(主机加固)、cis-cloud(云上合规)
+属于 cis-* 家族:cis-image(镜像源头)、cis-host(主机加固)、cis-cloud(云上合规)
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
@@ -204,8 +204,8 @@ cis-host/
 ├── display.py                      # CLI 表格/颜色输出
 ├── presets.py                      # OS_PRESETS 注册表
 ├── catalog.py                      # 规则目录查询
-├── ciscvm_diff.py                  # 漂移检测 / 修复验证 / 周期监控逻辑
-├── ciscvm_config.py                # ciscvm.toml 加载与合并
+├── cis_host_diff.py                # 漂移检测 / 修复验证 / 周期监控逻辑
+├── cis_host_config.py              # cis-host.toml 加载与合并
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus 导出
 ├── tests/                          # pytest 测试（引擎、CLI、漂移、导出）
 ├── docs/architecture.svg           # 架构图

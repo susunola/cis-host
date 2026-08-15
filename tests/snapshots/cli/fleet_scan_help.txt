@@ -54,6 +54,6 @@ options:
                         reasons/objects
   --fleet-hosts FLEET_HOSTS
                         Comma-separated fleet host list (or use [fleet] hosts
-                        in ciscvm.toml)
+                        in cis-host.toml)
   --fleet-remote        Run engine over SSH on each host (requires [fleet]
                         remote config)

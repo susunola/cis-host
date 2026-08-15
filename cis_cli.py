@@ -2,35 +2,35 @@
 """
 CIS Benchmark CLI — scan, apply, audit, fleet scan, with HTML + CLI output.
 
-Installable as the `ciscvm` command after `pip install ciscvm`.
+Installable as the `cis-host` command after `pip install cis-host`.
 
 Usage:
   # Scan only (check compliance)
-  ciscvm scan --os rhel9 --profile L1 --output output/
+  cis-host scan --os rhel9 --profile L1 --output output/
 
   # Apply then re-scan (combined)
-  ciscvm apply --os rhel9 --profile L1 --output output/
+  cis-host apply --os rhel9 --profile L1 --output output/
 
   # Audit / gate mode (exit non-zero on findings)
-  ciscvm audit --os rhel9 --profile L1 --output output/
+  cis-host audit --os rhel9 --profile L1 --output output/
 
   # Fleet scan across multiple hosts
-  ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2 --output output/
+  cis-host fleet scan --os rhel9 --fleet-hosts web1,web2 --output output/
 
   # Fine-grained: run specific rules by ID
-  ciscvm scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
+  cis-host scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
 
   # Tailor rule inputs and waive exceptions
-  ciscvm scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
+  cis-host scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
 
   # Dry-run remediation
-  ciscvm apply --os rhel9 --simulate
+  cis-host apply --os rhel9 --simulate
 
-  # Use a config file (ciscvm.toml)
-  ciscvm scan --config ciscvm.toml
+  # Use a config file (cis-host.toml)
+  cis-host scan --config cis-host.toml
 
   # View rule detail (CLI)
-  ciscvm info --os rhel9 --id 1.1.1.1
+  cis-host info --os rhel9 --id 1.1.1.1
 
 Supported --os values:
   tencentos3, tencentos4

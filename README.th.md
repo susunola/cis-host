@@ -204,8 +204,8 @@ cis-host/
 ├── display.py                      # เอาต์พุตตาราง/สีของ CLI
 ├── presets.py                      # รายการ OS_PRESETS
 ├── catalog.py                      # ค้นหาแคตตาล็อกกฎ
-├── ciscvm_diff.py                  # ตรรกะ drift detection / verify / watch
-├── ciscvm_config.py                # โหลดและ merge ciscvm.toml
+├── cis_host_diff.py                # ตรรกะ drift detection / verify / watch
+├── cis_host_config.py              # โหลดและ merge cis-host.toml
 ├── scripts/                        # ตัวส่งออก SARIF/XCCDF/JUnit/Prometheus
 ├── tests/                          # ชุดทดสอบ pytest (engine, CLI, drift, exporters)
 ├── docs/architecture.svg           # แผนผังสถาปัตยกรรม

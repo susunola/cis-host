@@ -20,8 +20,8 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --config CONFIG       Path to ciscvm.toml config file (default:
-                        ./ciscvm.toml or $CISCVM_CONFIG)
+  --config CONFIG       Path to cis-host.toml config file (default: ./cis-
+                        host.toml or $CIS_HOST_CONFIG)
 
 Examples:
   # Pure scan

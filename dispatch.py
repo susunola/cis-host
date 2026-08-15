@@ -1,14 +1,14 @@
-"""Runtime orchestration: resolve --os preset paths, merge ciscvm.toml
+"""Runtime orchestration: resolve --os preset paths, merge cis-host.toml
 config, apply hard-coded defaults, validate required paths/template, then
 dispatch to the selected command function and apply the strict/gate
 exit-code policy. This is the only module that wires together args.py,
-defaults.py, ciscvm_config.py, and the individual command modules.
+defaults.py, cis_host_config.py, and the individual command modules.
 """
 
 import os
 import sys
 
-import ciscvm_config
+import cis_host_config
 from presets import OS_PRESETS
 from defaults import apply_defaults
 from args import build_parser
@@ -81,8 +81,8 @@ def run(script_dir=None):
 
     args = _resolve_os_preset(args, script_dir)
 
-    # Merge ciscvm.toml defaults; CLI args always win
-    args = ciscvm_config.merge(args, args.config if args.config else None)
+    # Merge cis-host.toml defaults; CLI args always win
+    args = cis_host_config.merge(args, args.config if args.config else None)
     args = apply_defaults(args)
 
     # Validate required paths (not needed for list/list-os/diff; diff only
