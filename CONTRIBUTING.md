@@ -1,4 +1,4 @@
-# Contributing to cis-bulwark
+# Contributing to cis-host
 
 Thanks for your interest in contributing.
 

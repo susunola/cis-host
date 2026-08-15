@@ -100,7 +100,7 @@ def test_export_xccdf(sample_result, tmp_path):
     tree = ET.parse(str(output))
     root = tree.getroot()
     assert root.tag == "{%s}Benchmark" % XCCDF_NS
-    assert root.attrib.get("id", "").startswith("xccdf_cis-bulwark_benchmark_")
+    assert root.attrib.get("id", "").startswith("xccdf_cis-host_benchmark_")
 
     test_result = root.find("{%s}TestResult" % XCCDF_NS)
     assert test_result is not None
