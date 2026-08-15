@@ -2,7 +2,6 @@
 """Load and merge cis-host.toml configuration with CLI arguments."""
 
 import os
-import sys
 
 
 def _import_tomllib():
@@ -78,13 +77,7 @@ def merge(args, config_path=None):
     that are not set (None) on args are filled from the config.
     """
     if config_path is None:
-        config_path = os.environ.get("CIS_HOST_CONFIG") or os.environ.get("CISCVM_CONFIG") or "cis-host.toml"
-        # Legacy config fallback: keep reading ciscvm.toml when the default
-        # cis-host.toml is absent, so existing pipelines are not broken.
-        if config_path == "cis-host.toml" and not os.path.exists(config_path) and os.path.exists("ciscvm.toml"):
-            print("cis-host: legacy ciscvm.toml found — please rename it to cis-host.toml "
-                  "(ciscvm.toml support will be removed in a future release).", file=sys.stderr)
-            config_path = "ciscvm.toml"
+        config_path = os.environ.get("CIS_HOST_CONFIG", "cis-host.toml")
 
     cfg = load(config_path)
     if not cfg:
