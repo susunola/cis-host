@@ -37,12 +37,6 @@
 
   <!-- Text area -->
   <g transform="translate(180,32)">
-    <!-- SECX SERIES tag -->
-    <text x="0" y="24" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-          font-size="13" font-weight="500" letter-spacing="6" fill="#5B7FAF">
-      SECX SERIES
-    </text>
-
     <!-- cis-host main wordmark -->
     <text x="0" y="76" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
           font-size="56" font-weight="800" letter-spacing="-1.5" fill="url(#text-grad)">

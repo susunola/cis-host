@@ -53,7 +53,7 @@
   <!-- Title -->
   <text x="330" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="800"
         fill="#e6edf3" letter-spacing="-1">
-    SecX Automation Suite
+    cis-host
   </text>
 
   <!-- Tagline -->
