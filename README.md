@@ -372,7 +372,19 @@ Scan works as non-Admin with `RemoteSigned` execution policy. Apply requires Adm
 
 ```
 cis-host/
-├── cis_cli.py                      # Local CLI (--os switches targets)
+├── cis_cli.py                      # Local CLI entrypoint (--os switches targets)
+├── args.py                         # argparse declaration (all subcommands)
+├── dispatch.py                     # Runtime orchestration & dispatch table
+├── defaults.py                     # Hard-coded CLI defaults
+├── commands_scan.py                # scan/audit/apply/check commands
+├── commands_watch.py               # diff/watch commands
+├── fleet.py                        # Fleet scan across multiple hosts
+├── info.py                         # Rule detail lookup (info command)
+├── report.py                       # HTML/CLI report rendering
+├── engine.py                       # Engine subprocess invocation
+├── display.py                      # CLI table/color output helpers
+├── presets.py                      # OS_PRESETS registry
+├── catalog.py                      # Rule catalog lookups
 ├── ciscvm_diff.py                  # Drift detection / verification / watch logic
 ├── ciscvm_config.py                # ciscvm.toml loader & merge
 ├── docs/

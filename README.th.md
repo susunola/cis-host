@@ -191,7 +191,19 @@ cis-host/
 ├── README.zh.md
 ├── README.ja.md
 ├── README.th.md
-├── cis_cli.py                      # CLI ในเครื่อง (--os สลับเป้าหมาย)
+├── cis_cli.py                      # จุดเริ่มต้น CLI ในเครื่อง (--os สลับเป้าหมาย)
+├── args.py                         # การประกาศ argparse (ทุกซับคอมมานด์)
+├── dispatch.py                     # การจัดลำดับรันไทม์และดิสแพตช์คำสั่ง
+├── defaults.py                     # ค่าเริ่มต้นของ CLI
+├── commands_scan.py                # คำสั่ง scan/audit/apply/check
+├── commands_watch.py               # คำสั่ง diff/watch
+├── fleet.py                        # สแกนหลายโฮสต์พร้อมกัน
+├── info.py                         # ดูรายละเอียดกฎ (คำสั่ง info)
+├── report.py                       # เรนเดอร์รายงาน HTML/CLI
+├── engine.py                       # เรียก engine ผ่าน subprocess
+├── display.py                      # เอาต์พุตตาราง/สีของ CLI
+├── presets.py                      # รายการ OS_PRESETS
+├── catalog.py                      # ค้นหาแคตตาล็อกกฎ
 ├── ciscvm_diff.py                  # ตรรกะ drift detection / verify / watch
 ├── ciscvm_config.py                # โหลดและ merge ciscvm.toml
 ├── scripts/                        # ตัวส่งออก SARIF/XCCDF/JUnit/Prometheus

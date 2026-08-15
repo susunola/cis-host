@@ -191,7 +191,19 @@ cis-host/
 ├── README.zh.md
 ├── README.ja.md
 ├── README.th.md
-├── cis_cli.py                      # ローカル CLI（--os でターゲットを切り替え）
+├── cis_cli.py                      # ローカル CLI エントリポイント（--os でターゲットを切り替え）
+├── args.py                         # argparse 定義（全サブコマンド）
+├── dispatch.py                     # 実行時オーケストレーションとコマンド振り分け
+├── defaults.py                     # CLI デフォルト値
+├── commands_scan.py                # scan/audit/apply/check コマンド
+├── commands_watch.py               # diff/watch コマンド
+├── fleet.py                        # 複数ホストへのフリートスキャン
+├── info.py                         # ルール詳細参照（info コマンド）
+├── report.py                       # HTML/CLI レポート生成
+├── engine.py                       # エンジンサブプロセス呼び出し
+├── display.py                      # CLI テーブル/カラー出力
+├── presets.py                      # OS_PRESETS レジストリ
+├── catalog.py                      # ルールカタログ参照
 ├── ciscvm_diff.py                  # ドリフト検出 / 検証 / 監視ロジック
 ├── ciscvm_config.py                # ciscvm.toml のロードとマージ
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus エクスポーター
