@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""cis-bulwark drift detection, remediation verification and waiver hygiene.
+"""cis-host drift detection, remediation verification and waiver hygiene.
 
 Pure logic layer — no CLI parsing, no subprocess, no I/O beyond what the
 caller supplies. Consumed by cis_cli.py (CLI wiring) and exercised directly
@@ -629,7 +629,7 @@ tr.sev-critical td {{ background: #fff5f5; }}
   }});
 }})();
 </script>
-<p style="color:#94a3b8; font-size:12px; margin-top:32px;">Generated {generated} · cis-bulwark</p>
+<p style="color:#94a3b8; font-size:12px; margin-top:32px;">Generated {generated} · cis-host</p>
 </body>
 </html>"""
 
@@ -697,7 +697,7 @@ code {{ background: #eef1f6; padding: 1px 5px; border-radius: 4px; }}
   <div class="card"><div class="num">{c["waived"]}</div><div class="lbl">Newly waived</div></div>
 </div>
 {sections}
-<p style="color:#94a3b8; font-size:12px; margin-top:32px;">Generated {generated} · cis-bulwark</p>
+<p style="color:#94a3b8; font-size:12px; margin-top:32px;">Generated {generated} · cis-host</p>
 </body>
 </html>"""
 

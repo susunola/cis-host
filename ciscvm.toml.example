@@ -51,5 +51,5 @@ hosts = []             # e.g. ["web1", "web2"]
 remote = false         # set true to run engine over SSH on each host
 user = "root"
 key = "~/.ssh/id_rsa"
-remote_engine = "/opt/cis-bulwark/cis_engine.py"
-remote_catalog = "/opt/cis-bulwark/rules.json"
+remote_engine = "/opt/cis-host/cis_engine.py"
+remote_catalog = "/opt/cis-host/rules.json"

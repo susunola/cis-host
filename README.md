@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/logo-full.png" alt="cis-bulwark — SecX Series" width="600">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@1a8670f/docs/logo-full.png" alt="cis-host — SecX Series" width="600">
 </p>
 
 <p align="center">
@@ -16,7 +16,14 @@
   <img src="https://img.shields.io/badge/deps-zero-00B4D8" alt="Zero third-party dependencies">
 </p>
 
-# cis-bulwark
+<p align="center">
+  <b>金汤·守城 (Keep)</b> — 固若金汤 · part of the <b>cis-*</b> family:
+  <a href="https://github.com/susunola/cis-image">cis-image</a> (镜像源头) ·
+  <a href="https://github.com/susunola/cis-host">cis-host</a> (主机加固) ·
+  <a href="https://github.com/susunola/cis-cloud">cis-cloud</a> (云上合规)
+</p>
+
+# cis-host
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Two modes — `scan` (read-only assessment) and `apply` (remediate) — each producing per-host HTML reports with structured audit logs. **4,400+ rules, zero third-party dependencies.**
 
@@ -25,8 +32,8 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 ### Install from source (recommended)
 
 ```bash
-git clone https://github.com/susunola/cis-bulwark.git
-cd cis-bulwark
+git clone https://github.com/susunola/cis-host.git
+cd cis-host
 pip install -e .
 ```
 
@@ -113,7 +120,7 @@ backup_dir = ""
 hosts = []
 remote = false
 user = "root"
-remote_engine = "/opt/cis-bulwark/cis_engine.py"
+remote_engine = "/opt/cis-host/cis_engine.py"
 ```
 
 CLI arguments always override config-file values.
@@ -130,7 +137,7 @@ ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini cis-rhel9-ansible/appl
 ## Architecture
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/architecture.svg" alt="cis-bulwark architecture" width="800">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@1a8670f/docs/architecture.svg" alt="cis-host architecture" width="800">
 </p>
 
 Each suite ships a single-file engine (Python 3 on Linux, PowerShell on Windows) with **zero third-party dependencies**. Ansible handles file transfer, remote execution, and Jinja2 report rendering. The engine produces `result.json` and an optional `audit.log` (JSON-lines) suitable for SIEM ingestion.
@@ -228,11 +235,11 @@ A `findings.csv.j2` template is also available — enable with `cis_report_csv=t
 - Per-host score bar, pass/fail pills, applied counts, deep-link to per-host report
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@1a8670f/docs/screenshots/per-host-report.png" alt="per-host compliance report" width="900">
 </p>
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-bulwark@1a8670f/docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@1a8670f/docs/screenshots/fleet-index.png" alt="fleet compliance index" width="900">
 </p>
 
 ## Fine-Grained Execution
@@ -360,7 +367,7 @@ Scan works as non-Admin with `RemoteSigned` execution policy. Apply requires Adm
 ## Directory Structure
 
 ```
-cis-bulwark/
+cis-host/
 ├── cis_cli.py                      # Local CLI (--os switches targets)
 ├── ciscvm_diff.py                  # Drift detection / verification / watch logic
 ├── ciscvm_config.py                # ciscvm.toml loader & merge
@@ -408,6 +415,10 @@ cis-bulwark/
 - `ciscvm watch` — periodic scan mode with alerting on new failures ✅ *(implemented)*
 - Molecule-based integration tests for every Linux role (`molecule test` in each role directory)
 - macOS CIS benchmark support
+
+## CIS Benchmarks Disclaimer
+
+**Independent project** — cis-host is not affiliated with, sponsored by, or endorsed by the Center for Internet Security (CIS).
 
 ## License
 

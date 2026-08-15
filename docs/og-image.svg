@@ -87,5 +87,5 @@
 
   <!-- Bottom bar -->
   <rect x="330" y="505" width="700" height="20" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-  <text x="680" y="519" font-family="monospace" font-size="12" fill="#484f58" text-anchor="middle">github.com/susunola/cis-bulwark</text>
+  <text x="680" y="519" font-family="monospace" font-size="12" fill="#484f58" text-anchor="middle">github.com/susunola/cis-host</text>
 </svg>
