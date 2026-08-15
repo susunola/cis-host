@@ -29,7 +29,7 @@ Ansible playbooks and a local CLI that run the **CIS** security benchmarks again
 
 ## Quick Start
 
-### Install from source (recommended)
+### Install from source (only supported method)
 
 ```bash
 git clone https://github.com/susunola/cis-host.git
@@ -37,7 +37,11 @@ cd cis-host
 pip install -e .
 ```
 
-This installs the `cis-host` command.
+This installs the `cis-host` command. Note: this project is not published to
+PyPI. The Ansible role directories (engines, rules catalogs, report
+templates) are resolved relative to the source checkout at runtime, so an
+editable install (`-e .`) from the cloned repo is required — a regular
+`pip install` of a built wheel would not include them.
 
 ### Run
 
