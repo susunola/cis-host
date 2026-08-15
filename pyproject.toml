@@ -37,6 +37,7 @@ dev = [
     "pytest>=7.0",
     "jsonschema>=4.0",
     "ansible-core>=2.12",
+    "tomli>=2.0; python_version<'3.11'",
 ]
 
 [project.scripts]
@@ -47,5 +48,14 @@ Homepage = "https://github.com/susunola/cis-host"
 Repository = "https://github.com/susunola/cis-host"
 Issues = "https://github.com/susunola/cis-host/issues"
 
+# NOTE: This project is only supported via `pip install -e .` from a source
+# checkout. The 14 cis-<os>-ansible/ directories (engine scripts, rules.json,
+# guidance/sections JSON, Jinja2 report templates) are consumed via paths
+# relative to cis_cli.py at runtime and are NOT included in built
+# wheels/sdists. A `pip install ciscvm` from a real package index would
+# install the CLI but scan/apply would fail with "Template not found" /
+# missing catalog errors. Do not publish this package to PyPI until the
+# ansible directories are packaged as included data (package_data) and the
+# runtime path resolution is updated to look inside the installed package.
 [tool.setuptools]
-py-modules = ["cis_cli", "ciscvm_config"]
+py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display"]
