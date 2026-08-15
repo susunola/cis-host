@@ -37,45 +37,45 @@ cd cis-host
 pip install -e .
 ```
 
-This installs the `ciscvm` command.
+This installs the `cis-host` command.
 
 ### Run
 
 ```bash
 # List supported OS presets
-ciscvm list
+cis-host list
 
 # L1 scan (read-only)
-ciscvm scan --os rhel9 --profile L1 --output output/
+cis-host scan --os rhel9 --profile L1 --output output/
 
 # L1 apply (remediate)
-ciscvm apply --os ubuntu2204 --profile L1 --output output/
+cis-host apply --os ubuntu2204 --profile L1 --output output/
 
 # Audit / gate mode (exit non-zero on findings)
-ciscvm audit --os rhel9 --profile L1 --output output/
+cis-host audit --os rhel9 --profile L1 --output output/
 
 # Fleet scan across multiple hosts (local tagged mode by default)
-ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2,db1 --output output/
+cis-host fleet scan --os rhel9 --fleet-hosts web1,web2,db1 --output output/
 
 # Tailor rule inputs and waive exceptions
-ciscvm scan --os rhel9 --variables '{"min_len": 14}' \
+cis-host scan --os rhel9 --variables '{"min_len": 14}' \
   --waivers '{"1.1.1.1": "legacy app exception"}'
 
 # Dry-run remediation
-ciscvm apply --os rhel9 --simulate
+cis-host apply --os rhel9 --simulate
 
 # Drift detection: compare two scan results (baseline vs latest)
-ciscvm diff output/result-before.json output/result-after.json --exit-code
+cis-host diff output/result-before.json output/result-after.json --exit-code
 
 # Periodic watch: scan every 6h, report only when configuration drifts
-ciscvm watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+cis-host watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 
 # L2 full apply + allow disruptive rules + audit log
-ciscvm apply --os tencentos4 --profile L2 --allow-disruptive \
+cis-host apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
 
 # Scan only specific rules
-ciscvm scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+cis-host scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 ```
 
 `--os` values: `tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -258,63 +258,63 @@ When using Ansible, corresponding variables are in each suite's README under "Ke
 
 ## Audit / Gate Mode
 
-`ciscvm audit` is a strict, CI-friendly scan that exits non-zero when any rule fails or errors. It produces the same HTML/JSON reports as `scan` plus a concise `audit-gate-<host>-<profile>.json` artifact:
+`cis-host audit` is a strict, CI-friendly scan that exits non-zero when any rule fails or errors. It produces the same HTML/JSON reports as `scan` plus a concise `audit-gate-<host>-<profile>.json` artifact:
 
 ```bash
-ciscvm audit --os rhel9 --profile L1 --output output/
+cis-host audit --os rhel9 --profile L1 --output output/
 # exit 0 if fully compliant, exit 2 if failures remain
 ```
 
 ## Fleet Scan
 
-`ciscvm fleet scan` repeats a scan across multiple hosts and aggregates the results into a single fleet HTML report and JSON file.
+`cis-host fleet scan` repeats a scan across multiple hosts and aggregates the results into a single fleet HTML report and JSON file.
 
 ```bash
 # Local tagged mode — runs on this machine, tags each result with the host name
-ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2,db1
+cis-host fleet scan --os rhel9 --fleet-hosts web1,web2,db1
 
 # Remote SSH mode — run engine on each host (configure [fleet] in ciscvm.toml)
-ciscvm fleet scan --os rhel9 --fleet-remote
+cis-host fleet scan --os rhel9 --fleet-remote
 ```
 
 Remote mode requires the engine and catalog to already exist on the target hosts. See `ciscvm.toml.example` for the `[fleet]` layout.
 
 ## Drift Detection, Verification & Watch
 
-**`ciscvm diff`** compares two scan result JSONs and classifies every rule change — new failures (drift), regressions, recoveries, and waiver transitions — as a CLI summary and a self-contained HTML report. Use `--exit-code` in CI to fail the pipeline when drift appears:
+**`cis-host diff`** compares two scan result JSONs and classifies every rule change — new failures (drift), regressions, recoveries, and waiver transitions — as a CLI summary and a self-contained HTML report. Use `--exit-code` in CI to fail the pipeline when drift appears:
 
 ```bash
-ciscvm diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
+cis-host diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
 ```
 
-**Apply verification** — after `ciscvm apply`, a pre/post scan comparison reports which rules were actually fixed, which are still failing, and — critically — which rules **regressed** because the remediation itself broke them. A standalone `verify-*.html` report is written alongside the apply report.
+**Apply verification** — after `cis-host apply`, a pre/post scan comparison reports which rules were actually fixed, which are still failing, and — critically — which rules **regressed** because the remediation itself broke them. A standalone `verify-*.html` report is written alongside the apply report.
 
-**`ciscvm watch`** runs a periodic scan loop with change-only, de-duplicated alerting (edge-triggered like Wazuh SCA): a rule is alerted when it starts failing and only again when it clears — a persistent failure never re-pages. Quiet runs print a single line; `--json` emits one machine-readable event per line for SIEM/automation:
+**`cis-host watch`** runs a periodic scan loop with change-only, de-duplicated alerting (edge-triggered like Wazuh SCA): a rule is alerted when it starts failing and only again when it clears — a persistent failure never re-pages. Quiet runs print a single line; `--json` emits one machine-readable event per line for SIEM/automation:
 
 ```bash
-ciscvm watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
-ciscvm watch --os rhel9 --interval 3600 --json          # event stream
+cis-host watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+cis-host watch --os rhel9 --interval 3600 --json          # event stream
 ```
 
 **Waiver hygiene** — waivers may carry approval metadata; expired or malformed entries are flagged at scan time, and a waiver whose rule id does not exist in the catalog (a silent no-op) is called out:
 
 ```bash
-ciscvm scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+cis-host scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
 ```
 
 ## Tailoring, Waivers, and Dry-Run
 
 - **Variables** — override rule parameters without editing the catalog:
   ```bash
-  ciscvm scan --os rhel9 --variables '{"min_len": 14}'
+  cis-host scan --os rhel9 --variables '{"min_len": 14}'
   ```
 - **Waivers** — mark specific rules as excepted with an audit reason:
   ```bash
-  ciscvm scan --os rhel9 --waivers '{"1.1.1.1": "legacy app exception"}'
+  cis-host scan --os rhel9 --waivers '{"1.1.1.1": "legacy app exception"}'
   ```
 - **Simulate** — dry-run apply mode that reports what would change without touching the system:
   ```bash
-  ciscvm apply --os rhel9 --simulate
+  cis-host apply --os rhel9 --simulate
   ```
 
 ## Export Formats
@@ -411,8 +411,8 @@ cis-host/
 ## Roadmap
 
 - CI pipeline for per-suite regression testing
-- `ciscvm diff` — compare two scan results and show drift between runs ✅ *(implemented)*
-- `ciscvm watch` — periodic scan mode with alerting on new failures ✅ *(implemented)*
+- `cis-host diff` — compare two scan results and show drift between runs ✅ *(implemented)*
+- `cis-host watch` — periodic scan mode with alerting on new failures ✅ *(implemented)*
 - Molecule-based integration tests for every Linux role (`molecule test` in each role directory)
 - macOS CIS benchmark support
 
