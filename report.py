@@ -60,6 +60,12 @@ def render_report(result_data, args, mode, scan_result_file):
     }
 
     env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
+    # The report templates use `| bool` (as they would under Ansible's
+    # Jinja2, where it is a built-in filter). Standalone cis-host renders
+    # with plain Jinja2, which has no `bool` filter -- register one so
+    # `cis-host scan/apply/audit --format html` does not crash on every
+    # report render. (Found by the L4 e2e test.)
+    env.filters.setdefault("bool", bool)
     try:
         template = env.get_template(template_name)
     except Exception as exc:

@@ -2,8 +2,8 @@
 
 **Status:** Living document · applies to the merged `main` (post PR0–PR9 modularization + M0–M5 rule-verification matrix + `ciscvm → cis-host` rename)
 **Last updated:** 2026-08-15
-**Baseline:** 508 passing tests across two suites (see [Test inventory](#2-test-inventory-what-exists-today)).
-**L4 e2e plan:** §10 (modeled on `cis-image/scripts/real_e2e_test.py`) — not yet implemented.
+**Baseline:** 509 passing tests across two suites (see [Test inventory](#2-test-inventory-what-exists-today)).
+**L4 e2e plan:** §10 (modeled on `cis-image/scripts/real_e2e_test.py`) — implemented in `scripts/real_e2e_test.py`; Docker provider validated against ubuntu2204; CI step added (non-blocking).
 
 This plan describes the full testing strategy for cis-host: what is tested today, the philosophy behind it, and where coverage is intentionally extended next. It is a *plan*, not an exhaustive how-to — each section names the target, the approach, the mocking boundary, and the current gap. Sections 1–9 cover the unit → rule-matrix stack; [§10](#10-end-to-end-l4-test-plan--real-host-scanapplyrescan) is the real-host end-to-end (L4) plan, modeled on the sister-project's `cis-image/scripts/real_e2e_test.py`.
 

@@ -72,6 +72,18 @@ jobs:
             ansible-playbook --syntax-check "$pb"
           done
 
+      # L4 real-host e2e (docs/TESTING.md §10): boot a real Ubuntu 22.04
+      # systemd container, install cis-host, and run a real scan -> apply
+      # -> re-scan -> idempotent-apply cycle. This is slow and uses Docker,
+      # so it runs non-blocking (continue-on-error) for now; it is promoted
+      # to a blocking release gate in phase 2 once stable on CI.
+      - name: Real-host e2e (L4, non-blocking)
+        continue-on-error: true
+        run: |
+          docker info >/dev/null 2>&1 || { echo "Docker daemon not available - skipping e2e"; exit 0; }
+          python3 scripts/real_e2e_test.py --os ubuntu2204 --profile L1 \
+            --allow-disruptive -y 2>&1 || { echo "L4 e2e reported a failure (see above)"; exit 1; }
+
       - name: Test pip install and cis-host CLI
         run: |
           pip install -e .

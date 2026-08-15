@@ -10,6 +10,9 @@ __pycache__/
 */inventory/hosts.local.ini
 output/
 
+# e2e test artifacts (scripts/real_e2e_test.py)
+logs/
+
 # WorkBuddy project data
 .workbuddy/
 
