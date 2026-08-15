@@ -58,4 +58,4 @@ Issues = "https://github.com/susunola/cis-host/issues"
 # ansible directories are packaged as included data (package_data) and the
 # runtime path resolution is updated to look inside the installed package.
 [tool.setuptools]
-py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display"]
+py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display", "report"]
