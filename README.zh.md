@@ -1,6 +1,6 @@
 # cis-host
 
-**金汤·守城 (Keep)** — 固若金汤 · cis-* 家族:cis-image(镜像源头)、cis-host(主机加固)、cis-cloud(云上合规)
+属于 cis-* 家族:cis-image(镜像源头)、cis-host(主机加固)、cis-cloud(云上合规)
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
