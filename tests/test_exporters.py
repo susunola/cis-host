@@ -12,6 +12,10 @@ import pytest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 XCCDF_SCRIPT = os.path.join(ROOT, "scripts", "export_xccdf.py")
 JUNIT_SCRIPT = os.path.join(ROOT, "scripts", "export_junit.py")
+PLOT_SCRIPT = os.path.join(ROOT, "scripts", "plot_history.py")
+TAILOR_EXPORT = os.path.join(ROOT, "scripts", "export_tailoring.py")
+TAILOR_IMPORT = os.path.join(ROOT, "scripts", "import_tailoring.py")
+PDF_SCRIPT = os.path.join(ROOT, "scripts", "export_pdf.py")
 
 XCCDF_NS = "http://checklists.nist.gov/xccdf/1.2"
 
@@ -173,3 +177,72 @@ def test_export_junit(sample_result, tmp_path):
     assert "failure" not in status_by_id["1.1.1"]
     assert "error" not in status_by_id["1.1.1"]
     assert "skipped" not in status_by_id["1.1.1"]
+
+
+def test_plot_history(tmp_path):
+    history = tmp_path / "history.jsonl"
+    rows = [
+        {"timestamp": "2024-01-01T00:00:00Z", "host": "h1", "mode": "scan", "profile": "L1", "score": 80.0, "pass": 8, "fail": 2, "error": 0},
+        {"timestamp": "2024-01-02T00:00:00Z", "host": "h1", "mode": "scan", "profile": "L1", "score": 85.0, "pass": 9, "fail": 1, "error": 0},
+        {"timestamp": "2024-01-03T00:00:00Z", "host": "h1", "mode": "scan", "profile": "L1", "score": 83.0, "pass": 8, "fail": 2, "error": 0},
+    ]
+    history.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+    output = tmp_path / "history.html"
+    _run(PLOT_SCRIPT, [str(history), str(output)])
+    assert output.exists()
+    text = output.read_text(encoding="utf-8")
+    assert "Compliance Score" in text
+    assert "Failed Rules" in text
+    assert "<svg" in text
+
+
+def test_tailoring_round_trip(tmp_path):
+    toml = tmp_path / "cis-host.toml"
+    toml.write_text("""
+[profile]
+os = "rhel9"
+profile = "L1"
+name = "CIS RHEL 9"
+
+[rules]
+include = ["1.1.1", "1.1.2"]
+exclude = "5.1.1"
+
+[variables]
+min_len = 14
+
+[waivers]
+"1.1.1" = "legacy app"
+""", encoding="utf-8")
+
+    xml_out = tmp_path / "tailoring.xml"
+    _run(TAILOR_EXPORT, [str(toml), str(xml_out)])
+    assert xml_out.exists()
+    xml_text = xml_out.read_text(encoding="utf-8")
+    assert "xccdf_cis-host_rule_1.1.1" in xml_text
+    assert "xccdf_cis-host_rule_5.1.1" in xml_text
+    assert "xccdf_cis-host_value_min_len" in xml_text
+
+    toml_out = tmp_path / "imported.toml"
+    _run(TAILOR_IMPORT, [str(xml_out), str(toml_out)])
+    assert toml_out.exists()
+    toml_text = toml_out.read_text(encoding="utf-8")
+    assert "min_len = 14" in toml_text
+    assert '"1.1.1" = "legacy app"' in toml_text
+    assert "5.1.1" in toml_text
+
+
+def test_export_pdf_missing_weasyprint(tmp_path):
+    import importlib.util
+
+    html = tmp_path / "report.html"
+    html.write_text("<html><body>test</body></html>", encoding="utf-8")
+    pdf = tmp_path / "report.pdf"
+    result = _run(PDF_SCRIPT, [str(html), str(pdf)], check=False)
+    if importlib.util.find_spec("weasyprint") is not None:
+        # WeasyPrint available: PDF must be produced successfully
+        assert result.returncode == 0, result.stderr
+        assert pdf.exists()
+    else:
+        # Should fail gracefully because weasyprint is not installed
+        assert result.returncode != 0 or not pdf.exists() or "WeasyPrint" in result.stderr

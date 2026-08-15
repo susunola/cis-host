@@ -3718,7 +3718,7 @@ def select(rules, profile, platform, include, exclude, sections, families):
 def _audit_entry(rule_result, mode, profile, hostname, version):
     """Return a JSON-lines audit entry dict."""
     ts = datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-    return {
+    entry = {
         "ts": ts,
         "host": hostname,
         "version": version,
@@ -3731,6 +3731,13 @@ def _audit_entry(rule_result, mode, profile, hostname, version):
         "detail": rule_result.get("detail", "")[:200],
         "duration_ms": rule_result["duration_ms"],
     }
+    if rule_result.get("waived"):
+        entry["waived"] = True
+        entry["waiver"] = rule_result.get("waiver")
+    if rule_result.get("waiver_expired"):
+        entry["waiver_expired"] = True
+        entry["waiver"] = rule_result.get("waiver")
+    return entry
 
 
 def run_rule(ctx, rule, audit_fh=None):
@@ -3762,20 +3769,31 @@ def run_rule(ctx, rule, audit_fh=None):
         "waiver": None,
     }
 
-    # Waiver handling: if a rule is waived, mark it and skip execution.
+    # Waiver handling: if a rule is waived and not expired, mark it and skip execution.
     waiver = ctx.waivers.get(rule["id"])
+    waiver_expired = False
+    waiver_detail = ""
     if waiver:
-        res["waived"] = True
-        res["waiver"] = waiver if isinstance(waiver, dict) else {"reason": str(waiver)}
-        res["status"] = "waived"
-        res["detail"] = "waived: %s" % res["waiver"].get("reason", "")
-        res["duration_ms"] = 0
-        if audit_fh is not None:
-            audit_fh.write(json.dumps(_audit_entry(
-                res, ctx.opts.mode, ctx.opts.profile,
-                ctx._hostname, VERSION), ensure_ascii=False) + "\n")
-            audit_fh.flush()
-        return res
+        waiver_obj = waiver if isinstance(waiver, dict) else {"reason": str(waiver)}
+        expired, detail = _waiver_expired(waiver_obj)
+        if expired:
+            waiver_expired = True
+            waiver_detail = detail
+            res["waiver"] = waiver_obj
+            res["waiver_expired"] = True
+            # Fall through to actually assess the rule; expired waivers do not grant exemption.
+        else:
+            res["waived"] = True
+            res["waiver"] = waiver_obj
+            res["status"] = "waived"
+            res["detail"] = "waived: %s" % waiver_obj.get("reason", "")
+            res["duration_ms"] = 0
+            if audit_fh is not None:
+                audit_fh.write(json.dumps(_audit_entry(
+                    res, ctx.opts.mode, ctx.opts.profile,
+                    ctx._hostname, VERSION), ensure_ascii=False) + "\n")
+                audit_fh.flush()
+            return res
 
     t0 = time.time()
     fn = CHECKS.get(fam)
@@ -3829,6 +3847,27 @@ def run_rule(ctx, rule, audit_fh=None):
     return res
 
 
+def _waiver_expired(waiver):
+    """Return (expired, detail) for a waiver object."""
+    if not isinstance(waiver, dict):
+        return False, ""
+    expires = waiver.get("expires") or waiver.get("expiration_date")
+    if not expires:
+        return False, ""
+    try:
+        from datetime import date
+        if isinstance(expires, date):
+            exp = expires
+        else:
+            exp = datetime.strptime(str(expires), "%Y-%m-%d").date()
+        today = date.today()
+        if exp < today:
+            return True, "waiver expired on %s" % exp.isoformat()
+    except Exception:
+        return False, ""
+    return False, ""
+
+
 def _weighted_score(results, level=None):
     """Return (weighted_pass, weighted_total) for hardening index."""
     total, passed = 0, 0
@@ -3847,8 +3886,8 @@ def _weighted_score(results, level=None):
 def summarize(results, skipped_count):
     def blank():
         return {"total": 0, "pass": 0, "fail": 0, "manual": 0, "error": 0,
-                "notapplicable": 0, "waived": 0, "applied": 0,
-                "applied_pending": 0, "apply_failed": 0,
+                "notapplicable": 0, "waived": 0, "expired_waived": 0,
+                "applied": 0, "applied_pending": 0, "apply_failed": 0,
                 "skipped_disruptive": 0, "unsupported": 0, "simulated": 0,
                 "already": 0}
     s = {"all": blank(), "L1": blank(), "L2": blank()}
@@ -3857,6 +3896,8 @@ def summarize(results, skipped_count):
         for b in buckets:
             b["total"] += 1
             b[r["status"]] = b.get(r["status"], 0) + 1
+            if r.get("waiver_expired"):
+                b["expired_waived"] = b.get("expired_waived", 0) + 1
             a = r["apply_status"]
             if a in b:
                 b[a] += 1

@@ -39,6 +39,9 @@ dev = [
     "ansible-core>=2.12",
     "tomli>=2.0; python_version<'3.11'",
 ]
+pdf = [
+    "weasyprint>=53.0",
+]
 
 [project.scripts]
 cis-host = "cis_cli:main"
@@ -61,4 +64,4 @@ Issues = "https://github.com/susunola/cis-host/issues"
 # and the runtime path resolution is updated to look inside the installed
 # package.
 [tool.setuptools]
-py-modules = ["cis_cli", "cis_host_config", "cis_host_diff", "presets", "catalog", "engine", "display", "report", "fleet", "info", "commands_scan", "commands_watch", "defaults", "args", "dispatch"]
+py-modules = ["cis_cli", "cis_host_config", "cis_host_diff", "presets", "catalog", "engine", "display", "report", "fleet", "info", "commands_scan", "commands_watch", "notify", "defaults", "args", "dispatch"]

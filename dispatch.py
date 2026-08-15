@@ -12,10 +12,11 @@ import cis_host_config
 from presets import OS_PRESETS
 from defaults import apply_defaults
 from args import build_parser
-from commands_scan import cmd_scan, cmd_audit, cmd_apply, cmd_check
+from commands_scan import cmd_scan, cmd_audit, cmd_apply, cmd_check, cmd_remediate
 from commands_watch import cmd_diff, cmd_watch
 from fleet import cmd_fleet_scan
 from info import cmd_info
+from notify import send_webhook
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -47,6 +48,7 @@ COMMANDS = {
     "scan": cmd_scan,
     "audit": cmd_audit,
     "apply": cmd_apply,
+    "remediate": cmd_remediate,
     "check": cmd_check,
     "diff": cmd_diff,
     "watch": cmd_watch,
@@ -103,6 +105,9 @@ def run(script_dir=None):
             data = result.get("data")
             if out_path:
                 print(f"\nDone. Open: {out_path}")
+            # Webhook notification: fire-and-warn, never blocks the run.
+            if args.command in ("scan", "audit", "apply", "remediate") and data:
+                send_webhook(args, args.command, data, out_path)
             # Audit mode is always strict by default: fail the gate if findings remain.
             strict = getattr(args, "strict", False) or args.command == "audit"
             if strict and args.command in ("scan", "apply", "check", "audit"):

@@ -51,6 +51,12 @@ def _add_common_args(p):
                    help="Also save result JSON alongside the HTML report")
     p.add_argument("--audit-log", default=None,
                    help="Write audit log (JSON-lines) to this path")
+    p.add_argument("--evidence-dir", default=None,
+                   help="Pack evidence (result JSON, config, host facts, per-rule detail) "
+                        "into <hostname>-<timestamp>-evidence.tar.gz under this directory")
+    p.add_argument("--webhook", default=None,
+                   help="POST a JSON run summary to this URL after the run "
+                        "(overrides [notify] webhook_url in cis-host.toml)")
     p.add_argument("--timeout", type=int, default=None,
                    help="Engine execution timeout in seconds (default: 600)")
     p.add_argument("--no-prescan", action="store_true",
@@ -132,12 +138,21 @@ Examples:
     p_audit = sub.add_parser("audit", help="Scan-only compliance gate (exit non-zero on findings)")
     _add_common_args(p_audit)
     _add_tailoring_args(p_audit)
+    p_audit.add_argument("--fail-on-expired-waiver", default=None, action="store_true",
+                         help="Treat expired waivers as gate failures")
 
     # ── apply ──
     p_apply = sub.add_parser("apply", help="Apply fixes, re-scan, generate report")
     _add_common_args(p_apply)
     _add_apply_args(p_apply)
     _add_tailoring_args(p_apply)
+
+    # ── remediate ──
+    p_remediate = sub.add_parser("remediate", help="Apply fixes only for rules that failed in a previous scan")
+    _add_common_args(p_remediate)
+    _add_apply_args(p_remediate)
+    _add_tailoring_args(p_remediate)
+    p_remediate.add_argument("--result", required=True, help="Path to a previous scan result JSON")
 
     # ── check ──
     p_check = sub.add_parser("check", help="Dry-run: scan + show what would change")
