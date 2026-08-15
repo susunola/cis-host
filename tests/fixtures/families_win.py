@@ -90,10 +90,51 @@ class FirewallGenerator:
         })
 
 
+class UserRightGenerator:
+    """See the module-level KNOWN CATALOG/ENGINE MISMATCH note above --
+    the same {"key"/"privilege": "<rule id>"} pattern applies here too:
+    all 48 real user-right rules on win2022 carry {"privilege": "<rule
+    id>"} with no "expected_sid", but Invoke-Check/Invoke-Fix's
+    user-right branch requires both params.privilege (a real Windows
+    privilege constant name) and params.expected_sid to do anything
+    useful -- immediately returning status "error" / apply_status
+    "skipped: no expected SID defined" against the real catalog.
+    synthetic_user_right_rule() below builds a rule with the params
+    shape the engine actually expects.
+
+    ANOTHER PRE-EXISTING BUG found while building this generator (see
+    test_m4_windows.py for the full writeup): Invoke-Fix's user-right
+    branch computes $members via a piped -split/ForEach-Object/
+    Where-Object chain; when that pipeline yields exactly one element,
+    PowerShell auto-unwraps the result from an array to a scalar
+    string, so the later `$members += $expectedSid.Trim()` string-
+    concatenates instead of array-appending, producing a malformed,
+    comma-less member list ("*S-1-5-32-545*S-1-5-32-544") that never
+    matches on re-check. This only manifests when the privilege
+    currently has exactly one existing member. Seeding 2+ existing,
+    non-matching members avoids the bug (confirmed: with 2 members the
+    pipeline stays an array and += appends correctly) -- see
+    seed_noncompliant()'s params below.
+    """
+
+    def seed_noncompliant(self, params: Dict[str, Any]) -> WinFixtureState:
+        # Two existing (wrong) members, not one -- avoids the pipeline
+        # single-element-unwrap bug documented above.
+        return WinFixtureState(user_rights={
+            params["privilege"]: "*S-1-5-32-9001,*S-1-5-32-9002",
+        })
+
+    def seed_compliant(self, params: Dict[str, Any]) -> WinFixtureState:
+        return WinFixtureState(user_rights={
+            params["privilege"]: "*S-1-5-32-9001,%s" % params["expected_sid"],
+        })
+
+
 GENERATORS = {
     "reg-dword": RegDwordGenerator(),
     "adv-audit": AdvAuditGenerator(),
     "firewall": FirewallGenerator(),
+    "user-right": UserRightGenerator(),
 }
 
 
@@ -116,6 +157,26 @@ def synthetic_reg_dword_rule(rule_id):
             "path": "HKLM:\\SOFTWARE\\CISFixtureTest",
             "name": "TestValue",
             "value": 1,
+        },
+        "risk": "safe",
+    }
+
+
+def synthetic_user_right_rule(rule_id):
+    """Build a user-right rule with the params shape Invoke-Check/
+    Invoke-Fix actually read (privilege/expected_sid), since the real
+    catalog entries only carry {"privilege": "<rule id>"} -- see
+    UserRightGenerator's docstring above.
+    """
+    return {
+        "id": rule_id,
+        "title": "synthetic user-right fixture rule (real catalog params "
+                 "don't match cis_engine.ps1's user-right branch -- see "
+                 "families_win.py docstring)",
+        "family": "user-right",
+        "params": {
+            "privilege": "SeNetworkLogonRight",
+            "expected_sid": "*S-1-5-32-544",
         },
         "risk": "safe",
     }
