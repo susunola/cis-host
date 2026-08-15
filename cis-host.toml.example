@@ -28,6 +28,7 @@ timeout = 600
 allow_disruptive = false
 backup_dir = ""
 audit_log = ""
+evidence_dir = ""      # pack evidence tar.gz per run into this directory (empty = off)
 
 # Tailor rule inputs. Keys must match param names in the rule catalog.
 [variables]
@@ -45,6 +46,9 @@ audit_log = ""
 
 [audit]
 strict = true          # audit mode always exits non-zero on findings by default
+
+[notify]
+webhook_url = ""       # POST a JSON summary here after scan/audit/apply/remediate (empty = off)
 
 [fleet]
 hosts = []             # e.g. ["web1", "web2"]

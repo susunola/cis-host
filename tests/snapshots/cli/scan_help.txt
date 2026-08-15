@@ -8,9 +8,9 @@ usage: cis_cli.py scan [-h]
                        [--exclude EXCLUDE] [--sections-filter SECTIONS_FILTER]
                        [--families FAMILIES] [--output OUTPUT]
                        [--format {html,cli,both}] [--copy-json]
-                       [--audit-log AUDIT_LOG] [--timeout TIMEOUT]
-                       [--no-prescan] [--strict] [--variables VARIABLES]
-                       [--waivers WAIVERS]
+                       [--audit-log AUDIT_LOG] [--evidence-dir EVIDENCE_DIR]
+                       [--webhook WEBHOOK] [--timeout TIMEOUT] [--no-prescan]
+                       [--strict] [--variables VARIABLES] [--waivers WAIVERS]
 
 options:
   -h, --help            show this help message and exit
@@ -43,6 +43,13 @@ options:
   --copy-json           Also save result JSON alongside the HTML report
   --audit-log AUDIT_LOG
                         Write audit log (JSON-lines) to this path
+  --evidence-dir EVIDENCE_DIR
+                        Pack evidence (result JSON, config, host facts, per-
+                        rule detail) into
+                        <hostname>-<timestamp>-evidence.tar.gz under this
+                        directory
+  --webhook WEBHOOK     POST a JSON run summary to this URL after the run
+                        (overrides [notify] webhook_url in cis-host.toml)
   --timeout TIMEOUT     Engine execution timeout in seconds (default: 600)
   --no-prescan          Skip pre-scan baseline in apply mode
   --strict              Exit non-zero when residual failures remain

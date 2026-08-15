@@ -223,3 +223,19 @@ class TestCommentOut:
         n = engine.comment_out(ctx, str(target), r"^\s*Enable\s*=\s*true")
         assert n == 0
         assert target.read_text() == "# Enable=true\n"
+
+
+class TestWaiverExpiration:
+    def test_expired_waiver_detected(self):
+        from datetime import date, timedelta
+        expired = {"reason": "legacy", "expires": (date.today() - timedelta(days=1)).isoformat()}
+        assert engine._waiver_expired(expired)[0] is True
+
+    def test_valid_waiver_not_expired(self):
+        from datetime import date, timedelta
+        valid = {"reason": "legacy", "expires": (date.today() + timedelta(days=1)).isoformat()}
+        assert engine._waiver_expired(valid)[0] is False
+
+    def test_waiver_without_expiry_never_expired(self):
+        assert engine._waiver_expired({"reason": "legacy"})[0] is False
+        assert engine._waiver_expired("legacy reason")[0] is False

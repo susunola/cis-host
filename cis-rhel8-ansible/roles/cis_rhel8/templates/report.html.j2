@@ -216,6 +216,7 @@ h2.sec::before{content:"";width:4px;height:18px;background:linear-gradient(180de
 .pill.err{background:var(--errbg);color:var(--err);border-color:var(--errln)}
 .pill.na{background:var(--nabg);color:var(--na);border-color:var(--naln)}
 .pill.waived{background:#f3e8ff;color:#7c3aed;border-color:#d8b4fe}
+.pill.expired{background:#fff7ed;color:#c2410c;border-color:#fdba74}
 
 .notice{margin-top:16px;padding:11px 14px;border-radius:var(--radius-sm);font-size:12.5px;
   background:var(--manbg);color:#163a8a;border:1px solid var(--manln);line-height:1.7}
@@ -630,6 +631,9 @@ footer b{color:var(--ink2)}
           {% if r.waived | default(false) %}
           <span class="pill waived" title="{{ ((r.waiver | default({})).reason | default('Waived')) | e }}">{{ 'Waived' }}</span>
           {% endif %}
+          {% if r.waiver_expired | default(false) %}
+          <span class="pill expired" title="{{ ((r.waiver | default({})).reason | default('Expired waiver')) | e }}">{{ 'Expired waiver' }}</span>
+          {% endif %}
           <span class="fam">{{ SEC.subsections.get(r.section, SEC.chapters.get(r.id.split('.')[0], '')) | e }}
      · {{ r.assessment | e }} · {{ r.family | e }}</span>
     </td>
@@ -655,6 +659,10 @@ footer b{color:var(--ink2)}
               {% if r.waived | default(false) %}
               <h4>{{ 'Waiver' }}</h4>
               <p>{{ ((r.waiver | default({})).reason | default('(no reason)')) | e }}</p>
+              {% endif %}
+              {% if r.waiver_expired | default(false) %}
+              <h4>{{ 'Expired Waiver' }}</h4>
+              <p>{{ ((r.waiver | default({})).reason | default('(no reason)')) | e }}<br><strong>{{ 'This waiver has expired and the rule was assessed normally.' }}</strong></p>
               {% endif %}
               {% if r.apply_status not in ['n/a', 'already'] %}
               <h4>{{ 'Remediation' }} · {{ ainfo.en }}</h4>

@@ -1,16 +1,18 @@
 usage: cis_cli.py [-h] [--config CONFIG]
-                  {list,list-os,scan,audit,apply,check,fleet,diff,watch,info} ...
+                  {list,list-os,scan,audit,apply,remediate,check,fleet,diff,watch,info} ...
 
 CIS Benchmark local CLI — scan, apply, audit, fleet scan, view rules
 
 positional arguments:
-  {list,list-os,scan,audit,apply,check,fleet,diff,watch,info}
+  {list,list-os,scan,audit,apply,remediate,check,fleet,diff,watch,info}
                         Mode: list | scan | apply | audit | check | fleet |
                         info
     list (list-os)      List supported OS presets
     scan                Check compliance only, generate HTML report
     audit               Scan-only compliance gate (exit non-zero on findings)
     apply               Apply fixes, re-scan, generate report
+    remediate           Apply fixes only for rules that failed in a previous
+                        scan
     check               Dry-run: scan + show what would change
     fleet               Fleet scan across multiple hosts
     diff                Compare two scan result JSONs and report configuration

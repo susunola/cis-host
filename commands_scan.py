@@ -6,11 +6,13 @@ check runs a scan-only dry-run preview of what apply would fix.
 
 import json
 import os
+import sys
 from datetime import datetime
 
 import cis_host_diff
 from engine import run_engine
 from display import click_style, print_summary, print_result_table
+from notify import collect_evidence, send_webhook
 from report import render_report
 
 
@@ -38,7 +40,9 @@ def cmd_scan(args):
     if args.format in ("html", "both"):
         out_path = render_report(result_data, args, "scan", result_file)
         print(f"Report saved: {out_path}")
-    return {"data": result_data, "path": out_path}
+    evidence_path = collect_evidence(args, result_data, result_file, "scan")
+    return {"data": result_data, "path": out_path, "result_file": result_file,
+            "evidence_path": evidence_path}
 
 
 def cmd_audit(args):
@@ -70,7 +74,10 @@ def cmd_audit(args):
     fail = s.get("fail", 0)
     err = s.get("error", 0)
     score = s.get("score", 0.0)
+    expired_waived = s.get("expired_waived", 0)
     gate_pass = fail == 0 and err == 0
+    if getattr(args, "fail_on_expired_waiver", False) and expired_waived > 0:
+        gate_pass = False
 
     audit_summary = {
         "started_at": result_data.get("started_at"),
@@ -83,6 +90,7 @@ def cmd_audit(args):
         "fail": fail,
         "error": err,
         "waived": s.get("waived", 0),
+        "expired_waived": expired_waived,
         "gate_pass": gate_pass,
     }
     audit_path = os.path.join(os.path.abspath(args.output),
@@ -93,8 +101,14 @@ def cmd_audit(args):
     print(f"Audit gate saved: {audit_path}")
 
     status = click_style("PASS", "green") if gate_pass else click_style("FAIL", "red")
-    print(f"\nGate: {status}  (fail={fail}, error={err}, score={score:.1f}%)")
-    return {"data": result_data, "path": out_path, "audit_path": audit_path, "gate_pass": gate_pass}
+    extra = ""
+    if expired_waived:
+        extra = f", expired_waivers={expired_waived}"
+    print(f"\nGate: {status}  (fail={fail}, error={err}{extra}, score={score:.1f}%)")
+    evidence_path = collect_evidence(args, result_data, result_file, "audit")
+    return {"data": result_data, "path": out_path, "audit_path": audit_path,
+            "gate_pass": gate_pass, "result_file": result_file,
+            "evidence_path": evidence_path}
 
 
 def cmd_apply(args):
@@ -195,7 +209,9 @@ def cmd_apply(args):
     if args.format in ("html", "both"):
         out_path = render_report(post_data, args, "apply", post_file)
         print(f"\nReport saved: {out_path}")
-    return {"data": post_data, "path": out_path}
+    evidence_path = collect_evidence(args, post_data, post_file, "apply")
+    return {"data": post_data, "path": out_path, "result_file": post_file,
+            "evidence_path": evidence_path}
 
 
 def cmd_check(args):
@@ -222,3 +238,42 @@ def cmd_check(args):
     out_path = render_report(scan_data, args, "scan", scan_file)
     print(f"\nReport saved: {out_path}")
     return {"data": scan_data, "path": out_path}
+
+
+def _load_result(path):
+    """Load a result JSON produced by the engine."""
+    if not os.path.exists(path):
+        print(f"Result file not found: {path}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"Cannot parse result JSON ({path}): {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_remediate(args):
+    """REMEDIATE mode: apply fixes only for rules that failed in a previous scan."""
+    result_path = os.path.abspath(args.result)
+    data = _load_result(result_path)
+
+    failed = [
+        r["id"] for r in data.get("results", [])
+        if r.get("status") in ("fail", "error") and not r.get("waived")
+    ]
+    if not failed:
+        print("No failing rules in the provided scan result — nothing to remediate.")
+        return {"data": data, "path": None}
+
+    print(f"\n╔══ CIS Benchmark — REMEDIATE ══╗")
+    print(f"║ Source scan: {result_path}")
+    print(f"║ Failing rules: {len(failed)}")
+    print(f"╚{'═'*26}╝\n")
+
+    # Override include list to target only the failing rules.
+    existing_include = set(args.include.split(",")) if args.include else set()
+    existing_include.update(failed)
+    args.include = ",".join(sorted(existing_include))
+
+    return cmd_apply(args)

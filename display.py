@@ -48,6 +48,7 @@ def print_summary(data, mode):
         error = s.get("error", 0)
         na = s.get("notapplicable", 0)
         waived = s.get("waived", 0)
+        expired_waived = s.get("expired_waived", 0)
         print(f"  Score:           {score:.1f}%")
         print(f"  Hardening index: {idx:.1f}%")
         print(f"  Pass:            {passed}")
@@ -57,6 +58,8 @@ def print_summary(data, mode):
         print(f"  N/A:             {na}")
         if waived:
             print(f"  Waived:          {waived}")
+        if expired_waived:
+            print(f"  Expired waivers: {expired_waived}")
         if total:
             print(f"  Total:           {total}")
     else:
@@ -136,6 +139,8 @@ def print_result_table(data):
         title = (r.get("title", "") or "")[:title_w]
         if r.get("waived"):
             title = "[waived] " + title
+        if r.get("waiver_expired"):
+            title = "[waiver expired] " + title
         if r.get("status_before"):
             title += f" (was {r['status_before']})"
 

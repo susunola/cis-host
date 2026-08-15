@@ -112,6 +112,7 @@ def merge(args, config_path=None):
         _set_if_none(args, "allow_disruptive", _normalize_bool(engine_cfg.get("allow_disruptive")) if "allow_disruptive" in engine_cfg else None)
         _set_if_none(args, "backup_dir", engine_cfg.get("backup_dir", ""))
         _set_if_none(args, "audit_log", engine_cfg.get("audit_log", ""))
+        _set_if_none(args, "evidence_dir", engine_cfg.get("evidence_dir", ""))
 
     # Tailoring: rule input variables and waivers/exception tracking.
     variables_cfg = _get(cfg, "variables", default={})
@@ -141,5 +142,10 @@ def merge(args, config_path=None):
     fleet_cfg = _get(cfg, "fleet", default={})
     if fleet_cfg:
         _set_if_none(args, "fleet", fleet_cfg)
+
+    # Notification configuration.
+    notify_cfg = _get(cfg, "notify", default={})
+    if notify_cfg:
+        _set_if_none(args, "webhook", notify_cfg.get("webhook_url", ""))
 
     return args

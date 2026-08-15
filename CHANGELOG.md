@@ -1,5 +1,35 @@
 # Changelog
 
+## [Unreleased] — evidence, webhook, expired-waiver hygiene, remediate, exporters
+
+New runtime features (ported onto the modular `cis-host` structure):
+
+- **Expired-waiver hygiene (all 10 Linux engines).** A waiver whose
+  `expires`/`expiration_date` is in the past no longer exempts the rule:
+  the rule is assessed normally and flagged `waiver_expired`. Summary
+  buckets gain an `expired_waived` counter; CLI table/summary and the
+  HTML report mark expired waivers (`[waiver expired]` / an
+  "Expired waiver" pill). `audit --fail-on-expired-waiver` makes an
+  expired waiver fail the gate.
+- **Evidence snapshot.** `scan`/`audit`/`apply` can pack the result JSON,
+  effective config, host facts, and per-rule detail into
+  `<hostname>-<timestamp>-evidence.tar.gz` via `--evidence-dir` (or
+  `[engine] evidence_dir` in `cis-host.toml`).
+- **Webhook notification.** After `scan`/`audit`/`apply`/`remediate`, a
+  JSON run summary is POSTed to `--webhook` (or `[notify] webhook_url`).
+  Delivery is fire-and-warn: failures never block or fail a run.
+- **`remediate` subcommand.** Applies fixes only for the rules that
+  failed in a previous scan result (`--result <json>`).
+- **New exporter scripts.** `scripts/export_pdf.py` (WeasyPrint),
+  `scripts/export_tailoring.py` / `import_tailoring.py` (XCCDF 1.2
+  tailoring round-trip), `scripts/plot_history.py` (SVG trend dashboard
+  from a history JSONL). `pyproject.toml` gains a `pdf` extra.
+
+Tests: new `tests/test_features.py` plus plot/tailoring/pdf cases in
+`tests/test_exporters.py` and waiver-expiration cases in
+`tests/test_engine.py`. CLI `--help` snapshots were regenerated for the
+new flags/subcommand (see `tests/snapshots/cli/`).
+
 ## [Unreleased] — CI rule-verification matrix (M0–M5)
 
 Added `tests/fixtures/`: an in-memory, per-OS scan → apply → re-scan
