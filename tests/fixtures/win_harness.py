@@ -190,3 +190,38 @@ class WinHarness:
                 "@{ apply_status = $applyStatus; status = $r.status; detail = $r.detail } | ConvertTo-Json -Compress",
             ])
             return self._run_script(script)
+
+    def fix_twice(self, rule: Dict[str, Any], state: WinFixtureState) -> Dict[str, Any]:
+        """Idempotency check (M5): run Invoke-Fix twice in a row against
+        the same fake state within a single pwsh process (state must
+        persist across both applies, so this cannot be split into two
+        separate WinHarness.fix() calls the way it would be for the
+        Linux EngineHarness's in-process FakeSystem). Snapshots the fake
+        registry/secpol/user_rights/auditpol/firewall dicts after each
+        apply so the caller can compare them for byte-for-byte equality.
+        Returns {"apply_status_1", "status_1", "apply_status_2",
+        "status_2", "detail_2", "snapshot_1", "snapshot_2"}.
+        """
+        with tempfile.TemporaryDirectory(prefix="cis-win-fixture-") as tmpdir:
+            rule_json = json.dumps(rule).replace("'", "''")
+            snapshot_expr = (
+                "@{ FakeReg = $Global:FakeReg; FakeSecPol = $Global:FakeSecPol; "
+                "FakeUserRights = $Global:FakeUserRights; "
+                "FakeAuditPol = $Global:FakeAuditPol; FakeFirewall = $Global:FakeFirewall }")
+            script = "\n".join([
+                self._preamble(state, tmpdir),
+                "$rule = ConvertFrom-Json -InputObject '%s' -AsHashtable" % rule_json,
+                "$applyStatus1 = Invoke-Fix -Rule $rule",
+                "$r1 = Invoke-Check -Rule $rule",
+                "$snap1 = %s | ConvertTo-Json -Compress -Depth 10" % snapshot_expr,
+                "$applyStatus2 = Invoke-Fix -Rule $rule",
+                "$r2 = Invoke-Check -Rule $rule",
+                "$snap2 = %s | ConvertTo-Json -Compress -Depth 10" % snapshot_expr,
+                "Write-Output '===FIXTURE-JSON-START==='",
+                "@{ apply_status_1 = $applyStatus1; status_1 = $r1.status; "
+                "apply_status_2 = $applyStatus2; status_2 = $r2.status; "
+                "detail_2 = $r2.detail; snapshot_1 = $snap1; snapshot_2 = $snap2 } "
+                "| ConvertTo-Json -Compress",
+            ])
+            return self._run_script(script)
+
