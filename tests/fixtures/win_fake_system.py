@@ -90,7 +90,18 @@ function secedit {
         # matched the same flag name in a differently-ordered arg list)
         $cfgIdx2 = [array]::IndexOf($args, "/cfg")
         $cfgPath2 = $args[$cfgIdx2 + 1]
-        $content = Microsoft.PowerShell.Management\Get-Content -Path $cfgPath2 -Raw
+        # cis_engine.ps1's own fix code writes the *updated* .inf via
+        # [System.IO.File]::WriteAllText($tmp2, $c) (see user-right's
+        # Invoke-Fix), not Set-Content/Out-File -- and on a posix pwsh
+        # host, .NET's File APIs treat a Windows-style "dir\file.inf"
+        # path as one literal filename (no directory component) while
+        # PowerShell's own Get-Content/Set-Content treat the backslash
+        # as a path separator. Those are two different physical files
+        # on disk here. So this read must use [System.IO.File]::
+        # ReadAllText (matching WriteAllText's own path semantics)
+        # rather than Get-Content, or it would see stale/pre-fix
+        # content written by this fake's own /export branch above.
+        $content = [System.IO.File]::ReadAllText($cfgPath2)
         foreach ($ln in ($content -split "`r`n")) {
             if ($ln -match "^\s*([^=\[\]][^=]*?)\s*=\s*(.+)$") {
                 $k = $Matches[1].Trim(); $v = $Matches[2].Trim()
