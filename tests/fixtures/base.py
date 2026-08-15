@@ -32,6 +32,34 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__f
 _PATCHED_NAMES = ("sh", "read", "exists", "atomic_write", "conf_values", "have")
 
 
+class _FakePath:
+    """Proxy for `os.path` inside a faked cis_engine.py module.
+
+    Several families (mount_opt, gdm_dconf, audit_immutable, user_audit,
+    ...) call os.path.isfile()/isdir()/exists() directly instead of
+    going through the patchable exists() boundary helper. This proxy
+    answers those from the FakeSystem's in-memory files/dirs instead of
+    the real host filesystem, while delegating pure string helpers
+    (dirname, join, basename, abspath, ...) to the real os.path.
+    """
+
+    def __init__(self, fs):
+        self._fs = fs
+
+    def __getattr__(self, name):
+        import os.path as _real_path
+        return getattr(_real_path, name)
+
+    def isfile(self, path):
+        return self._fs.isfile(path)
+
+    def isdir(self, path):
+        return self._fs.isdir(path)
+
+    def exists(self, path):
+        return self._fs.exists(path)
+
+
 class _NoopMakedirsOs:
     """Proxy for the `os` module used inside a faked cis_engine.py module.
 
@@ -40,16 +68,30 @@ class _NoopMakedirsOs:
     os.makedirs would try to create real directories like /etc/sysctl.d/
     on the actual host filesystem, which needs root and pollutes real
     disk. This proxy no-ops makedirs and otherwise delegates every other
-    attribute (os.path, os.environ, ...) to the real os module, so it is
+    attribute (os.environ, os.sep, ...) to the real os module, so it is
     safe to swap in as a whole-module replacement for one engine copy's
     `os` global without touching the real, process-wide os module.
+
+    os.path.isfile/isdir/exists are additionally redirected to a
+    _FakePath backed by the same FakeSystem, so families that check
+    os.path.* directly (rather than through the exists() helper) see
+    the same in-memory filesystem as everything else.
     """
+
+    def __init__(self, fs):
+        self.path = _FakePath(fs)
 
     def __getattr__(self, name):
         import os as _real_os
         return getattr(_real_os, name)
 
     def makedirs(self, *args, **kwargs):
+        return None
+
+    def chmod(self, *args, **kwargs):
+        return None
+
+    def chown(self, *args, **kwargs):
         return None
 
 
@@ -149,7 +191,15 @@ class EngineHarness:
         # to the real os module -- this must NOT touch the real,
         # process-wide `os` module object, only this one module's
         # reference to it.
-        self.engine.os = _NoopMakedirsOs()
+        self.engine.os = _NoopMakedirsOs(fs)
+        # A handful of families (mount_opt, kv_conf, gdm_dconf, ...) call
+        # globmod.glob()/open() directly rather than through the
+        # patchable exists()/read()/atomic_write() boundary. Patch those
+        # two module-level bindings too, so their file access resolves
+        # against the same FakeSystem instead of the real disk.
+        if hasattr(self.engine, "globmod"):
+            self.engine.globmod = SimpleNamespace(glob=fs.glob)
+        self.engine.open = fs.open
 
     def make_ctx(self, mode="scan", allow_disruptive=False, simulate=False,
                 variables=None, waivers=None):
