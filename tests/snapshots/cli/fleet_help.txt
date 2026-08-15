@@ -1,0 +1,8 @@
+usage: cis_cli.py fleet [-h] {scan} ...
+
+positional arguments:
+  {scan}      Fleet subcommand
+    scan      Scan multiple hosts and aggregate report
+
+options:
+  -h, --help  show this help message and exit
