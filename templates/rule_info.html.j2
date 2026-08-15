@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rule {{ detail.id }} — {{ detail.benchmark }}</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+       max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; background: #f8f9fa; }
+.rule-id { font-size: 28px; font-weight: 700; color: #0ea5e9; }
+.rule-title { font-size: 20px; margin: 8px 0 24px; color: #334155; }
+.meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.meta-item { background: #e2e8f0; padding: 4px 12px; border-radius: 6px; font-size: 13px; color: #475569; }
+.section { background: #0ea5e9; color: #fff; }
+.section-title { font-size: 16px; font-weight: 600; color: #1e293b; margin: 24px 0 8px;
+                   border-bottom: 2px solid #0ea5e9; padding-bottom: 4px; }
+.content { background: #fff; padding: 16px 20px; border-radius: 8px;
+           line-height: 1.7; color: #475569; white-space: pre-wrap; font-size: 14px; }
+.params-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.params-table td { padding: 6px 12px; border: 1px solid #e2e8f0; }
+.params-table td:first-child { font-weight: 600; background: #f1f5f9; width: 200px; }
+</style>
+</head>
+<body>
+<div class="rule-id">{{ detail.id }}</div>
+<div class="rule-title">{{ detail.title }}</div>
+<div class="meta">
+  <span class="meta-item">Benchmark: {{ detail.benchmark }} v{{ detail.benchmark_version }}</span>
+  <span class="meta-item section">Section {{ detail.section }}</span>
+  <span class="meta-item">Family: {{ detail.family }}</span>
+  <span class="meta-item">Level: {{ detail.levels_display }}</span>
+  <span class="meta-item">Risk: {{ detail.risk }}</span>
+  <span class="meta-item">{{ 'Automated' if detail.automated else 'Manual' }}</span>
+</div>
+{% for label, key in [("Description", "description"), ("Rationale", "rationale"), ("Assessment", "assessment"), ("Remediation", "remediation")] %}
+{% if detail.get(key) %}
+<div class="section-title">{{ label }}</div>
+<div class="content">{{ detail[key] }}</div>
+{% endif %}
+{% endfor %}
+{% if detail.get("params") %}
+<div class="section-title">Parameters</div>
+<table class="params-table">
+{% for k, v in detail.params.items() %}
+<tr><td>{{ k }}</td><td>{{ v }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+</body>
+</html>

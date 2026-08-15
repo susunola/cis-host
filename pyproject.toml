@@ -51,13 +51,14 @@ Issues = "https://github.com/susunola/cis-host/issues"
 # NOTE: This project is only supported via `pip install -e .` from a source
 # checkout. The 14 cis-<os>-ansible/ directories (engine scripts, rules.json,
 # guidance/sections JSON, Jinja2 report templates) plus the top-level
-# templates/ directory (fleet_report.html.j2) are consumed via paths
-# relative to cis_cli.py/fleet.py at runtime and are NOT included in built
-# wheels/sdists. A `pip install ciscvm` from a real package index would
-# install the CLI but scan/apply/fleet would fail with "Template not
+# templates/ directory (fleet_report.html.j2, rule_info.html.j2) are
+# consumed via paths relative to cis_cli.py/fleet.py/info.py at runtime
+# and are NOT included in built wheels/sdists. A `pip install ciscvm`
+# from a real package index would install the CLI but
+# scan/apply/fleet/info --format html would fail with "Template not
 # found" / missing catalog errors. Do not publish this package to PyPI
 # until these directories are packaged as included data (package_data)
 # and the runtime path resolution is updated to look inside the installed
 # package.
 [tool.setuptools]
-py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display", "report", "fleet"]
+py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display", "report", "fleet", "info"]
