@@ -137,3 +137,22 @@ def test_render_report_template_error_returns_none(mock_host, tmp_path):
     args = _args(tmp_path, "{{ this is not valid jinja !! }}")
     out_path = render_report(_result_data(), args, "scan", str(tmp_path / "result.json"))
     assert out_path is None
+
+
+@patch("report.collect_host", side_effect=_fake_host)
+def test_render_report_registers_bool_filter(mock_host, tmp_path):
+    """Regression test for the L4 e2e finding: the real report.html.j2
+    templates use the `| bool` Jinja2 filter (a built-in under Ansible's
+    Jinja2), but plain Jinja2 has no `bool` filter. Without registering
+    one, every `cis-host scan/apply/audit --format html` crashed with
+    `jinja2.exceptions.TemplateRuntimeError: No filter named 'bool' found`.
+    render_report() must register a `bool` filter so the template renders.
+    """
+    template_body = "{{ (cis_allow_disruptive | bool) and 'x' }}"
+    args = _args(tmp_path, template_body, allow_disruptive=True)
+    out_path = render_report(_result_data(), args, "scan", str(tmp_path / "result.json"))
+    assert out_path is not None, "render_report crashed; `| bool` filter not registered"
+    with open(out_path, "r", encoding="utf-8") as fh:
+        content = fh.read()
+    assert "x" in content
+

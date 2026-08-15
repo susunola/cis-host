@@ -87,6 +87,31 @@ them is out of scope for a fixture-framework milestone):
   `sysctl`-family rules — a real gap in that OS's catalog, not a
   fixture-framework issue.
 
+### L4 real-host e2e (new) + a bug it found and fixed
+
+- **Added `scripts/real_e2e_test.py`** (modeled on the sister project's
+  `cis-image/scripts/real_e2e_test.py`): provisions a real OS (Docker
+  provider first — systemd `geerlingguy` images; cloud VM optional),
+  installs cis-host on it, and runs a real `scan → apply → re-scan →
+  idempotent-apply` cycle, then always tears the host down
+  (`--keep-on-failure` escape hatch, `logs/e2e_last_instance.json`
+  record, teardown on success/failure/Ctrl-C). Host-side assertions
+  check scan/apply exit codes, valid reports, that remediation actually
+  changed the host, that re-scan failures decreased with no error
+  regression, and that a second apply performs no new remediation.
+  Wired into CI as a non-blocking step (Docker e2e for ubuntu2204).
+  See `docs/TESTING.md` §10.
+- **Fixed: `cis-host scan/apply/audit --format html` crashed with
+  `jinja2.exceptions.TemplateRuntimeError: No filter named 'bool' found`.**
+  The real `report.html.j2` templates use the `| bool` Jinja2 filter
+  (a built-in under Ansible's Jinja2), but standalone cis-host renders
+  with plain Jinja2, which has no `bool` filter. `report.render_report()`
+  now registers one (`env.filters.setdefault("bool", bool)`), so every
+  HTML report render no longer throws. Found by the L4 e2e test (the
+  fixture matrix fakes the OS boundary and never rendered the real
+  template, so this went undetected until the e2e ran a real scan).
+  Regression-tested in `tests/test_report.py`.
+
 ## [Unreleased] — cis_cli.py modularization (PR1–PR8)
 
 `cis_cli.py` was refactored from a single 1730-line monolithic file into
