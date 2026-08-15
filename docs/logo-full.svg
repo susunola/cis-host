@@ -1,52 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 180">
-  <defs>
-    <linearGradient id="arc-grad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#006EFF"/>
-      <stop offset="100%" stop-color="#00B4D8"/>
-    </linearGradient>
-    <linearGradient id="text-grad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#006EFF"/>
-      <stop offset="100%" stop-color="#00B4D8"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <!-- Honey badger (平头哥) — flat mark, front view -->
+  <!-- ears -->
+  <circle cx="56" cy="56" r="13" fill="#16273A"/>
+  <circle cx="244" cy="56" r="13" fill="#16273A"/>
 
-  <!-- Icon area (transparent, 160x160) -->
-  <g transform="translate(10,10)">
-    <path d="M32,42 Q76,18 124,80"
-          fill="none" stroke="url(#arc-grad)" stroke-width="3.4" stroke-linecap="round"
-          stroke-opacity="0.35"/>
-    <path d="M26,80 Q76,28 124,80"
-          fill="none" stroke="url(#arc-grad)" stroke-width="3.4" stroke-linecap="round"
-          stroke-opacity="0.6"/>
-    <path d="M32,118 Q76,36 124,80"
-          fill="none" stroke="url(#arc-grad)" stroke-width="3.6" stroke-linecap="round"
-          stroke-opacity="0.95"/>
+  <!-- light cap: flat head + dorsal cape (the signature stripe) -->
+  <path d="M50 62 Q50 26 88 24 L212 24 Q250 26 250 62 L250 112 L240 144 L224 176 L200 196 L150 204 L100 196 L76 176 L60 144 L50 112 Z"
+        fill="#E9EEF5"/>
 
-    <circle cx="32" cy="42" r="4.2" fill="#006EFF" fill-opacity="0.35"/>
-    <circle cx="26" cy="80" r="4.2" fill="#006EFF" fill-opacity="0.6"/>
-    <circle cx="32" cy="118" r="4.2" fill="#006EFF" fill-opacity="0.95"/>
+  <!-- dark face (lower head, on cape's lower-front) -->
+  <path d="M50 98 L250 98 L250 120 Q250 142 226 144 L74 144 Q50 142 50 120 Z"
+        fill="#16273A"/>
 
-    <circle cx="124" cy="80" r="14" fill="#006EFF" fill-opacity="0.08"/>
-    <circle cx="124" cy="80" r="9" fill="#006EFF" fill-opacity="0.15"/>
-    <circle cx="124" cy="80" r="5.5" fill="url(#arc-grad)"/>
+  <!-- dark lower body (chest/belly/paws, under cape) -->
+  <path d="M70 148 L230 148 L230 226 Q230 256 204 262 L96 262 Q70 256 70 226 Z"
+        fill="#16273A"/>
 
-    <path d="M121,80 L123.5,82.5 L127.5,78"
-          fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
+  <!-- eyes (deadpan stare on dark face) -->
+  <circle cx="112" cy="120" r="8.5" fill="#F4F6F9"/>
+  <circle cx="188" cy="120" r="8.5" fill="#F4F6F9"/>
+  <circle cx="112" cy="121" r="3.2" fill="#16273A"/>
+  <circle cx="188" cy="121" r="3.2" fill="#16273A"/>
 
-  <!-- Text area -->
-  <g transform="translate(180,32)">
-    <!-- cis-host main wordmark -->
-    <text x="0" y="76" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-          font-size="56" font-weight="800" letter-spacing="-1.5" fill="url(#text-grad)">
-      cis-host
-    </text>
-
-    <!-- Subtitle -->
-    <text x="2" y="108" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-          font-size="14" font-weight="400" letter-spacing="3.5" fill="#6B7280">
-      COMPLIANCE BASELINE AS CODE
-    </text>
-  </g>
+  <!-- nose -->
+  <ellipse cx="150" cy="132" rx="10" ry="6" fill="#0C1722"/>
 </svg>
