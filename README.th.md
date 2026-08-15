@@ -192,8 +192,8 @@ cis-host/
 ├── README.ja.md
 ├── README.th.md
 ├── cis_cli.py                      # CLI ในเครื่อง (--os สลับเป้าหมาย)
-├── ciscvm_diff.py                  # ตรรกะ drift detection / verify / watch
-├── ciscvm_config.py                # โหลดและ merge ciscvm.toml
+├── cis_host_diff.py                  # ตรรกะ drift detection / verify / watch
+├── cis_host_config.py                # โหลดและ merge cis-host.toml
 ├── scripts/                        # ตัวส่งออก SARIF/XCCDF/JUnit/Prometheus
 ├── tests/                          # ชุดทดสอบ pytest (engine, CLI, drift, exporters)
 ├── docs/architecture.svg           # แผนผังสถาปัตยกรรม

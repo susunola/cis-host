@@ -2,35 +2,35 @@
 """
 CIS Benchmark CLI — scan, apply, audit, fleet scan, with HTML + CLI output.
 
-Installable as the `ciscvm` command after `pip install ciscvm`.
+Installable as the `cis-host` command after `pip install cis-host`.
 
 Usage:
   # Scan only (check compliance)
-  ciscvm scan --os rhel9 --profile L1 --output output/
+  cis-host scan --os rhel9 --profile L1 --output output/
 
   # Apply then re-scan (combined)
-  ciscvm apply --os rhel9 --profile L1 --output output/
+  cis-host apply --os rhel9 --profile L1 --output output/
 
   # Audit / gate mode (exit non-zero on findings)
-  ciscvm audit --os rhel9 --profile L1 --output output/
+  cis-host audit --os rhel9 --profile L1 --output output/
 
   # Fleet scan across multiple hosts
-  ciscvm fleet scan --os rhel9 --fleet-hosts web1,web2 --output output/
+  cis-host fleet scan --os rhel9 --fleet-hosts web1,web2 --output output/
 
   # Fine-grained: run specific rules by ID
-  ciscvm scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
+  cis-host scan --os rhel9 --include "1.1.1.1,1.1.1.2,5.1.1" --output output/
 
   # Tailor rule inputs and waive exceptions
-  ciscvm scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
+  cis-host scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
 
   # Dry-run remediation
-  ciscvm apply --os rhel9 --simulate
+  cis-host apply --os rhel9 --simulate
 
-  # Use a config file (ciscvm.toml)
-  ciscvm scan --config ciscvm.toml
+  # Use a config file (cis-host.toml)
+  cis-host scan --config cis-host.toml
 
   # View rule detail (CLI)
-  ciscvm info --os rhel9 --id 1.1.1.1
+  cis-host info --os rhel9 --id 1.1.1.1
 
 Supported --os values:
   tencentos3, tencentos4
@@ -51,8 +51,8 @@ import sys
 import time
 from datetime import datetime, timezone
 
-import ciscvm_config
-import ciscvm_diff
+import cis_host_config
+import cis_host_diff
 
 # ─── OS Presets ──────────────────────────────────────────────────────
 
@@ -267,7 +267,7 @@ def run_engine(args, mode):
         except (OSError, json.JSONDecodeError):
             waivers_doc = None
         if waivers_doc is not None:
-            for problem in ciscvm_diff.waiver_problems(
+            for problem in cis_host_diff.waiver_problems(
                     waivers_doc, _waiver_catalog_ids(args)):
                 print(f"  [waivers] {problem}", file=sys.stderr)
 
@@ -899,7 +899,7 @@ def cmd_apply(args):
 
     # Apply + verify: compare pre/post scans so the user sees what was
     # actually fixed, what is still failing, and what regressed.
-    verify = ciscvm_diff.verify_remediation(pre_scan, post_data)
+    verify = cis_host_diff.verify_remediation(pre_scan, post_data)
     post_data["_verify"] = verify.to_dict()
     if not verify.is_empty():
         print("\n  ── Verification (pre vs post apply) ──")
@@ -933,7 +933,7 @@ def cmd_apply(args):
             f"verify-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
         os.makedirs(os.path.dirname(verify_path), exist_ok=True)
         with open(verify_path, "w", encoding="utf-8") as fh:
-            fh.write(ciscvm_diff.render_verify_html(
+            fh.write(cis_host_diff.render_verify_html(
                 verify, name=args.name, profile=args.profile, org=args.org))
         print(f"Verification report saved: {verify_path}")
     elif verify.warnings:
@@ -980,7 +980,7 @@ def cmd_check(args):
 
 # ─── Drift detection, verification & periodic watch ───────────────
 #
-# Pure logic lives in ciscvm_diff.py (unit-testable, dataclass-typed);
+# Pure logic lives in cis_host_diff.py (unit-testable, dataclass-typed);
 # this file only wires CLI arguments to it.
 
 def _load_result_json(path):
@@ -1016,10 +1016,10 @@ def cmd_diff(args):
     """DIFF mode: compare two scan results and report configuration drift."""
     before = _load_result_json(args.before)
     after = _load_result_json(args.after)
-    report = ciscvm_diff.diff_results(before, after)
+    report = cis_host_diff.diff_results(before, after)
 
     if args.format in ("cli", "both"):
-        print(ciscvm_diff.render_cli(report))
+        print(cis_host_diff.render_cli(report))
 
     out_path = None
     if args.format in ("html", "both"):
@@ -1028,7 +1028,7 @@ def cmd_diff(args):
             f"drift-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as fh:
-            fh.write(ciscvm_diff.render_html(report, name=args.name,
+            fh.write(cis_host_diff.render_html(report, name=args.name,
                                              profile=args.profile, org=args.org))
         print(f"Drift report saved: {out_path}")
 
@@ -1074,7 +1074,7 @@ def cmd_watch(args):
         print(f"║ Alert:   {args.alert_cmd}")
     print(f"╚{'═'*26}╝\n")
 
-    session = ciscvm_diff.WatchSession(
+    session = cis_host_diff.WatchSession(
         scan=lambda: run_engine(args, "scan")[0],
         interval=interval,
         max_runs=getattr(args, "max_runs", 0),
@@ -1254,7 +1254,7 @@ def cmd_fleet_scan(args):
     """FLEET SCAN mode: scan multiple hosts and aggregate a fleet report."""
     hosts = _load_fleet_hosts(args)
     if not hosts:
-        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in ciscvm.toml",
+        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in cis-host.toml",
               file=sys.stderr)
         sys.exit(1)
 
@@ -1275,7 +1275,7 @@ def cmd_fleet_scan(args):
             data = _run_remote_scan(host, args, fleet_cfg)
         else:
             # Local mode: run on this machine but tag results with the host label.
-            # Useful for testing and for CI fleets that run ciscvm inside each node.
+            # Useful for testing and for CI fleets that run cis-host inside each node.
             data, _ = run_engine(args, "scan")
             if data:
                 data["host"] = data.get("host", {})
@@ -1496,7 +1496,7 @@ Examples:
     )
 
     ap.add_argument("--config", default="",
-                    help="Path to ciscvm.toml config file (default: ./ciscvm.toml or $CISCVM_CONFIG)")
+                    help="Path to cis-host.toml config file (default: ./cis-host.toml or $CIS_HOST_CONFIG)")
 
     sub = ap.add_subparsers(dest="command", help="Mode: list | scan | apply | audit | check | fleet | info")
     sub.required = True
@@ -1519,7 +1519,7 @@ Examples:
                        help="Path to sections.json (for report rendering)")
         p.add_argument("--template", default="",
                        help="Path to report.html.j2 template")
-        # Defaults are intentionally None here so that ciscvm.toml can supply
+        # Defaults are intentionally None here so that cis-host.toml can supply
         # values; hard-coded fallbacks are applied after config merging.
         p.add_argument("--profile", default=None, choices=["L1", "L2"],
                        help="Benchmark profile level (default: L1)")
@@ -1601,7 +1601,7 @@ Examples:
     add_common_args(p_fleet_scan)
     add_tailoring_args(p_fleet_scan)
     p_fleet_scan.add_argument("--fleet-hosts", default=None,
-                              help="Comma-separated fleet host list (or use [fleet] hosts in ciscvm.toml)")
+                              help="Comma-separated fleet host list (or use [fleet] hosts in cis-host.toml)")
     p_fleet_scan.add_argument("--fleet-remote", default=None, action="store_true",
                               help="Run engine over SSH on each host (requires [fleet] remote config)")
 
@@ -1672,8 +1672,8 @@ Examples:
         if not args.name or args.name == "CIS Benchmark":
             args.name = preset["name"]
 
-    # Merge ciscvm.toml defaults; CLI args always win
-    args = ciscvm_config.merge(args, args.config if args.config else None)
+    # Merge cis-host.toml defaults; CLI args always win
+    args = cis_host_config.merge(args, args.config if args.config else None)
     args = _apply_defaults(args)
 
     # Validate required paths (not needed for list/list-os/diff; diff only

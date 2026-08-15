@@ -82,7 +82,7 @@ cis-host scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 
 ### Configuration file
 
-Create `ciscvm.toml` in the working directory (or point to another path with `--config` / `$CISCVM_CONFIG`):
+Create `cis-host.toml` in the working directory (or point to another path with `--config` / `$CIS_HOST_CONFIG`):
 
 ```toml
 [profile]
@@ -273,11 +273,11 @@ cis-host audit --os rhel9 --profile L1 --output output/
 # Local tagged mode — runs on this machine, tags each result with the host name
 cis-host fleet scan --os rhel9 --fleet-hosts web1,web2,db1
 
-# Remote SSH mode — run engine on each host (configure [fleet] in ciscvm.toml)
+# Remote SSH mode — run engine on each host (configure [fleet] in cis-host.toml)
 cis-host fleet scan --os rhel9 --fleet-remote
 ```
 
-Remote mode requires the engine and catalog to already exist on the target hosts. See `ciscvm.toml.example` for the `[fleet]` layout.
+Remote mode requires the engine and catalog to already exist on the target hosts. See `cis-host.toml.example` for the `[fleet]` layout.
 
 ## Drift Detection, Verification & Watch
 
@@ -369,8 +369,8 @@ Scan works as non-Admin with `RemoteSigned` execution policy. Apply requires Adm
 ```
 cis-host/
 ├── cis_cli.py                      # Local CLI (--os switches targets)
-├── ciscvm_diff.py                  # Drift detection / verification / watch logic
-├── ciscvm_config.py                # ciscvm.toml loader & merge
+├── cis_host_diff.py                  # Drift detection / verification / watch logic
+├── cis_host_config.py                # cis-host.toml loader & merge
 ├── docs/
 │   ├── architecture.svg
 │   └── screenshots/

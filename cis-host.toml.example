@@ -1,5 +1,5 @@
-# Example ciscvm configuration file.
-# Copy to ciscvm.toml and edit for your environment.
+# Example cis-host configuration file.
+# Copy to cis-host.toml and edit for your environment.
 # CLI arguments always override values from this file.
 
 [profile]

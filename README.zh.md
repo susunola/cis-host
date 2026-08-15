@@ -192,8 +192,8 @@ cis-host/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
 ├── cis_cli.py                      # 本地 CLI（--os 切换目标）
-├── ciscvm_diff.py                  # 漂移检测 / 修复验证 / 周期监控逻辑
-├── ciscvm_config.py                # ciscvm.toml 加载与合并
+├── cis_host_diff.py                  # 漂移检测 / 修复验证 / 周期监控逻辑
+├── cis_host_config.py                # cis-host.toml 加载与合并
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus 导出
 ├── tests/                          # pytest 测试（引擎、CLI、漂移、导出）
 ├── docs/architecture.svg           # 架构图
