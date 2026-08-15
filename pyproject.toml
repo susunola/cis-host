@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ciscvm"
+name = "cis-host"
 version = "1.3.0"
 description = "CIS benchmark scan/apply engine and CLI for Linux & Windows server images"
 readme = "README.md"
@@ -48,4 +48,4 @@ Repository = "https://github.com/susunola/cis-host"
 Issues = "https://github.com/susunola/cis-host/issues"
 
 [tool.setuptools]
-py-modules = ["cis_cli", "ciscvm_config"]
+py-modules = ["cis_cli", "cis_host_config", "cis_host_diff"]

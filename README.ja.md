@@ -192,8 +192,8 @@ cis-host/
 ├── README.ja.md
 ├── README.th.md
 ├── cis_cli.py                      # ローカル CLI（--os でターゲットを切り替え）
-├── ciscvm_diff.py                  # ドリフト検出 / 検証 / 監視ロジック
-├── ciscvm_config.py                # ciscvm.toml のロードとマージ
+├── cis_host_diff.py                  # ドリフト検出 / 検証 / 監視ロジック
+├── cis_host_config.py                # cis-host.toml のロードとマージ
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus エクスポーター
 ├── tests/                          # pytest テスト（エンジン、CLI、ドリフト、エクスポート）
 ├── docs/architecture.svg           # アーキテクチャ図

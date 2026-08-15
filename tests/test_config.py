@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for ciscvm.toml config loading and CLI merging."""
+"""Tests for cis-host.toml config loading and CLI merging."""
 
 import os
 import sys
@@ -8,12 +8,12 @@ from types import SimpleNamespace
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import ciscvm_config
+import cis_host_config
 
 
 def _args(**kwargs):
     # Simulate argparse defaults after the switch to None for optional values
-    # so that ciscvm.toml can supply them.
+    # so that cis-host.toml can supply them.
     defaults = {
         "os": None,
         "profile": None,
@@ -45,11 +45,11 @@ def _args(**kwargs):
 
 
 def test_load_missing_file_returns_none(tmp_path):
-    assert ciscvm_config.load(str(tmp_path / "nope.toml")) is None
+    assert cis_host_config.load(str(tmp_path / "nope.toml")) is None
 
 
 def test_load_valid_toml(tmp_path):
-    p = tmp_path / "ciscvm.toml"
+    p = tmp_path / "cis-host.toml"
     p.write_text("""
 [profile]
 os = "rhel9"
@@ -59,7 +59,7 @@ profile = "L2"
 include = ["1.1.1", "1.1.2"]
 exclude = "5.1.1"
 """)
-    cfg = ciscvm_config.load(str(p))
+    cfg = cis_host_config.load(str(p))
     assert cfg["profile"]["os"] == "rhel9"
     assert cfg["profile"]["profile"] == "L2"
     assert cfg["rules"]["include"] == ["1.1.1", "1.1.2"]
@@ -67,7 +67,7 @@ exclude = "5.1.1"
 
 
 def test_merge_applies_defaults(tmp_path):
-    p = tmp_path / "ciscvm.toml"
+    p = tmp_path / "cis-host.toml"
     p.write_text("""
 [profile]
 os = "ubuntu2204"
@@ -96,7 +96,7 @@ backup_dir = "/tmp/backups"
 audit_log = "/tmp/audit.jsonl"
 """)
     args = _args()
-    merged = ciscvm_config.merge(args, str(p))
+    merged = cis_host_config.merge(args, str(p))
     assert merged.os == "ubuntu2204"
     assert merged.profile == "L2"
     assert merged.platform == "workstation"
@@ -118,20 +118,20 @@ audit_log = "/tmp/audit.jsonl"
 
 
 def test_cli_args_override_config(tmp_path):
-    p = tmp_path / "ciscvm.toml"
+    p = tmp_path / "cis-host.toml"
     p.write_text("""
 [profile]
 os = "rhel8"
 profile = "L2"
 """)
     args = _args(os="rhel9", profile="L1")
-    merged = ciscvm_config.merge(args, str(p))
+    merged = cis_host_config.merge(args, str(p))
     assert merged.os == "rhel9"
     assert merged.profile == "L1"
 
 
 def test_merge_tailoring_and_fleet(tmp_path):
-    p = tmp_path / "ciscvm.toml"
+    p = tmp_path / "cis-host.toml"
     p.write_text("""
 [variables]
 min_len = 14
@@ -152,7 +152,7 @@ key = "~/.ssh/id_rsa"
 remote_engine = "/opt/cis-host/cis_engine.py"
 """)
     args = _args()
-    merged = ciscvm_config.merge(args, str(p))
+    merged = cis_host_config.merge(args, str(p))
     assert merged.variables == {"min_len": 14, "max_login_retries": 3}
     assert merged.waivers == {
         "1.1.1.1": "legacy app",
@@ -169,17 +169,17 @@ remote_engine = "/opt/cis-host/cis_engine.py"
 
 
 def test_merge_waivers_rules_subtable(tmp_path):
-    p = tmp_path / "ciscvm.toml"
+    p = tmp_path / "cis-host.toml"
     p.write_text("""
 [waivers.rules]
 "1.1.1.1" = { reason = "legacy app" }
 """)
     args = _args()
-    merged = ciscvm_config.merge(args, str(p))
+    merged = cis_host_config.merge(args, str(p))
     assert merged.waivers == {"1.1.1.1": {"reason": "legacy app"}}
 
 
 def test_merge_without_config_returns_args(tmp_path):
     args = _args(os="rhel9")
-    merged = ciscvm_config.merge(args, str(tmp_path / "missing.toml"))
+    merged = cis_host_config.merge(args, str(tmp_path / "missing.toml"))
     assert merged.os == "rhel9"

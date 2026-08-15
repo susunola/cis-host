@@ -25,7 +25,7 @@ jobs:
 
       - name: Compile Python engines
         run: |
-          python -m py_compile cis_cli.py ciscvm_config.py
+          python -m py_compile cis_cli.py cis_host_config.py
           for engine in cis-*-ansible/roles/cis_*/files/cis_engine.py; do
             python -m py_compile "$engine"
           done
@@ -42,12 +42,12 @@ jobs:
             ansible-playbook --syntax-check "$pb"
           done
 
-      - name: Test pip install and ciscvm CLI
+      - name: Test pip install and cis-host CLI
         run: |
           pip install -e .
-          ciscvm --help
-          ciscvm list
-          ciscvm scan --help
-          ciscvm apply --help
-          printf '[profile]\nos = "rhel9"\nprofile = "L1"\n' > /tmp/ciscvm.toml
-          ciscvm scan --config /tmp/ciscvm.toml --help >/dev/null
+          cis-host --help
+          cis-host list
+          cis-host scan --help
+          cis-host apply --help
+          printf '[profile]\nos = "rhel9"\nprofile = "L1"\n' > /tmp/cis-host.toml
+          cis-host scan --config /tmp/cis-host.toml --help >/dev/null
