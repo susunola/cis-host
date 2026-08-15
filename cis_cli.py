@@ -41,7 +41,6 @@ Supported --os values:
 """
 
 import argparse
-import html
 import json
 import os
 import subprocess
@@ -51,11 +50,11 @@ from datetime import datetime
 import ciscvm_config
 import ciscvm_diff
 from presets import OS_PRESETS
-from catalog import find_rule, lookup_guidance, lookup_section, get_rule_detail
 from engine import run_engine
 from display import click_style, print_summary, print_result_table
 from report import render_report
 from fleet import cmd_fleet_scan
+from info import cmd_info
 
 # ─── OS Presets ──────────────────────────────────────────────────────
 
@@ -423,128 +422,6 @@ def _apply_defaults(args):
         if getattr(args, key, None) is None:
             setattr(args, key, value)
     return args
-
-
-def cmd_info(args):
-    """INFO mode: show rule detail by ID, CLI or HTML."""
-    rule_id = args.id.strip()
-    detail = get_rule_detail(args, rule_id)
-    if detail is None:
-        print(f"Rule '{rule_id}' not found in catalog.", file=sys.stderr)
-        sys.exit(1)
-
-    if args.format == "html":
-        return _render_info_html(detail, args)
-
-    # CLI output — rich formatted
-    print()
-    print(f"  {click_style('═══ Rule Detail ═══', 'bold')}")
-    print(f"  ID:         {click_style(detail['id'], 'cyan')}")
-    print(f"  Title:      {detail['title']}")
-    print(f"  Benchmark:  {detail['benchmark']}  v{detail['benchmark_version']}")
-    print(f"  Section:    {detail['section']}", end="")
-    if detail["section_chapter"]:
-        print(f" — {detail['section_chapter']}", end="")
-    if detail["section_subsection"]:
-        print(f" / {detail['section_subsection']}", end="")
-    print()
-    print(f"  Family:     {detail['family']}")
-    print(f"  Level(s):   {', '.join(f'L{x}' for x in detail['levels'])}")
-    print(f"  Risk:       {detail['risk']}")
-    print(f"  Automated:  {'Yes' if detail['automated'] else 'No (Manual)'}")
-    if detail.get("page"):
-        print(f"  Page:       {detail['page']}")
-    if detail.get("platforms"):
-        print(f"  Platforms:  {', '.join(detail['platforms'])}")
-
-    if detail.get("description"):
-        print(f"\n  {click_style('Description', 'bold')}")
-        print(f"  {detail['description']}")
-
-    if detail.get("rationale"):
-        print(f"\n  {click_style('Rationale', 'bold')}")
-        print(f"  {detail['rationale']}")
-
-    if detail.get("assessment"):
-        print(f"\n  {click_style('Assessment', 'bold')}")
-        print(f"  {detail['assessment']}")
-
-    if detail.get("params"):
-        print(f"\n  {click_style('Parameters', 'bold')}")
-        for k, v in detail["params"].items():
-            print(f"    {k}: {v}")
-
-    if detail.get("remediation"):
-        print(f"\n  {click_style('Remediation', 'bold')}")
-        for line in detail["remediation"].split("\n"):
-            print(f"  {line}")
-
-    print(f"\n  Total rules in catalog: {detail['total_rules']}")
-    print()
-    return None
-
-
-def _render_info_html(detail, args):
-    """Generate a single-rule detail HTML page."""
-    template_path = os.path.abspath(args.template)
-    template_dir = os.path.dirname(template_path)
-
-    html_doc = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Rule {detail['id']} — {detail['benchmark']}</title>
-<style>
-body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-       max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; background: #f8f9fa; }}
-.rule-id {{ font-size: 28px; font-weight: 700; color: #0ea5e9; }}
-.rule-title {{ font-size: 20px; margin: 8px 0 24px; color: #334155; }}
-.meta {{ display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }}
-.meta-item {{ background: #e2e8f0; padding: 4px 12px; border-radius: 6px; font-size: 13px; color: #475569; }}
-.section {{ background: #0ea5e9; color: #fff; }}
-.section-title {{ font-size: 16px; font-weight: 600; color: #1e293b; margin: 24px 0 8px;
-                   border-bottom: 2px solid #0ea5e9; padding-bottom: 4px; }}
-.content {{ background: #fff; padding: 16px 20px; border-radius: 8px;
-           line-height: 1.7; color: #475569; white-space: pre-wrap; font-size: 14px; }}
-.params-table {{ width: 100%; border-collapse: collapse; margin-top: 8px; }}
-.params-table td {{ padding: 6px 12px; border: 1px solid #e2e8f0; }}
-.params-table td:first-child {{ font-weight: 600; background: #f1f5f9; width: 200px; }}
-</style>
-</head>
-<body>
-<div class="rule-id">{html.escape(detail['id'])}</div>
-<div class="rule-title">{html.escape(detail['title'])}</div>
-<div class="meta">
-  <span class="meta-item">Benchmark: {html.escape(detail['benchmark'])} v{html.escape(detail['benchmark_version'])}</span>
-  <span class="meta-item section">Section {detail['section']}</span>
-  <span class="meta-item">Family: {detail['family']}</span>
-  <span class="meta-item">Level: {', '.join(f'L{x}' for x in detail['levels'])}</span>
-  <span class="meta-item">Risk: {detail['risk']}</span>
-  <span class="meta-item">{'Automated' if detail['automated'] else 'Manual'}</span>
-</div>
-"""
-
-    for label, key in [("Description", "description"), ("Rationale", "rationale"),
-                        ("Assessment", "assessment"), ("Remediation", "remediation")]:
-        val = detail.get(key, "")
-        if val:
-            html_doc += f'<div class="section-title">{html.escape(label)}</div>\n<div class="content">{html.escape(val)}</div>\n'
-
-    if detail.get("params"):
-        html_doc += '<div class="section-title">Parameters</div>\n<table class="params-table">\n'
-        for k, v in detail["params"].items():
-            html_doc += f'<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>\n'
-        html_doc += '</table>\n'
-
-    html_doc += "</body></html>"
-
-    os.makedirs(os.path.abspath(args.output), exist_ok=True)
-    out_path = os.path.join(os.path.abspath(args.output),
-                            f"info-{detail['id'].replace('.', '-')}.html")
-    with open(out_path, "w", encoding="utf-8") as fh:
-        fh.write(html_doc)
-    print(f"Info HTML saved: {out_path}")
-    return out_path
 
 
 # ─── CLI definition ───────────────────────────────────────────────────
