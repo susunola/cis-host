@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 
-import ciscvm_diff
+import cis_host_diff
 
 
 # ─── Platform detection helpers ───────────────────────────────────────
@@ -123,7 +123,7 @@ def run_engine(args, mode):
         except (OSError, json.JSONDecodeError):
             waivers_doc = None
         if waivers_doc is not None:
-            for problem in ciscvm_diff.waiver_problems(
+            for problem in cis_host_diff.waiver_problems(
                     waivers_doc, _waiver_catalog_ids(args)):
                 print(f"  [waivers] {problem}", file=sys.stderr)
 

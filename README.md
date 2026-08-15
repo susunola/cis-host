@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@1a8670f/docs/logo-full.png" alt="cis-host — SecX Series" width="600">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@0ec752d9755d24e86df4230152c45309cd99d375/docs/logo-full.png" alt="cis-host" width="440">
 </p>
 
 <p align="center">
@@ -17,15 +17,36 @@
 </p>
 
 <p align="center">
-  <b>金汤·守城 (Keep)</b> — 固若金汤 · part of the <b>cis-*</b> family:
-  <a href="https://github.com/susunola/cis-image">cis-image</a> (镜像源头) ·
-  <a href="https://github.com/susunola/cis-host">cis-host</a> (主机加固) ·
-  <a href="https://github.com/susunola/cis-cloud">cis-cloud</a> (云上合规)
+  part of the <b>cis-*</b> family:
+  <a href="https://github.com/susunola/cis-image">cis-image</a> ·
+  <a href="https://github.com/susunola/cis-host">cis-host</a> ·
+  <a href="https://github.com/susunola/cis-cloud">cis-cloud</a>
 </p>
 
 # cis-host
 
 Ansible playbooks and a local CLI that run the **CIS** security benchmarks against 10 Linux distributions and 4 Windows Server versions. Two modes — `scan` (read-only assessment) and `apply` (remediate) — each producing per-host HTML reports with structured audit logs. **4,400+ rules, zero third-party dependencies.**
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Workflow](#workflow)
+- [Suites](#suites)
+- [Audit Logging](#audit-logging)
+- [Reports](#reports)
+- [Fine-Grained Execution](#fine-grained-execution)
+- [Audit / Gate Mode](#audit-gate-mode)
+- [Fleet Scan](#fleet-scan)
+- [Drift Detection, Verification & Watch](#drift-detection-verification-watch)
+- [Tailoring, Waivers, and Dry-Run](#tailoring-waivers-and-dry-run)
+- [Export Formats](#export-formats)
+- [Privilege Modes](#privilege-modes)
+- [Directory Structure](#directory-structure)
+- [Notes](#notes)
+- [Roadmap](#roadmap)
+- [CIS Benchmarks Disclaimer](#cis-benchmarks-disclaimer)
+- [License](#license)
 
 ## Quick Start
 
@@ -86,7 +107,7 @@ cis-host scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 
 ### Configuration file
 
-Create `ciscvm.toml` in the working directory (or point to another path with `--config` / `$CISCVM_CONFIG`):
+Create `cis-host.toml` in the working directory (or point to another path with `--config` / `$CIS_HOST_CONFIG`):
 
 ```toml
 [profile]
@@ -277,11 +298,11 @@ cis-host audit --os rhel9 --profile L1 --output output/
 # Local tagged mode — runs on this machine, tags each result with the host name
 cis-host fleet scan --os rhel9 --fleet-hosts web1,web2,db1
 
-# Remote SSH mode — run engine on each host (configure [fleet] in ciscvm.toml)
+# Remote SSH mode — run engine on each host (configure [fleet] in cis-host.toml)
 cis-host fleet scan --os rhel9 --fleet-remote
 ```
 
-Remote mode requires the engine and catalog to already exist on the target hosts. See `ciscvm.toml.example` for the `[fleet]` layout.
+Remote mode requires the engine and catalog to already exist on the target hosts. See `cis-host.toml.example` for the `[fleet]` layout.
 
 ## Drift Detection, Verification & Watch
 
@@ -385,8 +406,8 @@ cis-host/
 ├── display.py                      # CLI table/color output helpers
 ├── presets.py                      # OS_PRESETS registry
 ├── catalog.py                      # Rule catalog lookups
-├── ciscvm_diff.py                  # Drift detection / verification / watch logic
-├── ciscvm_config.py                # ciscvm.toml loader & merge
+├── cis_host_diff.py                # Drift detection / verification / watch logic
+├── cis_host_config.py              # cis-host.toml loader & merge
 ├── docs/
 │   ├── architecture.svg
 │   └── screenshots/

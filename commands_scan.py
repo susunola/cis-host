@@ -1,6 +1,6 @@
 """scan/audit/apply/check command implementations: the core "run the
 engine, print a summary table, render an HTML report" commands. apply
-additionally runs a pre/post verification diff (ciscvm_diff.py) and
+additionally runs a pre/post verification diff (cis_host_diff.py) and
 check runs a scan-only dry-run preview of what apply would fix.
 """
 
@@ -8,7 +8,7 @@ import json
 import os
 from datetime import datetime
 
-import ciscvm_diff
+import cis_host_diff
 from engine import run_engine
 from display import click_style, print_summary, print_result_table
 from report import render_report
@@ -145,7 +145,7 @@ def cmd_apply(args):
 
     # Apply + verify: compare pre/post scans so the user sees what was
     # actually fixed, what is still failing, and what regressed.
-    verify = ciscvm_diff.verify_remediation(pre_scan, post_data)
+    verify = cis_host_diff.verify_remediation(pre_scan, post_data)
     post_data["_verify"] = verify.to_dict()
     if not verify.is_empty():
         print("\n  ── Verification (pre vs post apply) ──")
@@ -179,7 +179,7 @@ def cmd_apply(args):
             f"verify-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
         os.makedirs(os.path.dirname(verify_path), exist_ok=True)
         with open(verify_path, "w", encoding="utf-8") as fh:
-            fh.write(ciscvm_diff.render_verify_html(
+            fh.write(cis_host_diff.render_verify_html(
                 verify, name=args.name, profile=args.profile, org=args.org))
         print(f"Verification report saved: {verify_path}")
     elif verify.warnings:

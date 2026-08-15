@@ -7,8 +7,9 @@ closed-loop and idempotency regression matrix, covering all 14
 supported OS engines (10 Linux + 4 Windows) without requiring real VMs
 or containers. This is test-only infrastructure — no production code
 changed as part of M0–M5, and it introduces no new runtime
-dependencies for `ciscvm` itself (the Windows fixtures need `pwsh` on
-the *test* machine only, and are skipped automatically if it's absent).
+   dependencies for `cis-host` itself (the Windows fixtures need `pwsh`
+   on the *test* machine only, and are skipped automatically if it's
+   absent).
 
 ### What's covered
 
@@ -92,8 +93,8 @@ them is out of scope for a fixture-framework milestone):
 14 top-level modules (`presets.py`, `catalog.py`, `engine.py`,
 `display.py`, `report.py`, `fleet.py`, `info.py`, `commands_scan.py`,
 `commands_watch.py`, `args.py`, `defaults.py`, `dispatch.py`, plus the
-pre-existing `ciscvm_config.py`/`ciscvm_diff.py`). `cis_cli.py` itself is
-now a 51-line entrypoint (`def main(): dispatch.run()`).
+pre-existing `cis_host_config.py`/`cis_host_diff.py`). `cis_cli.py`
+itself is now a 51-line entrypoint (`def main(): dispatch.run()`).
 
 This was a mechanical extraction — CLI flags, help text, exit codes, and
 output formatting are locked in by byte-for-byte snapshot tests
@@ -123,9 +124,9 @@ user-visible or API-visible differences from pre-refactor `cis_cli.py`.
 
 - **`pip install -e .` no longer crashes with `ModuleNotFoundError`.**
   A clean editable install previously failed on `cis-host list` (or any
-  command) with `ModuleNotFoundError: No module named 'ciscvm_diff'`,
+  command) with `ModuleNotFoundError: No module named 'cis_host_diff'`,
   because `pyproject.toml`'s `[tool.setuptools] py-modules` only listed
-  `cis_cli` and `ciscvm_config`. All local modules are now registered,
+  `cis_cli` and `cis_host_config`. All local modules are now registered,
   and `tests/test_packaging.py` regression-tests this by walking the
   local-import graph transitively from `cis_cli.py`.
 

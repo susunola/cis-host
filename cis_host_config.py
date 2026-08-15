@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load and merge ciscvm.toml configuration with CLI arguments."""
+"""Load and merge cis-host.toml configuration with CLI arguments."""
 
 import os
 
@@ -18,7 +18,7 @@ def _import_tomllib():
 
 
 def load(path):
-    """Load a ciscvm.toml file and return a normalized dict.
+    """Load a cis-host.toml file and return a normalized dict.
 
     Returns None if the file does not exist. Raises RuntimeError on parse
     failure when tomllib/tomli is unavailable.
@@ -28,7 +28,7 @@ def load(path):
     tomllib = _import_tomllib()
     if tomllib is None:
         raise RuntimeError(
-            "ciscvm.toml requires Python 3.11+ or `pip install tomli`"
+            "cis-host.toml requires Python 3.11+ or `pip install tomli`"
         )
     with open(path, "rb") as fh:
         return tomllib.load(fh)
@@ -71,13 +71,13 @@ def _set_if_none(args, attr, value):
 
 
 def merge(args, config_path=None):
-    """Merge ciscvm.toml defaults into argparse args object.
+    """Merge cis-host.toml defaults into argparse args object.
 
     CLI arguments always take precedence over config-file values. Only keys
     that are not set (None) on args are filled from the config.
     """
     if config_path is None:
-        config_path = os.environ.get("CISCVM_CONFIG", "ciscvm.toml")
+        config_path = os.environ.get("CIS_HOST_CONFIG", "cis-host.toml")
 
     cfg = load(config_path)
     if not cfg:

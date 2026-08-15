@@ -22,7 +22,7 @@ def _add_common_args(p):
                    help="Path to sections.json (for report rendering)")
     p.add_argument("--template", default="",
                    help="Path to report.html.j2 template")
-    # Defaults are intentionally None here so that ciscvm.toml can supply
+    # Defaults are intentionally None here so that cis-host.toml can supply
     # values; hard-coded fallbacks are applied after config merging.
     p.add_argument("--profile", default=None, choices=["L1", "L2"],
                    help="Benchmark profile level (default: L1)")
@@ -115,7 +115,7 @@ Examples:
     )
 
     ap.add_argument("--config", default="",
-                    help="Path to ciscvm.toml config file (default: ./ciscvm.toml or $CISCVM_CONFIG)")
+                    help="Path to cis-host.toml config file (default: ./cis-host.toml or $CIS_HOST_CONFIG)")
 
     sub = ap.add_subparsers(dest="command", help="Mode: list | scan | apply | audit | check | fleet | info")
     sub.required = True
@@ -153,7 +153,7 @@ Examples:
     _add_common_args(p_fleet_scan)
     _add_tailoring_args(p_fleet_scan)
     p_fleet_scan.add_argument("--fleet-hosts", default=None,
-                              help="Comma-separated fleet host list (or use [fleet] hosts in ciscvm.toml)")
+                              help="Comma-separated fleet host list (or use [fleet] hosts in cis-host.toml)")
     p_fleet_scan.add_argument("--fleet-remote", default=None, action="store_true",
                               help="Run engine over SSH on each host (requires [fleet] remote config)")
 

@@ -159,7 +159,7 @@ def cmd_fleet_scan(args):
     """FLEET SCAN mode: scan multiple hosts and aggregate a fleet report."""
     hosts = load_fleet_hosts(args)
     if not hosts:
-        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in ciscvm.toml",
+        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in cis-host.toml",
               file=sys.stderr)
         sys.exit(1)
 
@@ -180,7 +180,7 @@ def cmd_fleet_scan(args):
             data = run_remote_scan(host, args, fleet_cfg)
         else:
             # Local mode: run on this machine but tag results with the host label.
-            # Useful for testing and for CI fleets that run ciscvm inside each node.
+            # Useful for testing and for CI fleets that run cis-host inside each node.
             data, _ = run_engine(args, "scan")
             if data:
                 data["host"] = data.get("host", {})
