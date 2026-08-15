@@ -95,6 +95,12 @@ cis-host diff output/result-before.json output/result-after.json --exit-code
 # Periodic watch: scan every 6h, report only when configuration drifts
 cis-host watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 
+# Remediate: apply fixes only for rules that failed in a previous scan
+cis-host remediate --os rhel9 --result output/result-scan-*.json
+
+# Pack per-run evidence (result JSON, config, host facts, per-rule detail)
+cis-host scan --os rhel9 --evidence-dir output/evidence
+
 # L2 full apply + allow disruptive rules + audit log
 cis-host apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
@@ -131,14 +137,23 @@ strict = false      # exit non-zero when residual failures remain
 timeout = 600
 allow_disruptive = false
 backup_dir = ""
+audit_log = ""
+evidence_dir = ""    # pack evidence tar.gz per run into this directory (empty = off)
 
 # Tailor rule inputs (keys must match rule params)
 [variables]
 # min_len = 14
 
-# Waive specific rules
+# Waive specific rules. Value may be a plain string or a table with an
+# optional `expires` date (YYYY-MM-DD) — an expired waiver no longer exempts
+# the rule, which is assessed normally and flagged as expired.
 [waivers]
 # "1.1.1.1" = "legacy app"
+# "5.2.10" = { reason = "managed elsewhere", expires = "2026-12-31" }
+
+# Notification — POST a JSON run summary after scan/audit/apply/remediate
+[notify]
+webhook_url = ""     # empty = off
 
 # Fleet scan defaults
 [fleet]
@@ -337,9 +352,27 @@ cis-host scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approv
   ```bash
   cis-host scan --os rhel9 --waivers '{"1.1.1.1": "legacy app exception"}'
   ```
+  Waivers may carry an `expires` date (`"5.2.10": {"reason": "...", "expires": "2026-12-31"}`).
+  **Expired waivers no longer exempt the rule** — it is assessed normally and
+  flagged as `[waiver expired]` in the table/report. Use
+  `cis-host audit --fail-on-expired-waiver` to make an expired waiver fail the gate.
 - **Simulate** — dry-run apply mode that reports what would change without touching the system:
   ```bash
   cis-host apply --os rhel9 --simulate
+  ```
+- **Remediate** — apply fixes only for the rules that failed in a previous scan:
+  ```bash
+  cis-host remediate --os rhel9 --result output/result-scan-*.json
+  ```
+- **Evidence snapshot** — pack the result JSON, effective config, host facts, and
+  per-rule detail into `<hostname>-<timestamp>-evidence.tar.gz`:
+  ```bash
+  cis-host scan --os rhel9 --evidence-dir output/evidence
+  ```
+- **Webhook notify** — POST a JSON run summary after `scan`/`audit`/`apply`/`remediate`
+  (fire-and-warn, never blocks the run):
+  ```bash
+  cis-host scan --os rhel9 --webhook https://hooks.example.com/hook
   ```
 
 ## Export Formats
@@ -351,7 +384,11 @@ python3 scripts/export_sarif.py   output/result-scan-*.json output/findings.sari
 python3 scripts/export_xccdf.py   output/result-scan-*.json output/findings.xccdf.xml
 python3 scripts/export_junit.py   output/result-scan-*.json output/findings.junit.xml
 python3 scripts/export_prometheus.py output/result-scan-*.json
+python3 scripts/export_pdf.py     output/report-*.html output/report.pdf   # requires `pip install -e .[pdf]`
 python3 scripts/append_history.py output/result-scan-*.json history.jsonl
+python3 scripts/plot_history.py   history.jsonl output/history.html        # SVG trend dashboard
+python3 scripts/export_tailoring.py cis-host.toml tailoring.xml             # XCCDF 1.2 tailoring export
+python3 scripts/import_tailoring.py tailoring.xml cis-host-tailoring.toml   # reverse import
 ```
 
 ## Privilege Modes
