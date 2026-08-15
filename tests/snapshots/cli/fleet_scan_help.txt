@@ -1,0 +1,59 @@
+usage: cis_cli.py fleet scan [-h]
+                             [--os {rhel10,rhel8,rhel9,sles15,sles16,tencentos3,tencentos4,ubuntu2004,ubuntu2204,ubuntu2404,win2016,win2019,win2022,win2025}]
+                             [--engine ENGINE] [--catalog CATALOG]
+                             [--guidance GUIDANCE] [--sections SECTIONS]
+                             [--template TEMPLATE] [--profile {L1,L2}]
+                             [--platform {server,workstation,all}]
+                             [--name NAME] [--version VERSION] [--org ORG]
+                             [--include INCLUDE] [--exclude EXCLUDE]
+                             [--sections-filter SECTIONS_FILTER]
+                             [--families FAMILIES] [--output OUTPUT]
+                             [--format {html,cli,both}] [--copy-json]
+                             [--audit-log AUDIT_LOG] [--timeout TIMEOUT]
+                             [--no-prescan] [--strict] [--variables VARIABLES]
+                             [--waivers WAIVERS] [--fleet-hosts FLEET_HOSTS]
+                             [--fleet-remote]
+
+options:
+  -h, --help            show this help message and exit
+  --os {rhel10,rhel8,rhel9,sles15,sles16,tencentos3,tencentos4,ubuntu2004,ubuntu2204,ubuntu2404,win2016,win2019,win2022,win2025}
+                        OS preset (auto-fills paths): rhel10, rhel8, rhel9,
+                        sles15, sles16, tencentos3, tencentos4, ubuntu2004,
+                        ubuntu2204, ubuntu2404, win2016, win2019, win2022,
+                        win2025
+  --engine ENGINE       Path to cis_engine.py (Linux) or cis_engine.ps1
+                        (Windows). Required if --os not used.
+  --catalog CATALOG     Path to rules.json. Required if --os not used.
+  --guidance GUIDANCE   Path to guidance.json (for report rendering)
+  --sections SECTIONS   Path to sections.json (for report rendering)
+  --template TEMPLATE   Path to report.html.j2 template
+  --profile {L1,L2}     Benchmark profile level (default: L1)
+  --platform {server,workstation,all}
+                        Target platform (default: server)
+  --name NAME           Benchmark display name
+  --version VERSION     Benchmark version for report footer
+  --org ORG             Organization name for report header
+  --include INCLUDE     Comma-separated rule IDs to include (e.g. 1.1.1,1.1.2)
+  --exclude EXCLUDE     Comma-separated rule IDs to exclude
+  --sections-filter SECTIONS_FILTER
+                        Comma-separated section prefixes to filter (e.g.
+                        1.1,5)
+  --families FAMILIES   Comma-separated rule families to filter
+  --output OUTPUT       Output directory for reports (default: ./output)
+  --format {html,cli,both}
+                        Output format: html, cli, or both (default: both)
+  --copy-json           Also save result JSON alongside the HTML report
+  --audit-log AUDIT_LOG
+                        Write audit log (JSON-lines) to this path
+  --timeout TIMEOUT     Engine execution timeout in seconds (default: 600)
+  --no-prescan          Skip pre-scan baseline in apply mode
+  --strict              Exit non-zero when residual failures remain
+  --variables VARIABLES
+                        JSON file or inline JSON with rule variable overrides
+  --waivers WAIVERS     JSON file or inline JSON mapping rule IDs to waiver
+                        reasons/objects
+  --fleet-hosts FLEET_HOSTS
+                        Comma-separated fleet host list (or use [fleet] hosts
+                        in ciscvm.toml)
+  --fleet-remote        Run engine over SSH on each host (requires [fleet]
+                        remote config)

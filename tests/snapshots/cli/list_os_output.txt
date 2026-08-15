@@ -1,0 +1,20 @@
+
+Supported OS presets:
+
+OS             Engine     Benchmark
+----------------------------------------------------------------------
+rhel10         python     CIS Red Hat Enterprise Linux 10 Benchmark
+rhel8          python     CIS Red Hat Enterprise Linux 8 Benchmark
+rhel9          python     CIS Red Hat Enterprise Linux 9 Benchmark
+sles15         python     CIS SUSE Linux Enterprise 15 Benchmark
+sles16         python     CIS SUSE Linux Enterprise 16 Benchmark
+tencentos3     python     CIS TencentOS Server 3 Benchmark
+tencentos4     python     CIS TencentOS Server 4 Benchmark
+ubuntu2004     python     CIS Ubuntu Linux 20.04 LTS Benchmark
+ubuntu2204     python     CIS Ubuntu Linux 22.04 LTS Benchmark
+ubuntu2404     python     CIS Ubuntu Linux 24.04 LTS Benchmark
+win2016        powershell CIS Microsoft Windows Server 2016 Benchmark
+win2019        powershell CIS Microsoft Windows Server 2019 Benchmark
+win2022        powershell CIS Microsoft Windows Server 2022 Benchmark
+win2025        powershell CIS Microsoft Windows Server 2025 Benchmark
+

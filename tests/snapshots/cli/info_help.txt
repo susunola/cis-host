@@ -1,0 +1,21 @@
+usage: cis_cli.py info [-h]
+                       [--os {rhel10,rhel8,rhel9,sles15,sles16,tencentos3,tencentos4,ubuntu2004,ubuntu2204,ubuntu2404,win2016,win2019,win2022,win2025}]
+                       [--engine ENGINE] [--catalog CATALOG]
+                       [--guidance GUIDANCE] [--sections SECTIONS]
+                       [--template TEMPLATE] [--name NAME] --id RULE_ID
+                       [--format {html,cli}] [--output OUTPUT]
+
+options:
+  -h, --help            show this help message and exit
+  --os {rhel10,rhel8,rhel9,sles15,sles16,tencentos3,tencentos4,ubuntu2004,ubuntu2204,ubuntu2404,win2016,win2019,win2022,win2025}
+                        OS preset (auto-fills paths)
+  --engine ENGINE       Path to cis_engine.py (Linux) or cis_engine.ps1
+                        (Windows).
+  --catalog CATALOG     Path to rules.json.
+  --guidance GUIDANCE   Path to guidance.json (for description/remediation)
+  --sections SECTIONS   Path to sections.json (for chapter names)
+  --template TEMPLATE   Path to report.html.j2 template (for HTML mode)
+  --name NAME           Benchmark display name
+  --id RULE_ID          Rule ID to view (e.g. 1.1.1.1)
+  --format {html,cli}   Output format: cli (default) or html
+  --output OUTPUT       Output directory for HTML (default: ./output)

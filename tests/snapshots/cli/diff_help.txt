@@ -1,0 +1,21 @@
+usage: cis_cli.py diff [-h] [--name NAME] [--profile PROFILE] [--org ORG]
+                       [--output OUTPUT] [--format {html,cli,both}]
+                       [--exit-code]
+                       BEFORE_JSON AFTER_JSON
+
+positional arguments:
+  BEFORE_JSON           Baseline scan result JSON (e.g. from --copy-json or
+                        audit)
+  AFTER_JSON            Latest scan result JSON
+
+options:
+  -h, --help            show this help message and exit
+  --name NAME           Benchmark display name for the report
+  --profile PROFILE     Profile label for the report
+  --org ORG             Organization name for the report
+  --output OUTPUT       Output directory for the drift report (default:
+                        ./output)
+  --format {html,cli,both}
+                        Output format: html, cli, or both (default: both)
+  --exit-code           Exit non-zero (2) when drift or failing rules remain —
+                        CI gate
