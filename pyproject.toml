@@ -40,7 +40,7 @@ dev = [
 ]
 
 [project.scripts]
-ciscvm = "cis_cli:main"
+cis-host = "cis_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/susunola/cis-host"

@@ -259,15 +259,15 @@ cis-host/
 
 ## 漂移检测、验证与监控
 
-**`ciscvm diff`** 对比两份扫描结果 JSON，把每条规则的变更分类——新增失败（漂移）、回退、恢复、豁免变化——输出 CLI 摘要与自包含的 HTML 报告。CI 里加 `--exit-code`，出现漂移就让流水线失败：
+**`cis-host diff`** 对比两份扫描结果 JSON，把每条规则的变更分类——新增失败（漂移）、回退、恢复、豁免变化——输出 CLI 摘要与自包含的 HTML 报告。CI 里加 `--exit-code`，出现漂移就让流水线失败：
 
 ```bash
 python3 cis_cli.py diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
 ```
 
-**Apply 验证** —— `ciscvm apply` 之后，前后两次扫描对比会报告哪些规则真正被修复、哪些仍然失败，以及最关键的一点：哪些规则因修复本身而**回退（regressed）**。独立的 `verify-*.html` 报告与 apply 报告一同生成。
+**Apply 验证** —— `cis-host apply` 之后，前后两次扫描对比会报告哪些规则真正被修复、哪些仍然失败，以及最关键的一点：哪些规则因修复本身而**回退（regressed）**。独立的 `verify-*.html` 报告与 apply 报告一同生成。
 
-**`ciscvm watch`** 周期扫描循环，采用「仅变化 + 去重告警」（边沿触发，类似 Wazuh SCA）：规则开始失败时告警一次，恢复之后才会再次告警——持续失败不会反复打扰。静默轮次只输出一行；`--json` 每行输出一条机器可读事件，便于接入 SIEM / 自动化：
+**`cis-host watch`** 周期扫描循环，采用「仅变化 + 去重告警」（边沿触发，类似 Wazuh SCA）：规则开始失败时告警一次，恢复之后才会再次告警——持续失败不会反复打扰。静默轮次只输出一行；`--json` 每行输出一条机器可读事件，便于接入 SIEM / 自动化：
 
 ```bash
 python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
