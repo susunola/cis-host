@@ -8,7 +8,7 @@ This project automates CIS Benchmark compliance checks and remediations. Contrib
 
 - **New OS support** — adding a new Linux distribution or Windows Server version
 - **Rule fixes** — correcting check logic, false positives, or remediation issues
-- **CLI improvements** — enhancements to `cis_cli.py`
+- **CLI improvements** — enhancements to `cis_cli.py` and its supporting modules (`args.py`, `dispatch.py`, `commands_scan.py`, `commands_watch.py`, `fleet.py`, `info.py`, `report.py`, `display.py`, `engine.py`, `presets.py`, `catalog.py`, `defaults.py`)
 - **Report templates** — improving the HTML/CSV report experience
 - **Documentation** — fixing errors or improving clarity across the 4 README languages
 

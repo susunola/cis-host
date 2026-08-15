@@ -191,7 +191,19 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 cis-host/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
-├── cis_cli.py                      # 本地 CLI（--os 切换目标）
+├── cis_cli.py                      # 本地 CLI 入口（--os 切换目标）
+├── args.py                         # argparse 参数声明（所有子命令）
+├── dispatch.py                     # 运行期编排与命令分发
+├── defaults.py                     # CLI 默认值
+├── commands_scan.py                # scan/audit/apply/check 命令
+├── commands_watch.py               # diff/watch 命令
+├── fleet.py                        # 跨主机批量扫描
+├── info.py                         # 规则详情查询（info 命令）
+├── report.py                       # HTML/CLI 报告渲染
+├── engine.py                       # 引擎子进程调用
+├── display.py                      # CLI 表格/颜色输出
+├── presets.py                      # OS_PRESETS 注册表
+├── catalog.py                      # 规则目录查询
 ├── ciscvm_diff.py                  # 漂移检测 / 修复验证 / 周期监控逻辑
 ├── ciscvm_config.py                # ciscvm.toml 加载与合并
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus 导出
