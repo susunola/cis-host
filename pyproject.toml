@@ -61,4 +61,4 @@ Issues = "https://github.com/susunola/cis-host/issues"
 # and the runtime path resolution is updated to look inside the installed
 # package.
 [tool.setuptools]
-py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display", "report", "fleet", "info"]
+py-modules = ["cis_cli", "ciscvm_config", "ciscvm_diff", "presets", "catalog", "engine", "display", "report", "fleet", "info", "commands_scan", "commands_watch"]
