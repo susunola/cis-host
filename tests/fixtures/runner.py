@@ -77,6 +77,89 @@ def run_closed_loop(harness: EngineHarness, rule: Dict[str, Any],
         calls=list(harness.fs.calls))
 
 
+def run_idempotency_check(harness: EngineHarness, rule: Dict[str, Any],
+                          generator: FixtureGenerator) -> FixtureResult:
+    """Seed a non-compliant system, apply twice in a row (mode="apply"
+    both times, same FakeSystem/Ctx-per-call as run_closed_loop), and
+    verify:
+      1. apply #1 -> apply_status == "applied", status flips to "pass"
+      2. apply #2 -> apply_status == "already" (no second remediation
+         attempted) AND the on-disk/state footprint left by fixture #1
+         is byte-for-byte unchanged (fs.files/fs.services/fs.kmods/
+         fs.sysctls/fs.packages all compare equal before vs. after
+         apply #2)
+
+    This is the M5 gate: a fix that "succeeds" on the first apply but
+    silently mutates state again on every subsequent apply (e.g.
+    re-appending a line to a config file instead of checking whether
+    it is already present) would pass M0-M4's closed-loop check yet
+    still fail this idempotency check -- exactly the class of bug this
+    milestone exists to catch before it reaches a release.
+    """
+    rule_id = rule["id"]
+    family = rule["family"]
+    generator.seed_noncompliant(harness.fs, rule.get("params") or {})
+
+    apply1 = harness.run_rule(rule, mode="apply")
+    if apply1["apply_status"] != "applied" or apply1["status"] != "pass":
+        return FixtureResult(
+            rule_id=rule_id, family=family, ok=False,
+            apply_status=apply1["apply_status"],
+            apply_detail=apply1["apply_detail"],
+            rescan_status=apply1["status"],
+            message="first apply did not succeed as expected: apply_status=%r "
+                    "status=%r (detail: %s)"
+                    % (apply1["apply_status"], apply1["status"], apply1["detail"]),
+            calls=list(harness.fs.calls))
+
+    snapshot_before = _snapshot(harness.fs)
+    apply2 = harness.run_rule(rule, mode="apply")
+    snapshot_after = _snapshot(harness.fs)
+
+    if apply2["apply_status"] != "already":
+        return FixtureResult(
+            rule_id=rule_id, family=family, ok=False,
+            apply_status=apply2["apply_status"],
+            apply_detail=apply2["apply_detail"],
+            rescan_status=apply2["status"],
+            message="second apply on an already-fixed system expected "
+                    "apply_status 'already', got %r (detail: %s) -- the fix "
+                    "is not idempotent at the apply_status level"
+                    % (apply2["apply_status"], apply2["apply_detail"]),
+            calls=list(harness.fs.calls))
+
+    if snapshot_before != snapshot_after:
+        return FixtureResult(
+            rule_id=rule_id, family=family, ok=False,
+            apply_status=apply2["apply_status"],
+            message="second apply reported apply_status 'already' but still "
+                    "mutated system state -- before: %r, after: %r"
+                    % (snapshot_before, snapshot_after),
+            calls=list(harness.fs.calls))
+
+    return FixtureResult(
+        rule_id=rule_id, family=family, ok=True,
+        apply_status=apply2["apply_status"], rescan_status=apply2["status"],
+        calls=list(harness.fs.calls))
+
+
+def _snapshot(fs):
+    """Cheap equality snapshot of every piece of mutable state a
+    FixtureGenerator/check/fix function can touch, for idempotency
+    comparison. Deliberately excludes fs.calls (the recorded command
+    log), since replaying the *same* idempotent fix a second time is
+    expected to issue read-only verification commands again -- what
+    must NOT change is the actual system state those commands observe.
+    """
+    return (
+        dict(fs.files),
+        {k: dict(v) for k, v in fs.services.items()},
+        {k: dict(v) for k, v in fs.kmods.items()},
+        dict(fs.sysctls),
+        set(fs.packages),
+    )
+
+
 def run_already_compliant(harness: EngineHarness, rule: Dict[str, Any],
                           generator: FixtureGenerator) -> FixtureResult:
     """Seed an already-compliant system and verify:

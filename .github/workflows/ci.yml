@@ -31,7 +31,37 @@ jobs:
           done
 
       - name: Run pytest
-        run: pytest -v
+        run: pytest -v --ignore=tests/fixtures
+
+      - name: Rule verification matrix (release gate)
+        run: |
+          # M0-M5: scan -> apply -> re-scan closed-loop + idempotency
+          # regression matrix, across all 14 OS engines (10 Linux via
+          # in-process FakeSystem, 4 Windows via pwsh + FakeWindowsSystem).
+          # Kept as its own step (rather than folded into the "Run
+          # pytest" step above) so this specific gate's pass/fail is
+          # visible on its own in the Actions UI, and so it gets its
+          # own skip-detection below.
+          #
+          # GitHub's ubuntu-latest runner image ships PowerShell (pwsh)
+          # pre-installed; fail loudly here rather than letting the
+          # Windows fixture tests silently skip if that ever changes,
+          # since a skip would quietly drop this gate's Windows coverage.
+          command -v pwsh || { echo "pwsh not found - Windows fixture tests would be skipped"; exit 1; }
+          pytest tests/fixtures/ -v \
+            --junitxml=/tmp/fixture-matrix-junit.xml
+          # Defense in depth: even with pwsh confirmed present above,
+          # explicitly fail the build if any fixture test still got
+          # skipped for any other reason, instead of trusting a green
+          # exit code that might be hiding silently-skipped coverage.
+          python -c "
+          import xml.etree.ElementTree as ET
+          root = ET.parse('/tmp/fixture-matrix-junit.xml').getroot()
+          skipped = int(root.get('skipped', 0))
+          if skipped:
+              raise SystemExit('%d fixture test(s) were skipped - release gate requires full coverage' % skipped)
+          print('Rule verification matrix: 0 skipped, all fixture tests ran')
+          "
 
       - name: Validate JSON catalogs
         run: python scripts/validate_json.py

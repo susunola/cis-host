@@ -90,3 +90,53 @@ def run_already_compliant(harness: WinHarness, rule: Dict[str, Any], generator) 
         message="" if ok else (
             "expected apply_status 'already' on an already-compliant "
             "system, got %r" % fix_res["apply_status"]))
+
+
+def run_idempotency_check(harness: WinHarness, rule: Dict[str, Any], generator) -> WinFixtureResult:
+    """Seed a non-compliant system, apply twice in a row within a single
+    pwsh process/mutated state (via WinHarness.fix_twice()), and verify:
+      1. apply #1 -> apply_status "applied", status flips to "pass"
+      2. apply #2 -> apply_status "already" AND the fake registry/
+         secpol/user_rights/auditpol/firewall snapshot is unchanged
+         between the two applies
+
+    Mirrors the Linux runner.run_idempotency_check() contract, adapted
+    to the Windows harness's single-process-per-test-case model (see
+    win_harness.WinHarness.fix_twice()'s docstring for why this can't
+    be split into two separate fix() calls the way it might first
+    appear to parallel run_closed_loop()'s two-step check()+fix()).
+    """
+    rule_id, family = rule["id"], rule["family"]
+    params = rule.get("params") or {}
+    state = generator.seed_noncompliant(params)
+
+    result = harness.fix_twice(rule, state)
+
+    if result["apply_status_1"] != "applied" or result["status_1"] != "pass":
+        return WinFixtureResult(
+            rule_id=rule_id, family=family, ok=False,
+            apply_status=result["apply_status_1"],
+            message="first apply did not succeed as expected: "
+                    "apply_status=%r status=%r"
+                    % (result["apply_status_1"], result["status_1"]))
+
+    if result["apply_status_2"] != "already":
+        return WinFixtureResult(
+            rule_id=rule_id, family=family, ok=False,
+            apply_status=result["apply_status_2"],
+            message="second apply on an already-fixed system expected "
+                    "apply_status 'already', got %r (detail: %s) -- the "
+                    "fix is not idempotent at the apply_status level"
+                    % (result["apply_status_2"], result["detail_2"]))
+
+    if result["snapshot_1"] != result["snapshot_2"]:
+        return WinFixtureResult(
+            rule_id=rule_id, family=family, ok=False,
+            apply_status=result["apply_status_2"],
+            message="second apply reported apply_status 'already' but "
+                    "still mutated system state -- before: %s, after: %s"
+                    % (result["snapshot_1"], result["snapshot_2"]))
+
+    return WinFixtureResult(
+        rule_id=rule_id, family=family, ok=True,
+        apply_status=result["apply_status_2"], rescan_status=result["status_2"])
