@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@main/docs/logo-full.png" alt="cis-host" width="260">
+  <img src="https://cdn.jsdelivr.net/gh/susunola/cis-host@main/docs/logo-full.png" alt="cis-host" width="380">
 </p>
 
 <p align="center">
