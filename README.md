@@ -17,16 +17,6 @@
   <img src="https://img.shields.io/badge/deps-zero-00B4D8" alt="Zero third-party dependencies">
 </p>
 
-<p align="center">
-  <strong>Part of the <a href="https://github.com/susunola">oh baseline</a> hardening suite</strong>
-</p>
-
-<p align="center">
-  <a href="https://github.com/susunola/ohbs-image"><img src="https://img.shields.io/badge/ohbs--image-golden%20image%20builder-1f6feb?style=flat-square&logo=packer&logoColor=white" alt="ohbs-image — golden image builder"></a>&nbsp;
-  <a href="https://github.com/susunola/ohbs-host"><img src="https://img.shields.io/badge/ohbs--host-CIS%20Benchmark%20CLI-1f6feb?style=flat-square&logo=ansible&logoColor=white" alt="ohbs-host — CIS Benchmark CLI"></a>&nbsp;
-  <a href="https://github.com/susunola/ohbs-cloud"><img src="https://img.shields.io/badge/ohbs--cloud-Terraform%20policy-1f6feb?style=flat-square&logo=terraform&logoColor=white" alt="ohbs-cloud — Terraform hardening policy"></a>
-</p>
-
 # oh baseline host
 
 > **Repository / CLI / package:** `ohbs-host` · Full name: **oh baseline host** — part of the **oh baseline** (ohbs) family.
@@ -502,3 +492,13 @@ ohbs-host/
 ## License
 
 Automation scripts are licensed under the [MIT License](LICENSE). CIS Benchmark content is copyright &copy; Center for Internet Security, Inc. and used under their terms of use.
+
+<p align="center">
+  <strong>Part of the <a href="https://github.com/susunola">oh baseline</a> hardening suite</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/susunola/ohbs-image"><img src="https://img.shields.io/badge/ohbs--image-golden%20image%20builder-1f6feb?style=flat-square&logo=packer&logoColor=white" alt="ohbs-image — golden image builder"></a>&nbsp;
+  <a href="https://github.com/susunola/ohbs-host"><img src="https://img.shields.io/badge/ohbs--host-CIS%20Benchmark%20CLI-1f6feb?style=flat-square&logo=ansible&logoColor=white" alt="ohbs-host — CIS Benchmark CLI"></a>&nbsp;
+  <a href="https://github.com/susunola/ohbs-cloud"><img src="https://img.shields.io/badge/ohbs--cloud-Terraform%20policy-1f6feb?style=flat-square&logo=terraform&logoColor=white" alt="ohbs-cloud — Terraform hardening policy"></a>
+</p>
