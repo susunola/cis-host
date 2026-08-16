@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Unit tests for fleet.py (extracted from cis_cli.py in PR5).
+"""Unit tests for fleet.py (extracted from ohbs_cli.py in PR5).
 
 Covers _normalize_list/load_fleet_hosts host-list parsing, the
 aggregate_fleet_results() rollup math (per-host summaries -> fleet totals
 and score), and render_fleet_report()'s use of templates/fleet_report.html.j2
-(replacing the inline HTML string that used to live in cis_cli.py).
+(replacing the inline HTML string that used to live in ohbs_cli.py).
 """
 
 import os

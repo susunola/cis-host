@@ -11,12 +11,12 @@ import pytest
 # importing it does not start the CLI.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ENGINE_PATH = os.path.join(
-    _HERE, "..", "cis-rhel10-ansible", "roles", "cis_rhel10", "files", "cis_engine.py"
+    _HERE, "..", "ohbs-rhel10-ansible", "roles", "ohbs-rhel10", "files", "ohbs_engine.py"
 )
 
-_spec = importlib.util.spec_from_file_location("cis_engine_under_test", _ENGINE_PATH)
+_spec = importlib.util.spec_from_file_location("ohbs_engine_under_test", _ENGINE_PATH)
 engine = importlib.util.module_from_spec(_spec)
-sys.modules["cis_engine_under_test"] = engine
+sys.modules["ohbs_engine_under_test"] = engine
 _spec.loader.exec_module(engine)
 
 

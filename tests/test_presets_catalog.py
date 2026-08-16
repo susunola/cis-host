@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for presets.py and catalog.py (extracted from cis_cli.py in PR1)."""
+"""Unit tests for presets.py and catalog.py (extracted from ohbs_cli.py in PR1)."""
 
 import json
 import os
@@ -28,7 +28,7 @@ def test_os_presets_has_all_14_os():
 
 def test_os_presets_paths_resolve_to_real_files():
     """Every engine/catalog/guidance/sections/template path must exist on disk
-    (relative to the repo root), since cis_cli.py joins them with _SCRIPT_DIR."""
+    (relative to the repo root), since ohbs_cli.py joins them with _SCRIPT_DIR."""
     for os_id, preset in presets.OS_PRESETS.items():
         for key in ("engine", "catalog", "guidance", "sections", "template"):
             path = os.path.join(ROOT, preset[key])

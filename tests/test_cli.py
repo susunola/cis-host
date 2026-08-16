@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for cis_cli.py."""
+"""Tests for ohbs_cli.py."""
 
 import os
 import subprocess
@@ -8,7 +8,7 @@ import sys
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLI = os.path.join(ROOT, "cis_cli.py")
+CLI = os.path.join(ROOT, "ohbs_cli.py")
 
 
 def run(args, check=True):

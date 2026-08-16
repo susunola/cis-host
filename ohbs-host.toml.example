@@ -1,0 +1,59 @@
+# Example ohbs-host configuration file.
+# Copy to ohbs-host.toml and edit for your environment.
+# CLI arguments always override values from this file.
+
+[profile]
+os = "rhel9"
+profile = "L1"
+platform = "server"
+name = "CIS RHEL 9 Benchmark"
+version = "v2.0.0"
+org = "Example Org"
+
+[rules]
+# Comma-separated rule IDs, or TOML arrays
+include = []
+exclude = []
+sections = []
+families = []
+
+[output]
+format = "both"        # html | cli | both
+directory = "./output"
+copy_json = false
+strict = false         # exit non-zero if residual failures remain
+
+[engine]
+timeout = 600
+allow_disruptive = false
+backup_dir = ""
+audit_log = ""
+evidence_dir = ""      # pack evidence tar.gz per run into this directory (empty = off)
+
+# Tailor rule inputs. Keys must match param names in the rule catalog.
+[variables]
+# min_len = 14
+# max_login_retries = 3
+
+# Waive specific rules. Value may be a plain string (reason) or a table.
+[waivers]
+# "1.1.1.1" = "legacy application requirement"
+# "5.2.10" = { reason = "managed by another tool", approved_by = "security@example.com", expires = "2025-12-31" }
+
+# Alternative waiver layout (choose one style):
+# [waivers.rules]
+# "1.1.1.1" = { reason = "legacy app" }
+
+[audit]
+strict = true          # audit mode always exits non-zero on findings by default
+
+[notify]
+webhook_url = ""       # POST a JSON summary here after scan/audit/apply/remediate (empty = off)
+
+[fleet]
+hosts = []             # e.g. ["web1", "web2"]
+remote = false         # set true to run engine over SSH on each host
+user = "root"
+key = "~/.ssh/id_rsa"
+remote_engine = "/opt/ohbs-host/ohbs_engine.py"
+remote_catalog = "/opt/ohbs-host/rules.json"

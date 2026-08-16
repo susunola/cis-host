@@ -1,4 +1,4 @@
-"""Driver for running cis_engine.ps1's Invoke-Check/Invoke-Fix against
+"""Driver for running ohbs_engine.ps1's Invoke-Check/Invoke-Fix against
 FAKE_WINDOWS_SYSTEM_PS1 (see win_fake_system.py) via a single `pwsh`
 subprocess per test, using JSON on stdin/stdout to pass rule params and
 seed state in and get check/fix results back out.
@@ -11,11 +11,11 @@ Design notes:
     directory before dot-sourcing the engine, exactly mirroring what a
     real Windows host provides automatically.
   - The generated script dot-sources FAKE_WINDOWS_SYSTEM_PS1's function
-    definitions *before* dot-sourcing cis_engine.ps1, so PowerShell's
+    definitions *before* dot-sourcing ohbs_engine.ps1, so PowerShell's
     function-over-cmdlet resolution makes every Get-ItemProperty/
     secedit/auditpol/Get-NetFirewallProfile call inside the engine
     resolve to the fake instead of a real cmdlet/external command.
-  - cis_engine.ps1 itself runs its own full scan over the real
+  - ohbs_engine.ps1 itself runs its own full scan over the real
     rules.json on dot-source (that's just how the script is written --
     there's no function-only mode) and writes a throwaway result file;
     WinHarness points -Catalog/-Out at disposable temp paths and
@@ -94,7 +94,7 @@ def _ps_hashtable(d, value_is_dict=False):
 
 
 class WinHarness:
-    """Loads one Windows OS's real cis_engine.ps1 (dot-sourced after the
+    """Loads one Windows OS's real ohbs_engine.ps1 (dot-sourced after the
     FakeWindowsSystem functions) and drives Invoke-Check/Invoke-Fix
     against it via a fresh `pwsh` subprocess per call.
     """
@@ -175,7 +175,7 @@ class WinHarness:
         re-run Invoke-Check against the *same* mutated fake state (both
         happen inside one pwsh process, so registry/secedit/auditpol/
         firewall writes from Invoke-Fix are visible to the re-check --
-        mirroring how cis_engine.ps1's own apply-mode loop re-checks
+        mirroring how ohbs_engine.ps1's own apply-mode loop re-checks
         after a successful fix). Returns
         {"apply_status": ..., "status": ..., "detail": ...}.
         """

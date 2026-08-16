@@ -2,8 +2,8 @@
 kmod, sysctl, svc_enabled, svc_disabled, pkg_present.
 
 Each generator's seed_noncompliant()/seed_compliant() mirror exactly what
-the corresponding cis_engine.py check function inspects (see
-cis-ubuntu2204-ansible/roles/cis_ubuntu2204/files/cis_engine.py):
+the corresponding ohbs_engine.py check function inspects (see
+ohbs-ubuntu2204-ansible/roles/ohbs-ubuntu2204/files/ohbs_engine.py):
   - kmod:         c_kmod() looks at `modprobe --showconfig` (install/
                   blacklist directives) and `lsmod` (currently loaded).
   - sysctl:       c_sysctl() looks at `sysctl -n <key>` (runtime value)

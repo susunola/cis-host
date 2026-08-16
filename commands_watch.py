@@ -1,4 +1,4 @@
-"""diff/watch command implementations: pure logic lives in cis_host_diff.py
+"""diff/watch command implementations: pure logic lives in ohbs_host_diff.py
 (unit-testable, dataclass-typed); this module only wires CLI arguments to
 it — comparing two scan results for drift, or running a periodic
 change-only, de-duplicated watch session.
@@ -10,7 +10,7 @@ import subprocess
 import sys
 from datetime import datetime
 
-import cis_host_diff
+import ohbs_host_diff
 from display import click_style
 from engine import run_engine
 
@@ -32,10 +32,10 @@ def cmd_diff(args):
     """DIFF mode: compare two scan results and report configuration drift."""
     before = load_result_json(args.before)
     after = load_result_json(args.after)
-    report = cis_host_diff.diff_results(before, after)
+    report = ohbs_host_diff.diff_results(before, after)
 
     if args.format in ("cli", "both"):
-        print(cis_host_diff.render_cli(report))
+        print(ohbs_host_diff.render_cli(report))
 
     out_path = None
     if args.format in ("html", "both"):
@@ -44,7 +44,7 @@ def cmd_diff(args):
             f"drift-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as fh:
-            fh.write(cis_host_diff.render_html(report, name=args.name,
+            fh.write(ohbs_host_diff.render_html(report, name=args.name,
                                              profile=args.profile, org=args.org))
         print(f"Drift report saved: {out_path}")
 
@@ -90,7 +90,7 @@ def cmd_watch(args):
         print(f"║ Alert:   {args.alert_cmd}")
     print(f"╚{'═'*26}╝\n")
 
-    session = cis_host_diff.WatchSession(
+    session = ohbs_host_diff.WatchSession(
         scan=lambda: run_engine(args, "scan")[0],
         interval=interval,
         max_runs=getattr(args, "max_runs", 0),

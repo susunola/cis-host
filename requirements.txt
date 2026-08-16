@@ -1,5 +1,5 @@
-# cis-host — Python dependencies
-# Engine itself (cis_engine.py): zero third-party dependencies (Python 3 stdlib only).
-# cis_cli.py report generation requires Jinja2.
+# ohbs-host — Python dependencies
+# Engine itself (ohbs_engine.py): zero third-party dependencies (Python 3 stdlib only).
+# ohbs_cli.py report generation requires Jinja2.
 
 Jinja2>=2.10

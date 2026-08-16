@@ -1,7 +1,7 @@
 """M0 acceptance test: for ubuntu2204, drive one real rule per initial
 target family (kmod, sysctl, svc_enabled, svc_disabled, pkg_present)
 through the scan -> fail -> apply -> pass -> re-scan -> pass closed
-loop, using the *real* cis_engine.py business logic against an
+loop, using the *real* ohbs_engine.py business logic against an
 in-memory FakeSystem (see base.py, fake_system.py, families/core.py,
 runner.py in this directory).
 
@@ -22,7 +22,7 @@ from runner import run_already_compliant, run_closed_loop
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _CATALOG = os.path.join(
-    _REPO_ROOT, "cis-ubuntu2204-ansible", "roles", "cis_ubuntu2204", "files", "rules.json")
+    _REPO_ROOT, "ohbs-ubuntu2204-ansible", "roles", "ohbs-ubuntu2204", "files", "rules.json")
 
 TARGET_FAMILIES = ("kmod", "sysctl", "svc_enabled", "svc_disabled", "pkg_present")
 

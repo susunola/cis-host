@@ -2,7 +2,7 @@
 
 ## [Unreleased] — evidence, webhook, expired-waiver hygiene, remediate, exporters
 
-New runtime features (ported onto the modular `cis-host` structure):
+New runtime features (ported onto the modular `ohbs-host` structure):
 
 - **Expired-waiver hygiene (all 10 Linux engines).** A waiver whose
   `expires`/`expiration_date` is in the past no longer exempts the rule:
@@ -14,7 +14,7 @@ New runtime features (ported onto the modular `cis-host` structure):
 - **Evidence snapshot.** `scan`/`audit`/`apply` can pack the result JSON,
   effective config, host facts, and per-rule detail into
   `<hostname>-<timestamp>-evidence.tar.gz` via `--evidence-dir` (or
-  `[engine] evidence_dir` in `cis-host.toml`).
+  `[engine] evidence_dir` in `ohbs-host.toml`).
 - **Webhook notification.** After `scan`/`audit`/`apply`/`remediate`, a
   JSON run summary is POSTed to `--webhook` (or `[notify] webhook_url`).
   Delivery is fire-and-warn: failures never block or fail a run.
@@ -37,7 +37,7 @@ closed-loop and idempotency regression matrix, covering all 14
 supported OS engines (10 Linux + 4 Windows) without requiring real VMs
 or containers. This is test-only infrastructure — no production code
 changed as part of M0–M5, and it introduces no new runtime
-   dependencies for `cis-host` itself (the Windows fixtures need `pwsh`
+   dependencies for `ohbs-host` itself (the Windows fixtures need `pwsh`
    on the *test* machine only, and are skipped automatically if it's
    absent).
 
@@ -45,7 +45,7 @@ changed as part of M0–M5, and it introduces no new runtime
 
 - **Linux (10 OSes: tencentos3/4, rhel8/9/10, sles15/16, ubuntu2004/
   2204/2404):** `FakeSystem` (`tests/fixtures/fake_system.py`)
-  monkeypatches each OS's real `cis_engine.py` boundary functions
+  monkeypatches each OS's real `ohbs_engine.py` boundary functions
   (`sh`/`read`/`exists`/`atomic_write`/`conf_values`/`have`, plus
   `open()`/`glob.glob()`/`os.path.isfile`/`isdir` for the handful of
   families that bypass those helpers) so the real check/fix business
@@ -54,7 +54,7 @@ changed as part of M0–M5, and it introduces no new runtime
   `sysctl`, `svc_enabled`, `svc_disabled`, `pkg_present`, `mount_opt`,
   `kv_conf`, `banner`, `partition`, `audit_immutable`.
 - **Windows (4 OSes: win2016/2019/2022/2025):** since the Windows
-  engine is PowerShell (`cis_engine.ps1`), a parallel harness
+  engine is PowerShell (`ohbs_engine.ps1`), a parallel harness
   (`tests/fixtures/win_harness.py`) shells out to `pwsh`, dot-sourcing
   a block of fake cmdlet definitions (`win_fake_system.py`:
   `Get-ItemProperty`/`Set-ItemProperty`/`Test-Path`/`New-Item` for the
@@ -120,9 +120,9 @@ them is out of scope for a fixture-framework milestone):
 ### L4 real-host e2e (new) + a bug it found and fixed
 
 - **Added `scripts/real_e2e_test.py`** (modeled on the sister project's
-  `cis-image/scripts/real_e2e_test.py`): provisions a real OS (Docker
+  `ohbs-image/scripts/real_e2e_test.py`): provisions a real OS (Docker
   provider first — systemd `geerlingguy` images; cloud VM optional),
-  installs cis-host on it, and runs a real `scan → apply → re-scan →
+  installs ohbs-host on it, and runs a real `scan → apply → re-scan →
   idempotent-apply` cycle, then always tears the host down
   (`--keep-on-failure` escape hatch, `logs/e2e_last_instance.json`
   record, teardown on success/failure/Ctrl-C). Host-side assertions
@@ -131,10 +131,10 @@ them is out of scope for a fixture-framework milestone):
   regression, and that a second apply performs no new remediation.
   Wired into CI as a non-blocking step (Docker e2e for ubuntu2204).
   See `docs/TESTING.md` §10.
-- **Fixed: `cis-host scan/apply/audit --format html` crashed with
+- **Fixed: `ohbs-host scan/apply/audit --format html` crashed with
   `jinja2.exceptions.TemplateRuntimeError: No filter named 'bool' found`.**
   The real `report.html.j2` templates use the `| bool` Jinja2 filter
-  (a built-in under Ansible's Jinja2), but standalone cis-host renders
+  (a built-in under Ansible's Jinja2), but standalone ohbs-host renders
   with plain Jinja2, which has no `bool` filter. `report.render_report()`
   now registers one (`env.filters.setdefault("bool", bool)`), so every
   HTML report render no longer throws. Found by the L4 e2e test (the
@@ -142,25 +142,25 @@ them is out of scope for a fixture-framework milestone):
   template, so this went undetected until the e2e ran a real scan).
   Regression-tested in `tests/test_report.py`.
 
-## [Unreleased] — cis_cli.py modularization (PR1–PR8)
+## [Unreleased] — ohbs_cli.py modularization (PR1–PR8)
 
-`cis_cli.py` was refactored from a single 1730-line monolithic file into
+`ohbs_cli.py` was refactored from a single 1730-line monolithic file into
 14 top-level modules (`presets.py`, `catalog.py`, `engine.py`,
 `display.py`, `report.py`, `fleet.py`, `info.py`, `commands_scan.py`,
 `commands_watch.py`, `args.py`, `defaults.py`, `dispatch.py`, plus the
-pre-existing `cis_host_config.py`/`cis_host_diff.py`). `cis_cli.py`
+pre-existing `ohbs_host_config.py`/`ohbs_host_diff.py`). `ohbs_cli.py`
 itself is now a 51-line entrypoint (`def main(): dispatch.run()`).
 
 This was a mechanical extraction — CLI flags, help text, exit codes, and
 output formatting are locked in by byte-for-byte snapshot tests
 (`tests/test_cli_baseline.py`, added in PR0 before the refactor started)
 and pass unchanged across all 8 PRs. The items below are the only
-user-visible or API-visible differences from pre-refactor `cis_cli.py`.
+user-visible or API-visible differences from pre-refactor `ohbs_cli.py`.
 
 ### Changed (user-visible)
 
 - **Color output now respects `NO_COLOR` and TTY detection.**
-  Previously, `cis_cli.py` always emitted ANSI color escape codes,
+  Previously, `ohbs_cli.py` always emitted ANSI color escape codes,
   even when output was piped/redirected (e.g. into a log file or CI
   runner). `display.click_style()` now suppresses color codes when the
   `NO_COLOR` environment variable is set, or when stdout is not a TTY.
@@ -178,19 +178,19 @@ user-visible or API-visible differences from pre-refactor `cis_cli.py`.
 ### Fixed
 
 - **`pip install -e .` no longer crashes with `ModuleNotFoundError`.**
-  A clean editable install previously failed on `cis-host list` (or any
-  command) with `ModuleNotFoundError: No module named 'cis_host_diff'`,
+  A clean editable install previously failed on `ohbs-host list` (or any
+  command) with `ModuleNotFoundError: No module named 'ohbs_host_diff'`,
   because `pyproject.toml`'s `[tool.setuptools] py-modules` only listed
-  `cis_cli` and `cis_host_config`. All local modules are now registered,
+  `ohbs_cli` and `ohbs_host_config`. All local modules are now registered,
   and `tests/test_packaging.py` regression-tests this by walking the
-  local-import graph transitively from `cis_cli.py`.
+  local-import graph transitively from `ohbs_cli.py`.
 
 ### Known limitation (documented, not fixed in this refactor)
 
 - Building a real wheel/sdist (`python -m build`) does **not** package
   the 14 `cis-<os>-ansible/` directories or the top-level `templates/`
   directory, since they're consumed via filesystem paths relative to
-  `cis_cli.py` at runtime. Installing a published wheel would install
+  `ohbs_cli.py` at runtime. Installing a published wheel would install
   the CLI but `scan`/`apply`/`fleet`/`info --format html` would fail
   with "Template not found" / missing catalog errors. **Do not publish
   this package to PyPI** until this is fixed. See the comment above

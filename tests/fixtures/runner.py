@@ -1,5 +1,5 @@
 """Runner: drives one rule through the scan -> fail -> apply -> pass ->
-re-scan -> pass closed loop, using a real cis_engine.py's run_rule()
+re-scan -> pass closed loop, using a real ohbs_engine.py's run_rule()
 against a FakeSystem seeded by a FixtureGenerator.
 
 This is the single place that encodes what "the CI regression matrix

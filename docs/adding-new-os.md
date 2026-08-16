@@ -13,8 +13,8 @@ adding a new OS means copying the layout and tailoring the engine + rules.
    - `scan.yml`, `apply.yml`
    - `roles/cis_<os>/`
 2. Implement the engine:
-   - Linux: `roles/cis_<os>/files/cis_engine.py`
-   - Windows: `roles/cis_<os>/files/cis_engine.ps1`
+   - Linux: `roles/cis_<os>/files/ohbs_engine.py`
+   - Windows: `roles/cis_<os>/files/ohbs_engine.ps1`
 3. Add the catalog files:
    - `roles/cis_<os>/files/rules.json`
    - `roles/cis_<os>/files/guidance.json`

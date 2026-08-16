@@ -4,7 +4,7 @@ already covered by families/core.py) plus mount_opt, kv_conf, banner,
 partition, and audit_immutable.
 
 Each generator's seed_noncompliant()/seed_compliant() mirror exactly
-what the corresponding cis_engine.py check function inspects:
+what the corresponding ohbs_engine.py check function inspects:
   - mount_opt:       c_mount_opt() reads /proc/mounts (via readlines(),
                      faked); f_mount_opt() remounts live (fake `mount`
                      command) then rewrites /etc/fstab.

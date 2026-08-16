@@ -1,0 +1,16 @@
+---
+galaxy_info:
+  role_name: ohbs-sles16
+  author: CIS Automation
+  description: CIS Benchmark assessment for SUSE Linux Enterprise 16
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Suse
+      versions: ["16"]
+  galaxy_tags:
+    - cis
+    - security
+    - compliance
+    - hardening
+dependencies: []

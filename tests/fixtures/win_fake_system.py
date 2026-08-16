@@ -1,4 +1,4 @@
-"""In-memory fake for the Windows OS boundary that cis_engine.ps1's
+"""In-memory fake for the Windows OS boundary that ohbs_engine.ps1's
 Invoke-Check/Invoke-Fix call through: the registry (Get-ItemProperty/
 Set-ItemProperty/Test-Path/New-Item), secedit (security policy +
 user rights export/import), auditpol (advanced audit policy), and
@@ -7,9 +7,9 @@ Windows Firewall (Get-NetFirewallProfile/Set-NetFirewallProfile).
 Unlike the Linux FakeSystem (tests/fixtures/fake_system.py), which
 patches Python module-level function bindings via importlib, this
 fake is implemented as a block of PowerShell function definitions
-that get dot-sourced *before* cis_engine.ps1 itself is dot-sourced.
+that get dot-sourced *before* ohbs_engine.ps1 itself is dot-sourced.
 PowerShell resolves a locally-defined function over a same-named
-cmdlet/external command, so once these are defined, cis_engine.py's
+cmdlet/external command, so once these are defined, ohbs_engine.py's
 calls to Get-ItemProperty/secedit/auditpol/Get-NetFirewallProfile
 resolve to these fakes instead of touching a real Windows host -- the
 same "patch the boundary, keep the real check/fix logic" approach as
@@ -17,7 +17,7 @@ the Linux harness, adapted to PowerShell's dispatch rules instead of
 Python's module globals.
 
 See harness.py for the driver that emits a full PowerShell script
-(this fake + cis_engine.ps1, dot-sourced + one Invoke-Check/Invoke-Fix
+(this fake + ohbs_engine.ps1, dot-sourced + one Invoke-Check/Invoke-Fix
 call per step) and shells out to `pwsh` to run it.
 """
 
@@ -41,7 +41,7 @@ function Set-ItemProperty {
 
 function Test-Path {
     param($Path)
-    # cis_engine.ps1 only calls Test-Path on registry paths (to decide
+    # ohbs_engine.ps1 only calls Test-Path on registry paths (to decide
     # whether New-Item is needed before Set-ItemProperty) and on secedit
     # temp files it just wrote itself via the real filesystem -- so it is
     # safe to always report "exists" for registry-like paths and defer
@@ -90,7 +90,7 @@ function secedit {
         # matched the same flag name in a differently-ordered arg list)
         $cfgIdx2 = [array]::IndexOf($args, "/cfg")
         $cfgPath2 = $args[$cfgIdx2 + 1]
-        # cis_engine.ps1's own fix code writes the *updated* .inf via
+        # ohbs_engine.ps1's own fix code writes the *updated* .inf via
         # [System.IO.File]::WriteAllText($tmp2, $c) (see user-right's
         # Invoke-Fix), not Set-Content/Out-File -- and on a posix pwsh
         # host, .NET's File APIs treat a Windows-style "dir\file.inf"

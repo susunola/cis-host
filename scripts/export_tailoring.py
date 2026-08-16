@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Convert a cis-host.toml into an XCCDF 1.2 tailoring file.
+"""Convert a ohbs-host.toml into an XCCDF 1.2 tailoring file.
 
 Usage:
-    python3 scripts/export_tailoring.py cis-host.toml [tailoring.xml]
+    python3 scripts/export_tailoring.py ohbs-host.toml [tailoring.xml]
 
 The generated tailoring file can be consumed by OpenSCAP-compatible tools and
 records which rules are selected/deselected and which variable values override
@@ -36,9 +36,9 @@ def _clean_id(text):
     return re.sub(r"[^a-zA-Z0-9_.-]", "_", str(text))
 
 
-def export_tailoring(cfg, benchmark_uri="cis-host-benchmark", profile_id="xccdf_cis-host_profile_custom"):
+def export_tailoring(cfg, benchmark_uri="ohbs-host-benchmark", profile_id="xccdf_ohbs-host_profile_custom"):
     root = Element("{%s}Tailoring" % XCCDF_NS)
-    root.set("id", "xccdf_cis-host_tailoring_custom")
+    root.set("id", "xccdf_ohbs-host_tailoring_custom")
     root.set("version", "1.0")
 
     status = SubElement(root, "{%s}status" % XCCDF_NS)
@@ -54,13 +54,13 @@ def export_tailoring(cfg, benchmark_uri="cis-host-benchmark", profile_id="xccdf_
     title = SubElement(profile, "{%s}title" % XCCDF_NS)
     title.text = profile_cfg.get("name", "Custom CIS profile")
     desc = SubElement(profile, "{%s}description" % XCCDF_NS)
-    desc.text = "Tailored profile generated from cis-host.toml"
+    desc.text = "Tailored profile generated from ohbs-host.toml"
 
     # Variables
     variables = cfg.get("variables", {})
     for key, value in variables.items():
         rv = SubElement(profile, "{%s}refined-value" % XCCDF_NS)
-        rv.set("idref", "xccdf_cis-host_value_%s" % _clean_id(key))
+        rv.set("idref", "xccdf_ohbs-host_value_%s" % _clean_id(key))
         rv.set("selector", str(value))
 
     # Rule selection / deselection
@@ -70,12 +70,12 @@ def export_tailoring(cfg, benchmark_uri="cis-host-benchmark", profile_id="xccdf_
 
     for rid in include:
         sel = SubElement(profile, "{%s}select" % XCCDF_NS)
-        sel.set("idref", "xccdf_cis-host_rule_%s" % _clean_id(rid))
+        sel.set("idref", "xccdf_ohbs-host_rule_%s" % _clean_id(rid))
         sel.set("selected", "true")
 
     for rid in exclude:
         sel = SubElement(profile, "{%s}select" % XCCDF_NS)
-        sel.set("idref", "xccdf_cis-host_rule_%s" % _clean_id(rid))
+        sel.set("idref", "xccdf_ohbs-host_rule_%s" % _clean_id(rid))
         sel.set("selected", "false")
 
     # Waivers as remarks on deselected rules
@@ -84,7 +84,7 @@ def export_tailoring(cfg, benchmark_uri="cis-host-benchmark", profile_id="xccdf_
         waivers = waivers["rules"]
     for rid, waiver in waivers.items():
         mr = SubElement(profile, "{%s}refined-value" % XCCDF_NS)
-        mr.set("idref", "xccdf_cis-host_rule_%s_waiver" % _clean_id(rid))
+        mr.set("idref", "xccdf_ohbs-host_rule_%s_waiver" % _clean_id(rid))
         mr.set("selector", str(waiver))
 
     return root
@@ -110,11 +110,11 @@ def _pretty_xml(elem):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Export cis-host.toml as XCCDF tailoring file")
-    ap.add_argument("toml", help="Path to cis-host.toml")
-    ap.add_argument("output", nargs="?", help="Output XML path (default: cis-host-tailoring.xml)")
-    ap.add_argument("--benchmark-uri", default="cis-host-benchmark", help="Benchmark URI/href")
-    ap.add_argument("--profile-id", default="xccdf_cis-host_profile_custom", help="Tailoring profile ID")
+    ap = argparse.ArgumentParser(description="Export ohbs-host.toml as XCCDF tailoring file")
+    ap.add_argument("toml", help="Path to ohbs-host.toml")
+    ap.add_argument("output", nargs="?", help="Output XML path (default: ohbs-host-tailoring.xml)")
+    ap.add_argument("--benchmark-uri", default="ohbs-host-benchmark", help="Benchmark URI/href")
+    ap.add_argument("--profile-id", default="xccdf_ohbs-host_profile_custom", help="Tailoring profile ID")
     args = ap.parse_args()
 
     tomllib = _import_tomllib()
