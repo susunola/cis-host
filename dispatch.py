@@ -1,14 +1,14 @@
-"""Runtime orchestration: resolve --os preset paths, merge cis-host.toml
+"""Runtime orchestration: resolve --os preset paths, merge ohbs-host.toml
 config, apply hard-coded defaults, validate required paths/template, then
 dispatch to the selected command function and apply the strict/gate
 exit-code policy. This is the only module that wires together args.py,
-defaults.py, cis_host_config.py, and the individual command modules.
+defaults.py, ohbs_host_config.py, and the individual command modules.
 """
 
 import os
 import sys
 
-import cis_host_config
+import ohbs_host_config
 from presets import OS_PRESETS
 from defaults import apply_defaults
 from args import build_parser
@@ -76,15 +76,15 @@ def _resolve_os_preset(args, script_dir):
 def run(script_dir=None):
     """Parse CLI args, resolve config/defaults, dispatch to the selected
     command, and apply the strict/gate exit-code policy. Returns nothing;
-    exits the process directly (matching the previous cis_cli.py main()).
+    exits the process directly (matching the previous ohbs_cli.py main()).
     """
     script_dir = script_dir or _SCRIPT_DIR
     args = build_parser().parse_args()
 
     args = _resolve_os_preset(args, script_dir)
 
-    # Merge cis-host.toml defaults; CLI args always win
-    args = cis_host_config.merge(args, args.config if args.config else None)
+    # Merge ohbs-host.toml defaults; CLI args always win
+    args = ohbs_host_config.merge(args, args.config if args.config else None)
     args = apply_defaults(args)
 
     # Validate required paths (not needed for list/list-os/diff; diff only

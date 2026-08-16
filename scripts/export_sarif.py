@@ -43,9 +43,9 @@ def to_sarif(data):
         "runs": [{
             "tool": {
                 "driver": {
-                    "name": "cis-host",
+                    "name": "ohbs-host",
                     "version": data.get("engine_version", "1.0.0"),
-                    "informationUri": "https://github.com/susunola/cis-host"
+                    "informationUri": "https://github.com/susunola/ohbs-host"
                 }
             },
             "results": results,

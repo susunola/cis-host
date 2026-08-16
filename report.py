@@ -1,6 +1,6 @@
 """HTML report rendering: turns an engine result JSON into a self-contained
 report.html.j2-based report on disk, using the Ansible-mirrored template
-context (cis_result, cis_guidance, cis_sections, cis_host, ...).
+context (cis_result, cis_guidance, cis_sections, ohbs_host, ...).
 """
 
 import json
@@ -49,7 +49,7 @@ def render_report(result_data, args, mode, scan_result_file):
         "cis_benchmark_name": args.name,
         "cis_benchmark_version": args.version,
         "cis_org_name": args.org or "",
-        "cis_host": host,
+        "ohbs_host": host,
         "cis_run_human": now.strftime("%Y-%m-%d %H:%M:%S"),
         "cis_run_stamp": now.strftime("%Y%m%d-%H%M%S"),
         "cis_fleet_size": 1,
@@ -61,9 +61,9 @@ def render_report(result_data, args, mode, scan_result_file):
 
     env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
     # The report templates use `| bool` (as they would under Ansible's
-    # Jinja2, where it is a built-in filter). Standalone cis-host renders
+    # Jinja2, where it is a built-in filter). Standalone ohbs-host renders
     # with plain Jinja2, which has no `bool` filter -- register one so
-    # `cis-host scan/apply/audit --format html` does not crash on every
+    # `ohbs-host scan/apply/audit --format html` does not crash on every
     # report render. (Found by the L4 e2e test.)
     env.filters.setdefault("bool", bool)
     try:

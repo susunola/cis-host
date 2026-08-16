@@ -1,13 +1,13 @@
 """Fixture framework core: FixtureGenerator (per-family plugin interface),
 FixtureResult (per-rule outcome), and EngineHarness (loads a real
-cis_engine.py module for one OS and drives it against a FakeSystem
+ohbs_engine.py module for one OS and drives it against a FakeSystem
 instead of the real host).
 
 Design intent: every family (kmod, sysctl, svc_enabled, svc_disabled,
 pkg_present, ...) gets one FixtureGenerator subclass that knows how to
 seed a FakeSystem into a *non-compliant* state for a given rule's
 params. The runner (see runner.py) then drives the real
-cis_engine.run_rule() through the standard scan -> fail -> apply -> pass
+ohbs_engine.run_rule() through the standard scan -> fail -> apply -> pass
 -> re-scan -> pass closed loop, using the actual production check/fix
 functions -- only the OS/subprocess boundary is faked.
 """
@@ -24,7 +24,7 @@ from fake_system import FakeSystem
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Boundary functions inside cis_engine.py that every family's check/fix
+# Boundary functions inside ohbs_engine.py that every family's check/fix
 # ultimately goes through. Patching exactly these (and nothing else)
 # means the real regex parsing / idempotent file-rewriting / dispatch
 # logic in the engine still runs untouched -- only real subprocess and
@@ -33,7 +33,7 @@ _PATCHED_NAMES = ("sh", "read", "exists", "atomic_write", "conf_values", "have")
 
 
 class _FakePath:
-    """Proxy for `os.path` inside a faked cis_engine.py module.
+    """Proxy for `os.path` inside a faked ohbs_engine.py module.
 
     Several families (mount_opt, gdm_dconf, audit_immutable, user_audit,
     ...) call os.path.isfile()/isdir()/exists() directly instead of
@@ -61,7 +61,7 @@ class _FakePath:
 
 
 class _NoopMakedirsOs:
-    """Proxy for the `os` module used inside a faked cis_engine.py module.
+    """Proxy for the `os` module used inside a faked ohbs_engine.py module.
 
     write_file()/set_kv_in_file() call os.makedirs(dirname, exist_ok=True)
     directly before delegating to the (already-faked) atomic_write(). Real
@@ -136,14 +136,14 @@ class FixtureGenerator(ABC):
 
 
 class EngineHarness:
-    """Loads one OS's real cis_engine.py and drives run_rule() against an
+    """Loads one OS's real ohbs_engine.py and drives run_rule() against an
     in-memory FakeSystem, with the OS/subprocess boundary functions
     monkeypatched out.
     """
 
     def __init__(self, engine_path: str):
         self.engine_path = engine_path
-        self._module_name = "cis_engine_fixture_%s" % abs(hash(engine_path))
+        self._module_name = "ohbs_engine_fixture_%s" % abs(hash(engine_path))
         spec = importlib.util.spec_from_file_location(self._module_name, engine_path)
         self.engine = importlib.util.module_from_spec(spec)
         sys.modules[self._module_name] = self.engine
@@ -206,7 +206,7 @@ class EngineHarness:
         opts = SimpleNamespace(
             mode=mode,
             allow_disruptive=allow_disruptive,
-            backup_dir=None,  # disables backup() side effects entirely (see cis_engine.backup)
+            backup_dir=None,  # disables backup() side effects entirely (see ohbs_engine.backup)
             variables=variables or {},
             waivers=waivers or {},
             simulate=simulate,

@@ -13,7 +13,7 @@ def _add_common_args(p):
                    choices=sorted(OS_PRESETS.keys()),
                    help="OS preset (auto-fills paths): %s" % ", ".join(sorted(OS_PRESETS.keys())))
     p.add_argument("--engine",
-                   help="Path to cis_engine.py (Linux) or cis_engine.ps1 (Windows). Required if --os not used.")
+                   help="Path to ohbs_engine.py (Linux) or ohbs_engine.ps1 (Windows). Required if --os not used.")
     p.add_argument("--catalog",
                    help="Path to rules.json. Required if --os not used.")
     p.add_argument("--guidance", default="",
@@ -22,7 +22,7 @@ def _add_common_args(p):
                    help="Path to sections.json (for report rendering)")
     p.add_argument("--template", default="",
                    help="Path to report.html.j2 template")
-    # Defaults are intentionally None here so that cis-host.toml can supply
+    # Defaults are intentionally None here so that ohbs-host.toml can supply
     # values; hard-coded fallbacks are applied after config merging.
     p.add_argument("--profile", default=None, choices=["L1", "L2"],
                    help="Benchmark profile level (default: L1)")
@@ -56,7 +56,7 @@ def _add_common_args(p):
                         "into <hostname>-<timestamp>-evidence.tar.gz under this directory")
     p.add_argument("--webhook", default=None,
                    help="POST a JSON run summary to this URL after the run "
-                        "(overrides [notify] webhook_url in cis-host.toml)")
+                        "(overrides [notify] webhook_url in ohbs-host.toml)")
     p.add_argument("--timeout", type=int, default=None,
                    help="Engine execution timeout in seconds (default: 600)")
     p.add_argument("--no-prescan", action="store_true",
@@ -89,39 +89,39 @@ def build_parser():
         epilog="""
 Examples:
   # Pure scan
-  python3 cis_cli.py scan --os rhel9 --profile L1 --output ./out/
+  python3 ohbs_cli.py scan --os rhel9 --profile L1 --output ./out/
 
   # Apply + auto re-scan (combined)
-  python3 cis_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
+  python3 ohbs_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
 
   # Audit / gate mode (exit non-zero on findings)
-  python3 cis_cli.py audit --os rhel9 --profile L1 --output ./out/
+  python3 ohbs_cli.py audit --os rhel9 --profile L1 --output ./out/
 
   # Fleet scan across hosts
-  python3 cis_cli.py fleet scan --os rhel9 --fleet-hosts web1,web2 --output ./out/
+  python3 ohbs_cli.py fleet scan --os rhel9 --fleet-hosts web1,web2 --output ./out/
 
   # Fine-grained: only specific rules
-  python3 cis_cli.py scan --os rhel8 --include "1.1.1.1,1.1.1.2,5.1.1" --output ./out/
+  python3 ohbs_cli.py scan --os rhel8 --include "1.1.1.1,1.1.1.2,5.1.1" --output ./out/
 
   # Tailor rule inputs and waive exceptions
-  python3 cis_cli.py scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
+  python3 ohbs_cli.py scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
 
   # Dry-run remediation
-  python3 cis_cli.py apply --os rhel9 --simulate
+  python3 ohbs_cli.py apply --os rhel9 --simulate
 
   # CLI-only output (no HTML)
-  python3 cis_cli.py scan --os rhel9 --format cli
+  python3 ohbs_cli.py scan --os rhel9 --format cli
 
   # View rule detail
-  python3 cis_cli.py info --os rhel9 --id 1.1.1.1
+  python3 ohbs_cli.py info --os rhel9 --id 1.1.1.1
 
   # View rule detail as HTML page
-  python3 cis_cli.py info --os rhel9 --id 1.1.1.1 --format html --output ./out/
+  python3 ohbs_cli.py info --os rhel9 --id 1.1.1.1 --format html --output ./out/
         """
     )
 
     ap.add_argument("--config", default="",
-                    help="Path to cis-host.toml config file (default: ./cis-host.toml or $CIS_HOST_CONFIG)")
+                    help="Path to ohbs-host.toml config file (default: ./ohbs-host.toml or $OHBS_HOST_CONFIG)")
 
     sub = ap.add_subparsers(dest="command", help="Mode: list | scan | apply | audit | check | fleet | info")
     sub.required = True
@@ -168,7 +168,7 @@ Examples:
     _add_common_args(p_fleet_scan)
     _add_tailoring_args(p_fleet_scan)
     p_fleet_scan.add_argument("--fleet-hosts", default=None,
-                              help="Comma-separated fleet host list (or use [fleet] hosts in cis-host.toml)")
+                              help="Comma-separated fleet host list (or use [fleet] hosts in ohbs-host.toml)")
     p_fleet_scan.add_argument("--fleet-remote", default=None, action="store_true",
                               help="Run engine over SSH on each host (requires [fleet] remote config)")
 
@@ -209,7 +209,7 @@ Examples:
     p_info.add_argument("--os", default="",
                         choices=sorted(OS_PRESETS.keys()),
                         help="OS preset (auto-fills paths)")
-    p_info.add_argument("--engine", help="Path to cis_engine.py (Linux) or cis_engine.ps1 (Windows).")
+    p_info.add_argument("--engine", help="Path to ohbs_engine.py (Linux) or ohbs_engine.ps1 (Windows).")
     p_info.add_argument("--catalog", help="Path to rules.json.")
     p_info.add_argument("--guidance", default="",
                         help="Path to guidance.json (for description/remediation)")

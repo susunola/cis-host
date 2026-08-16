@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Convert an XCCDF 1.2 tailoring file into a cis-host.toml skeleton.
+"""Convert an XCCDF 1.2 tailoring file into a ohbs-host.toml skeleton.
 
 Usage:
-    python3 scripts/import_tailoring.py tailoring.xml [cis-host.toml]
+    python3 scripts/import_tailoring.py tailoring.xml [ohbs-host.toml]
 
-The output is a starter cis-host.toml containing [profile], [rules], [variables],
+The output is a starter ohbs-host.toml containing [profile], [rules], [variables],
 and [waivers] sections inferred from the tailoring content.
 """
 
@@ -27,7 +27,7 @@ def _strip_ns(tag):
 
 def _rule_id(idref):
     """Extract the CIS-style rule ID from an XCCDF idref."""
-    prefix = "xccdf_cis-host_rule_"
+    prefix = "xccdf_ohbs-host_rule_"
     if idref.startswith(prefix):
         return idref[len(prefix):]
     return idref
@@ -35,7 +35,7 @@ def _rule_id(idref):
 
 def _value_id(idref):
     """Extract the variable name from an XCCDF value idref."""
-    prefix = "xccdf_cis-host_value_"
+    prefix = "xccdf_ohbs-host_value_"
     if idref.startswith(prefix):
         return idref[len(prefix):]
     return idref
@@ -64,7 +64,7 @@ def import_tailoring(path):
             idref = child.get("idref", "")
             selector = child.get("selector", "")
             if idref.endswith("_waiver"):
-                rid = idref[len("xccdf_cis-host_rule_"):-len("_waiver")]
+                rid = idref[len("xccdf_ohbs-host_rule_"):-len("_waiver")]
                 cfg["waivers"][rid] = selector
                 continue
             var_name = _value_id(idref)
@@ -133,9 +133,9 @@ def render_toml(cfg):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Import XCCDF tailoring file as cis-host.toml")
+    ap = argparse.ArgumentParser(description="Import XCCDF tailoring file as ohbs-host.toml")
     ap.add_argument("tailoring", help="Path to XCCDF tailoring XML")
-    ap.add_argument("output", nargs="?", help="Output TOML path (default: cis-host-tailoring.toml)")
+    ap.add_argument("output", nargs="?", help="Output TOML path (default: ohbs-host-tailoring.toml)")
     args = ap.parse_args()
 
     if not os.path.exists(args.tailoring):

@@ -6,7 +6,7 @@ through the closed loop / already-compliant checks for every OS x
 family combination that has a usable rule in that OS's real
 rules.json.
 
-This works unmodified across OSes because all 10 Linux cis_engine.py
+This works unmodified across OSes because all 10 Linux ohbs_engine.py
 copies are byte-identical (verified: same md5 across
 tencentos3/tencentos4/rhel8/rhel9/rhel10/sles15/sles16/ubuntu2004/
 ubuntu2204/ubuntu2404) -- only rules.json (the catalog) differs per OS,

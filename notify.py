@@ -30,7 +30,7 @@ def _tar_add_text(tar, arcname, text):
 def collect_evidence(args, result_data, result_file, mode):
     """Pack scan evidence into <hostname>-<timestamp>-evidence.tar.gz.
 
-    The archive contains the engine result JSON, the effective cis-host.toml
+    The archive contains the engine result JSON, the effective ohbs-host.toml
     (if one was used), host facts, and one text file per rule holding its
     detail plus the extra per-rule fields recorded by the engine.
     Returns the archive path, or None when evidence collection is disabled.
@@ -50,9 +50,9 @@ def collect_evidence(args, result_data, result_file, mode):
         tar.add(result_file, arcname="result.json")
 
         # Effective config file, when one was loaded
-        cfg_path = getattr(args, "config", "") or os.environ.get("CIS_HOST_CONFIG", "cis-host.toml")
+        cfg_path = getattr(args, "config", "") or os.environ.get("OHBS_HOST_CONFIG", "ohbs-host.toml")
         if cfg_path and os.path.isfile(cfg_path):
-            tar.add(cfg_path, arcname="cis-host.toml")
+            tar.add(cfg_path, arcname="ohbs-host.toml")
 
         # Host facts (engine record wins over locally collected values)
         host_info = collect_host()

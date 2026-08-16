@@ -1,6 +1,6 @@
 """In-memory fake shell + filesystem for CI rule-verification fixtures.
 
-cis_engine.py's per-family check/fix functions never touch subprocess or
+ohbs_engine.py's per-family check/fix functions never touch subprocess or
 the filesystem directly -- they always go through a small boundary layer
 of module-level helpers: sh()/out() for commands, and
 read()/readlines()/exists()/atomic_write()/conf_values()/have() for the
@@ -109,7 +109,7 @@ class FakeSystem:
         return _FakeFileHandle(self, path)
 
     def conf_values(self, files, key, seps=(r"\s+", r"\s*=\s*")):
-        """Fake stand-in for cis_engine.py's conf_values(): scans
+        """Fake stand-in for ohbs_engine.py's conf_values(): scans
         self.files instead of the real disk/glob.
         """
         found = []
@@ -143,7 +143,7 @@ class FakeSystem:
     # -- command dispatch -------------------------------------------------
 
     def run(self, cmd, timeout=60):
-        """Fake stand-in for cis_engine.py's sh(): returns (rc, out, err)."""
+        """Fake stand-in for ohbs_engine.py's sh(): returns (rc, out, err)."""
         self.calls.append(list(cmd))
         for prefix, handler in self._extra_handlers:
             if tuple(cmd[:len(prefix)]) == prefix:

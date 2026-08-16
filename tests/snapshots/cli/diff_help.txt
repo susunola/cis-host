@@ -1,4 +1,4 @@
-usage: cis_cli.py diff [-h] [--name NAME] [--profile PROFILE] [--org ORG]
+usage: ohbs_cli.py diff [-h] [--name NAME] [--profile PROFILE] [--org ORG]
                        [--output OUTPUT] [--format {html,cli,both}]
                        [--exit-code]
                        BEFORE_JSON AFTER_JSON

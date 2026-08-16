@@ -1,6 +1,6 @@
-# cis-host
+# ohbs-host
 
-属于 cis-* 家族:cis-image(镜像源头)、cis-host(主机加固)、cis-cloud(云上合规)
+属于 cis-* 家族:ohbs-image(镜像源头)、ohbs-host(主机加固)、ohbs-cloud(云上合规)
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md) | [ภาษาไทย](README.th.md)
 
@@ -19,7 +19,7 @@
 ## 架构
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="cis-host 架构图" width="800">
+  <img src="docs/architecture.svg" alt="ohbs-host 架构图" width="800">
 </p>
 
 引擎是单文件脚本（Linux 为 Python 3，Windows 为 PowerShell），无第三方依赖。Ansible 只负责文件拷贝、命令执行、报告渲染。每个引擎产出 `result.json`（结构化结果）和可选的 `audit.log`（JSON-lines 审计日志），便于合规审查与 SIEM 接入。
@@ -29,7 +29,7 @@
 ### scan（只读）
 
 1. `preflight` —— Ansible 校验变量，探测目标机的 Python 3.6+（Windows 为 PowerShell 5.1+），确认 root / Administrator 身份。
-2. `push` —— 把 `cis_engine.py`、`rules.json`、`guidance.json`、`sections.json` 推到目标机的 `/tmp/cis-scan/`（Windows 为 `C:\Windows\Temp\cis-scan`）。
+2. `push` —— 把 `ohbs_engine.py`、`rules.json`、`guidance.json`、`sections.json` 推到目标机的 `/tmp/cis-scan/`（Windows 为 `C:\Windows\Temp\cis-scan`）。
 3. `run` —— 引擎以 `--mode scan` 启动，遍历规则目录逐条检查，采集判定依据，写出 `result.json`。目标机上的任何东西都不会被修改。
 4. `fetch` —— Ansible 把 `result.json`（若启用审计，还包括 `audit.log`）拉回控制机。
 5. `report` —— Jinja2 模板（`report.html.j2`）结合 `result.json` 和主机事实（hostname / IP / MAC / OS / 内核）渲染出交互式 HTML 报告。
@@ -46,20 +46,20 @@
 
 | 套件 | 基准 | 引擎 | 规则数 |
 |------|------|------|--------|
-| `cis-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
-| `cis-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
-| `cis-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
-| `cis-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
-| `cis-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
-| `cis-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
-| `cis-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
-| `cis-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
-| `cis-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
-| `cis-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
-| `cis-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
-| `cis-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
-| `cis-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
-| `cis-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
+| `ohbs-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
+| `ohbs-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
+| `ohbs-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
+| `ohbs-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
+| `ohbs-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
+| `ohbs-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
+| `ohbs-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
+| `ohbs-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
+| `ohbs-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
+| `ohbs-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
+| `ohbs-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
+| `ohbs-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
+| `ohbs-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
+| `ohbs-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
 
 每个套件都是独立的 Ansible 工程，自带 inventory、group_vars、`scan.yml`、`apply.yml`、role 树、模板。
 
@@ -84,7 +84,7 @@
 **CLI 用法：**
 
 ```bash
-python3 cis_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
+python3 ohbs_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
 ```
 
 **Ansible 用法：** 在 playbook 命令行添加 `-e cis_audit_log=/var/log/cis-audit.log`。
@@ -97,32 +97,32 @@ python3 cis_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
 
 ```bash
 # L1 scan（只读）
-python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+python3 ohbs_cli.py scan --os rhel9 --profile L1 --output output/
 
 # L1 apply（修复）
-python3 cis_cli.py apply --os ubuntu2204 --profile L1 --output output/
+python3 ohbs_cli.py apply --os ubuntu2204 --profile L1 --output output/
 
 # L2 全量 + 放行高风险规则 + 审计日志
-python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
+python3 ohbs_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
 
 # 只跑部分规则
-python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+python3 ohbs_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 
 # 漂移检测：对比两份扫描结果（基线 vs 最新），CI 中加 --exit-code 有漂移即退出
-python3 cis_cli.py diff output/result-before.json output/result-after.json --exit-code
+python3 ohbs_cli.py diff output/result-before.json output/result-after.json --exit-code
 
 # 周期监控：每 6 小时扫描一次，仅在配置漂移时报告
-python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+python3 ohbs_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 
 # 仅对上次扫描中失败（fail/error）的规则应用修复
-python3 cis_cli.py remediate --os rhel9 --result output/result-scan-*.json
+python3 ohbs_cli.py remediate --os rhel9 --result output/result-scan-*.json
 
 # 打包单次运行的证据（结果 JSON、配置、主机信息、逐条详情）
-python3 cis_cli.py scan --os rhel9 --evidence-dir output/evidence
+python3 ohbs_cli.py scan --os rhel9 --evidence-dir output/evidence
 
 # 运行后推送 JSON 摘要到 webhook（fire-and-warn，不阻塞运行）
-python3 cis_cli.py scan --os rhel9 --webhook https://hooks.example.com/hook
+python3 ohbs_cli.py scan --os rhel9 --webhook https://hooks.example.com/hook
 ```
 
 `--os` 取值：`tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -130,11 +130,11 @@ python3 cis_cli.py scan --os rhel9 --webhook https://hooks.example.com/hook
 ### 通过 Ansible
 
 ```bash
-ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
-                 cis-rhel9-ansible/scan.yml
+ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
+                 ohbs-rhel9-ansible/scan.yml
 
-ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
-                 cis-rhel9-ansible/apply.yml \
+ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
+                 ohbs-rhel9-ansible/apply.yml \
                  -e cis_profile=L2 -e cis_allow_disruptive=true
 ```
 
@@ -197,10 +197,10 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## 目录结构
 
 ```
-cis-host/
+ohbs-host/
 ├── README.md                       # 英文（GitHub 默认）
 ├── README.zh.md                    # 中文
-├── cis_cli.py                      # 本地 CLI 入口（--os 切换目标）
+├── ohbs_cli.py                      # 本地 CLI 入口（--os 切换目标）
 ├── args.py                         # argparse 参数声明（所有子命令）
 ├── dispatch.py                     # 运行期编排与命令分发
 ├── defaults.py                     # CLI 默认值
@@ -213,25 +213,25 @@ cis-host/
 ├── display.py                      # CLI 表格/颜色输出
 ├── presets.py                      # OS_PRESETS 注册表
 ├── catalog.py                      # 规则目录查询
-├── cis_host_diff.py                # 漂移检测 / 修复验证 / 周期监控逻辑
-├── cis_host_config.py              # cis-host.toml 加载与合并
+├── ohbs_host_diff.py                # 漂移检测 / 修复验证 / 周期监控逻辑
+├── ohbs_host_config.py              # ohbs-host.toml 加载与合并
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus 导出
 ├── tests/                          # pytest 测试（引擎、CLI、漂移、导出）
 ├── docs/architecture.svg           # 架构图
-├── cis-tencentos3-ansible/         # TencentOS 3
-├── cis-tencentos4-ansible/         # TencentOS 4
-├── cis-rhel8-ansible/              # RHEL 8
-├── cis-rhel9-ansible/              # RHEL 9
-├── cis-rhel10-ansible/             # RHEL 10
-├── cis-sles15-ansible/             # SLES 15
-├── cis-sles16-ansible/             # SLES 16
-├── cis-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
-├── cis-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
-├── cis-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
-├── cis-win2016-ansible/            # Windows Server 2016
-├── cis-win2019-ansible/            # Windows Server 2019
-├── cis-win2022-ansible/            # Windows Server 2022
-└── cis-win2025-ansible/            # Windows Server 2025
+├── ohbs-tencentos3-ansible/         # TencentOS 3
+├── ohbs-tencentos4-ansible/         # TencentOS 4
+├── ohbs-rhel8-ansible/              # RHEL 8
+├── ohbs-rhel9-ansible/              # RHEL 9
+├── ohbs-rhel10-ansible/             # RHEL 10
+├── ohbs-sles15-ansible/             # SLES 15
+├── ohbs-sles16-ansible/             # SLES 16
+├── ohbs-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
+├── ohbs-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
+├── ohbs-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
+├── ohbs-win2016-ansible/            # Windows Server 2016
+├── ohbs-win2019-ansible/            # Windows Server 2019
+├── ohbs-win2022-ansible/            # Windows Server 2022
+└── ohbs-win2025-ansible/            # Windows Server 2025
     ├── ansible.cfg
     ├── scan.yml | apply.yml | site.yml
     ├── inventory/  group_vars/
@@ -280,25 +280,25 @@ cis-host/
 
 ## 漂移检测、验证与监控
 
-**`cis-host diff`** 对比两份扫描结果 JSON，把每条规则的变更分类——新增失败（漂移）、回退、恢复、豁免变化——输出 CLI 摘要与自包含的 HTML 报告。CI 里加 `--exit-code`，出现漂移就让流水线失败：
+**`ohbs-host diff`** 对比两份扫描结果 JSON，把每条规则的变更分类——新增失败（漂移）、回退、恢复、豁免变化——输出 CLI 摘要与自包含的 HTML 报告。CI 里加 `--exit-code`，出现漂移就让流水线失败：
 
 ```bash
-python3 cis_cli.py diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
+python3 ohbs_cli.py diff output/result-2026-01-01.json output/result-2026-02-01.json --exit-code
 ```
 
-**Apply 验证** —— `cis-host apply` 之后，前后两次扫描对比会报告哪些规则真正被修复、哪些仍然失败，以及最关键的一点：哪些规则因修复本身而**回退（regressed）**。独立的 `verify-*.html` 报告与 apply 报告一同生成。
+**Apply 验证** —— `ohbs-host apply` 之后，前后两次扫描对比会报告哪些规则真正被修复、哪些仍然失败，以及最关键的一点：哪些规则因修复本身而**回退（regressed）**。独立的 `verify-*.html` 报告与 apply 报告一同生成。
 
-**`cis-host watch`** 周期扫描循环，采用「仅变化 + 去重告警」（边沿触发，类似 Wazuh SCA）：规则开始失败时告警一次，恢复之后才会再次告警——持续失败不会反复打扰。静默轮次只输出一行；`--json` 每行输出一条机器可读事件，便于接入 SIEM / 自动化：
+**`ohbs-host watch`** 周期扫描循环，采用「仅变化 + 去重告警」（边沿触发，类似 Wazuh SCA）：规则开始失败时告警一次，恢复之后才会再次告警——持续失败不会反复打扰。静默轮次只输出一行；`--json` 每行输出一条机器可读事件，便于接入 SIEM / 自动化：
 
 ```bash
-python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
-python3 cis_cli.py watch --os rhel9 --interval 3600 --json          # 事件流
+python3 ohbs_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+python3 ohbs_cli.py watch --os rhel9 --interval 3600 --json          # 事件流
 ```
 
 **豁免卫生（Waiver hygiene）** —— 豁免可携带审批元数据（`approved_by`、`expires`）；过期或格式错误的条目在扫描时会被标记，引用了目录中不存在的规则 ID（即静默失效的豁免）也会被点名：
 
 ```bash
-python3 cis_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+python3 ohbs_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
 ```
 
 ## 注意事项

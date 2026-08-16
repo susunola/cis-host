@@ -41,8 +41,8 @@ def run_remote_scan(host, args, fleet_cfg):
     """SSH to a host and run the engine remotely.  Returns parsed JSON or None."""
     user = fleet_cfg.get("user", "root")
     key = fleet_cfg.get("key", "")
-    remote_engine = fleet_cfg.get("remote_engine", "/opt/cis-host/cis_engine.py")
-    remote_catalog = fleet_cfg.get("remote_catalog", "/opt/cis-host/rules.json")
+    remote_engine = fleet_cfg.get("remote_engine", "/opt/ohbs-host/ohbs_engine.py")
+    remote_catalog = fleet_cfg.get("remote_catalog", "/opt/ohbs-host/rules.json")
     remote_guidance = fleet_cfg.get("remote_guidance", "")
     remote_sections = fleet_cfg.get("remote_sections", "")
     remote_template = fleet_cfg.get("remote_template", "")
@@ -159,7 +159,7 @@ def cmd_fleet_scan(args):
     """FLEET SCAN mode: scan multiple hosts and aggregate a fleet report."""
     hosts = load_fleet_hosts(args)
     if not hosts:
-        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in cis-host.toml",
+        print("Error: no fleet hosts configured. Use --fleet-hosts or [fleet] hosts in ohbs-host.toml",
               file=sys.stderr)
         sys.exit(1)
 
@@ -180,7 +180,7 @@ def cmd_fleet_scan(args):
             data = run_remote_scan(host, args, fleet_cfg)
         else:
             # Local mode: run on this machine but tag results with the host label.
-            # Useful for testing and for CI fleets that run cis-host inside each node.
+            # Useful for testing and for CI fleets that run ohbs-host inside each node.
             data, _ = run_engine(args, "scan")
             if data:
                 data["host"] = data.get("host", {})

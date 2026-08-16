@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Unit tests for display.py (extracted from cis_cli.py in PR2).
+"""Unit tests for display.py (extracted from ohbs_cli.py in PR2).
 
 Covers the click_style() NO_COLOR/TTY-detection behavior change: the
-original cis_cli.py always emitted ANSI color codes; this refactor makes
+original ohbs_cli.py always emitted ANSI color codes; this refactor makes
 click_style() a no-op when NO_COLOR is set or stdout is not a TTY (see
 CHANGELOG).
 """

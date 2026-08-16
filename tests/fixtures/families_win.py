@@ -14,7 +14,7 @@ instead.
 IMPORTANT CATALOG/ENGINE MISMATCH (found while building this, not
 fixed here): the real reg-dword rules in every Windows OS's rules.json
 (all 4: win2016/2019/2022/2025) store params as {"key": "<rule-id>"}
-(e.g. {"key": "2.3.1.1"}), but cis_engine.ps1's Invoke-Check/Invoke-Fix
+(e.g. {"key": "2.3.1.1"}), but ohbs_engine.ps1's Invoke-Check/Invoke-Fix
 for family "reg-dword" read params.path/params.name/params.value --
 none of which exist in the real catalog. Every real reg-dword scan
 therefore returns status "error" ("Registry key not found: \\"), not a
@@ -150,7 +150,7 @@ def synthetic_reg_dword_rule(rule_id):
     return {
         "id": rule_id,
         "title": "synthetic reg-dword fixture rule (real catalog params "
-                 "don't match cis_engine.ps1's reg-dword branch -- see "
+                 "don't match ohbs_engine.ps1's reg-dword branch -- see "
                  "families_win.py docstring)",
         "family": "reg-dword",
         "params": {
@@ -171,7 +171,7 @@ def synthetic_user_right_rule(rule_id):
     return {
         "id": rule_id,
         "title": "synthetic user-right fixture rule (real catalog params "
-                 "don't match cis_engine.ps1's user-right branch -- see "
+                 "don't match ohbs_engine.ps1's user-right branch -- see "
                  "families_win.py docstring)",
         "family": "user-right",
         "params": {

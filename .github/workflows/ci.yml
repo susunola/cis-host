@@ -25,8 +25,8 @@ jobs:
 
       - name: Compile Python engines
         run: |
-          python -m py_compile cis_cli.py cis_host_config.py
-          for engine in cis-*-ansible/roles/cis_*/files/cis_engine.py; do
+          python -m py_compile ohbs_cli.py ohbs_host_config.py
+          for engine in cis-*-ansible/roles/cis_*/files/ohbs_engine.py; do
             python -m py_compile "$engine"
           done
 
@@ -73,7 +73,7 @@ jobs:
           done
 
       # L4 real-host e2e (docs/TESTING.md §10): boot a real Ubuntu 22.04
-      # systemd container, install cis-host, and run a real scan -> apply
+      # systemd container, install ohbs-host, and run a real scan -> apply
       # -> re-scan -> idempotent-apply cycle. This is slow and uses Docker,
       # so it runs non-blocking (continue-on-error) for now; it is promoted
       # to a blocking release gate in phase 2 once stable on CI.
@@ -84,12 +84,12 @@ jobs:
           python3 scripts/real_e2e_test.py --os ubuntu2204 --profile L1 \
             --allow-disruptive -y 2>&1 || { echo "L4 e2e reported a failure (see above)"; exit 1; }
 
-      - name: Test pip install and cis-host CLI
+      - name: Test pip install and ohbs-host CLI
         run: |
           pip install -e .
-          cis-host --help
-          cis-host list
-          cis-host scan --help
-          cis-host apply --help
-          printf '[profile]\nos = "rhel9"\nprofile = "L1"\n' > /tmp/cis-host.toml
-          cis-host scan --config /tmp/cis-host.toml --help >/dev/null
+          ohbs-host --help
+          ohbs-host list
+          ohbs-host scan --help
+          ohbs-host apply --help
+          printf '[profile]\nos = "rhel9"\nprofile = "L1"\n' > /tmp/ohbs-host.toml
+          ohbs-host scan --config /tmp/ohbs-host.toml --help >/dev/null

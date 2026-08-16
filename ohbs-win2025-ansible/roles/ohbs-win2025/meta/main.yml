@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: ohbs-win2025
+  author: CIS Automation
+  description: CIS Benchmark assessment for Microsoft Windows Server 2025
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Windows
+      versions:
+        - "2025"
+  galaxy_tags:
+    - cis
+    - security
+    - compliance
+    - hardening
+    - windows
+dependencies: []

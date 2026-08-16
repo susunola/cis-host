@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Unit tests for report.py (extracted from cis_cli.py in PR3).
+"""Unit tests for report.py (extracted from ohbs_cli.py in PR3).
 
 Covers the render_report() template context (ctx dict) completeness and
 the output filename / copy_json side effects, using a minimal on-disk
-Jinja2 template so no real cis_engine.py or report.html.j2 asset is needed.
+Jinja2 template so no real ohbs_engine.py or report.html.j2 asset is needed.
 """
 
 import json
@@ -24,7 +24,7 @@ from report import render_report
 EXPECTED_CTX_KEYS = {
     "cis_result", "cis_guidance", "cis_sections", "cis_mode_effective",
     "cis_mode", "cis_profile", "cis_platform", "cis_benchmark_name",
-    "cis_benchmark_version", "cis_org_name", "cis_host", "cis_run_human",
+    "cis_benchmark_version", "cis_org_name", "ohbs_host", "cis_run_human",
     "cis_run_stamp", "cis_fleet_size", "cis_backup_dir",
     "cis_allow_disruptive", "cis_lang", "cis_report_embed_remediation",
 }
@@ -144,7 +144,7 @@ def test_render_report_registers_bool_filter(mock_host, tmp_path):
     """Regression test for the L4 e2e finding: the real report.html.j2
     templates use the `| bool` Jinja2 filter (a built-in under Ansible's
     Jinja2), but plain Jinja2 has no `bool` filter. Without registering
-    one, every `cis-host scan/apply/audit --format html` crashed with
+    one, every `ohbs-host scan/apply/audit --format html` crashed with
     `jinja2.exceptions.TemplateRuntimeError: No filter named 'bool' found`.
     render_report() must register a `bool` filter so the template renders.
     """

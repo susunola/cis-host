@@ -1,4 +1,4 @@
-# cis-host
+# ohbs-host
 
 [English](README.md) | [简体中文](README.zh.md) | **日本語** | [ภาษาไทย](README.th.md)
 
@@ -17,7 +17,7 @@
 ## アーキテクチャ
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="cis-host architecture" width="800">
+  <img src="docs/architecture.svg" alt="ohbs-host architecture" width="800">
 </p>
 
 エンジンは単一ファイルのスクリプトであり、サードパーティの依存関係は一切ありません（Linux では Python 3、Windows では PowerShell）。Ansible はファイル転送、コマンド実行、レポートのレンダリングのみを担当します。各エンジンは、構造化された `result.json` と、準拠レビューや SIEM 取り込みに適したオプションの `audit.log`（JSON 行形式）の両方を生成します。
@@ -27,7 +27,7 @@
 ### scan（読み取り専用）
 
 1. `preflight` — Ansible が変数を検証し、ターゲットに Python 3.6 以上（Windows では PowerShell 5.1 以上）が存在するか確認し、root / Administrator 権限を確認します。
-2. `push` — `cis_engine.py`、`rules.json`、`guidance.json`、`sections.json` をターゲットの `/tmp/cis-scan/`（Windows では `C:\Windows\Temp\cis-scan`）にコピーします。
+2. `push` — `ohbs_engine.py`、`rules.json`、`guidance.json`、`sections.json` をターゲットの `/tmp/cis-scan/`（Windows では `C:\Windows\Temp\cis-scan`）にコピーします。
 3. `run` — エンジンが `--mode scan` で起動し、カタログを走査して各ルールをチェックし、証跡を収集して `result.json` を書き込みます。ターゲット上の設定は一切変更されません。
 4. `fetch` — Ansible が `result.json`（および有効な場合は `audit.log`）を制御マシンに取得します。
 5. `report` — Jinja2 テンプレート（`report.html.j2`）が `result.json` とホスト情報（ホスト名、IP、MAC、OS、カーネル）を組み合わせて HTML レポートをレンダリングします。
@@ -44,20 +44,20 @@
 
 | スイート | ベンチマーク | エンジン | ルール数 |
 |-------|-----------|--------|-------|
-| `cis-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
-| `cis-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
-| `cis-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
-| `cis-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
-| `cis-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
-| `cis-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
-| `cis-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
-| `cis-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
-| `cis-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
-| `cis-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
-| `cis-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
-| `cis-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
-| `cis-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
-| `cis-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
+| `ohbs-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
+| `ohbs-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
+| `ohbs-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
+| `ohbs-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
+| `ohbs-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
+| `ohbs-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
+| `ohbs-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
+| `ohbs-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
+| `ohbs-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
+| `ohbs-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
+| `ohbs-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
+| `ohbs-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
+| `ohbs-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
+| `ohbs-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
 
 各スイートは自己完結型の Ansible プロジェクトであり、独自のインベントリ、group_vars、`scan.yml`、`apply.yml`、ロールツリー、テンプレートを備えています。
 
@@ -82,7 +82,7 @@
 **CLI 経由:**
 
 ```bash
-python3 cis_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
+python3 ohbs_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
 ```
 
 **Ansible 経由:** Playbook の実行時に `-e cis_audit_log=/var/log/cis-audit.log` を追加します。
@@ -95,23 +95,23 @@ python3 cis_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
 
 ```bash
 # L1 スキャン（読み取り専用）
-python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+python3 ohbs_cli.py scan --os rhel9 --profile L1 --output output/
 
 # L1 適用（修復）
-python3 cis_cli.py apply --os ubuntu2204 --profile L1 --output output/
+python3 ohbs_cli.py apply --os ubuntu2204 --profile L1 --output output/
 
 # L2 フルスキャン + 破壊的ルール許可 + 監査ログ
-python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
+python3 ohbs_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
 
 # 特定のルールのみをスキャン
-python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+python3 ohbs_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 
 # ドリフト検出：2 つのスキャン結果を比較（CI では --exit-code で失敗）
-python3 cis_cli.py diff output/result-before.json output/result-after.json --exit-code
+python3 ohbs_cli.py diff output/result-before.json output/result-after.json --exit-code
 
 # 定期監視：6 時間ごとにスキャン、設定ドリフト時のみ報告
-python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+python3 ohbs_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 ```
 
 `--os` の値: `tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -119,11 +119,11 @@ python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS http
 ### Ansible 経由
 
 ```bash
-ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
-                 cis-rhel9-ansible/scan.yml
+ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
+                 ohbs-rhel9-ansible/scan.yml
 
-ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
-                 cis-rhel9-ansible/apply.yml \
+ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
+                 ohbs-rhel9-ansible/apply.yml \
                  -e cis_profile=L2 -e cis_allow_disruptive=true
 ```
 
@@ -186,12 +186,12 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## ディレクトリ構成
 
 ```
-cis-host/
+ohbs-host/
 ├── README.md
 ├── README.zh.md
 ├── README.ja.md
 ├── README.th.md
-├── cis_cli.py                      # ローカル CLI エントリポイント（--os でターゲットを切り替え）
+├── ohbs_cli.py                      # ローカル CLI エントリポイント（--os でターゲットを切り替え）
 ├── args.py                         # argparse 定義（全サブコマンド）
 ├── dispatch.py                     # 実行時オーケストレーションとコマンド振り分け
 ├── defaults.py                     # CLI デフォルト値
@@ -204,25 +204,25 @@ cis-host/
 ├── display.py                      # CLI テーブル/カラー出力
 ├── presets.py                      # OS_PRESETS レジストリ
 ├── catalog.py                      # ルールカタログ参照
-├── cis_host_diff.py                # ドリフト検出 / 検証 / 監視ロジック
-├── cis_host_config.py              # cis-host.toml のロードとマージ
+├── ohbs_host_diff.py                # ドリフト検出 / 検証 / 監視ロジック
+├── ohbs_host_config.py              # ohbs-host.toml のロードとマージ
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus エクスポーター
 ├── tests/                          # pytest テスト（エンジン、CLI、ドリフト、エクスポート）
 ├── docs/architecture.svg           # アーキテクチャ図
-├── cis-tencentos3-ansible/         # TencentOS 3
-├── cis-tencentos4-ansible/         # TencentOS 4
-├── cis-rhel8-ansible/              # RHEL 8
-├── cis-rhel9-ansible/              # RHEL 9
-├── cis-rhel10-ansible/             # RHEL 10
-├── cis-sles15-ansible/             # SLES 15
-├── cis-sles16-ansible/             # SLES 16
-├── cis-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
-├── cis-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
-├── cis-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
-├── cis-win2016-ansible/            # Windows Server 2016
-├── cis-win2019-ansible/            # Windows Server 2019
-├── cis-win2022-ansible/            # Windows Server 2022
-└── cis-win2025-ansible/            # Windows Server 2025
+├── ohbs-tencentos3-ansible/         # TencentOS 3
+├── ohbs-tencentos4-ansible/         # TencentOS 4
+├── ohbs-rhel8-ansible/              # RHEL 8
+├── ohbs-rhel9-ansible/              # RHEL 9
+├── ohbs-rhel10-ansible/             # RHEL 10
+├── ohbs-sles15-ansible/             # SLES 15
+├── ohbs-sles16-ansible/             # SLES 16
+├── ohbs-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
+├── ohbs-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
+├── ohbs-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
+├── ohbs-win2016-ansible/            # Windows Server 2016
+├── ohbs-win2019-ansible/            # Windows Server 2019
+├── ohbs-win2022-ansible/            # Windows Server 2022
+└── ohbs-win2025-ansible/            # Windows Server 2025
     ├── ansible.cfg
     ├── scan.yml | apply.yml | site.yml
     ├── inventory/  group_vars/
@@ -271,14 +271,14 @@ cis-host/
 
 ## ドリフト検出・検証・監視
 
-- **`cis-host diff`** — 2 つのスキャン結果 JSON を比較し、ルールごとの変化（新規失敗＝ドリフト、回帰、回復、waiver 変更）を分類して CLI サマリと自己完結型 HTML レポートを出力。CI では `--exit-code` でドリフト時に失敗させられます。
-- **適用検証** — `cis-host apply` 後に前後スキャンを比較し、実際に修正されたルール・未修正のルール・**修正によって回帰したルール**を報告。`verify-*.html` レポートを生成します。
-- **`cis-host watch`** — 周期スキャンループ。変更時のみ・重複排除のアラート（Wazuh SCA と同様のエッジトリガー方式）。`--json` で SIEM / 自動化向けに 1 行 1 イベントを出力。
+- **`ohbs-host diff`** — 2 つのスキャン結果 JSON を比較し、ルールごとの変化（新規失敗＝ドリフト、回帰、回復、waiver 変更）を分類して CLI サマリと自己完結型 HTML レポートを出力。CI では `--exit-code` でドリフト時に失敗させられます。
+- **適用検証** — `ohbs-host apply` 後に前後スキャンを比較し、実際に修正されたルール・未修正のルール・**修正によって回帰したルール**を報告。`verify-*.html` レポートを生成します。
+- **`ohbs-host watch`** — 周期スキャンループ。変更時のみ・重複排除のアラート（Wazuh SCA と同様のエッジトリガー方式）。`--json` で SIEM / 自動化向けに 1 行 1 イベントを出力。
 - **waiver 衛生** — waiver に承認者・有効期限を付与可能。期限切れ・不正なエントリや、カタログに存在しないルール ID（黙って無効になる waiver）をスキャン時に警告します。
 
 ```bash
-python3 cis_cli.py watch --os rhel9 --interval 3600 --json
-python3 cis_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+python3 ohbs_cli.py watch --os rhel9 --interval 3600 --json
+python3 ohbs_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
 ```
 
 ## 注意事項
