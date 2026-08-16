@@ -84,7 +84,7 @@ def _add_apply_args(p):
 def build_parser():
     """Build and return the top-level ArgumentParser for the CLI."""
     ap = argparse.ArgumentParser(
-        description="CIS Benchmark local CLI — scan, apply, audit, fleet scan, view rules",
+        description="ohbs-host — CIS Benchmark local CLI (scan, apply, audit, fleet scan, view rules)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

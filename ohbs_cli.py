@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CIS Benchmark CLI — scan, apply, audit, fleet scan, with HTML + CLI output.
+ohbs-host CLI — CIS Benchmark scan, apply, audit, fleet scan, with HTML + CLI output.
 
 Installable as the `ohbs-host` command after `pip install ohbs-host`.
 

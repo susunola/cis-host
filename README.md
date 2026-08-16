@@ -1,6 +1,3 @@
-> ⚠️ **Not affiliated with, endorsed by, or sponsored by the Center for Internet
-> Security (CIS).** See [DISCLAIMER.md](./DISCLAIMER.md). This project implements
-> hardening *aligned with* the CIS Benchmarks™; it references CIS as a standard only.
 
 <p align="center">
   <img src="docs/logo-full.png" alt="ohbs-host" width="440">

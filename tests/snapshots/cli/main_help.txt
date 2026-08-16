@@ -1,7 +1,7 @@
 usage: ohbs_cli.py [-h] [--config CONFIG]
                   {list,list-os,scan,audit,apply,remediate,check,fleet,diff,watch,info} ...
 
-CIS Benchmark local CLI — scan, apply, audit, fleet scan, view rules
+ohbs-host — CIS Benchmark local CLI (scan, apply, audit, fleet scan, view rules)
 
 positional arguments:
   {list,list-os,scan,audit,apply,remediate,check,fleet,diff,watch,info}
