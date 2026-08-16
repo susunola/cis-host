@@ -8,10 +8,10 @@ import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WINDOWS_ENGINES = [
-    os.path.join(ROOT, "ohbs-win2016-ansible/roles/ohbs-win2016/files/ohbs_engine.ps1"),
-    os.path.join(ROOT, "ohbs-win2019-ansible/roles/ohbs-win2019/files/ohbs_engine.ps1"),
-    os.path.join(ROOT, "ohbs-win2022-ansible/roles/ohbs-win2022/files/ohbs_engine.ps1"),
-    os.path.join(ROOT, "ohbs-win2025-ansible/roles/ohbs-win2025/files/ohbs_engine.ps1"),
+    os.path.join(ROOT, "cis-win2016-ansible/roles/cis-win2016/files/ohbs_engine.ps1"),
+    os.path.join(ROOT, "cis-win2019-ansible/roles/cis-win2019/files/ohbs_engine.ps1"),
+    os.path.join(ROOT, "cis-win2022-ansible/roles/cis-win2022/files/ohbs_engine.ps1"),
+    os.path.join(ROOT, "cis-win2025-ansible/roles/cis-win2025/files/ohbs_engine.ps1"),
 ]
 
 

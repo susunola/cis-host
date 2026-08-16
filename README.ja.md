@@ -44,20 +44,20 @@
 
 | スイート | ベンチマーク | エンジン | ルール数 |
 |-------|-----------|--------|-------|
-| `ohbs-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
-| `ohbs-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
-| `ohbs-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
-| `ohbs-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
-| `ohbs-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
-| `ohbs-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
-| `ohbs-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
-| `ohbs-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
-| `ohbs-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
-| `ohbs-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
-| `ohbs-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
-| `ohbs-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
-| `ohbs-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
-| `ohbs-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
+| `cis-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
+| `cis-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
+| `cis-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
+| `cis-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
+| `cis-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
+| `cis-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
+| `cis-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
+| `cis-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
+| `cis-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
+| `cis-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
+| `cis-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
+| `cis-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
+| `cis-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
+| `cis-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
 
 各スイートは自己完結型の Ansible プロジェクトであり、独自のインベントリ、group_vars、`scan.yml`、`apply.yml`、ロールツリー、テンプレートを備えています。
 
@@ -119,11 +119,11 @@ python3 ohbs_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS htt
 ### Ansible 経由
 
 ```bash
-ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
-                 ohbs-rhel9-ansible/scan.yml
+ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
+                 cis-rhel9-ansible/scan.yml
 
-ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
-                 ohbs-rhel9-ansible/apply.yml \
+ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
+                 cis-rhel9-ansible/apply.yml \
                  -e cis_profile=L2 -e cis_allow_disruptive=true
 ```
 
@@ -209,20 +209,20 @@ ohbs-host/
 ├── scripts/                        # SARIF/XCCDF/JUnit/Prometheus エクスポーター
 ├── tests/                          # pytest テスト（エンジン、CLI、ドリフト、エクスポート）
 ├── docs/architecture.svg           # アーキテクチャ図
-├── ohbs-tencentos3-ansible/         # TencentOS 3
-├── ohbs-tencentos4-ansible/         # TencentOS 4
-├── ohbs-rhel8-ansible/              # RHEL 8
-├── ohbs-rhel9-ansible/              # RHEL 9
-├── ohbs-rhel10-ansible/             # RHEL 10
-├── ohbs-sles15-ansible/             # SLES 15
-├── ohbs-sles16-ansible/             # SLES 16
-├── ohbs-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
-├── ohbs-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
-├── ohbs-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
-├── ohbs-win2016-ansible/            # Windows Server 2016
-├── ohbs-win2019-ansible/            # Windows Server 2019
-├── ohbs-win2022-ansible/            # Windows Server 2022
-└── ohbs-win2025-ansible/            # Windows Server 2025
+├── cis-tencentos3-ansible/         # TencentOS 3
+├── cis-tencentos4-ansible/         # TencentOS 4
+├── cis-rhel8-ansible/              # RHEL 8
+├── cis-rhel9-ansible/              # RHEL 9
+├── cis-rhel10-ansible/             # RHEL 10
+├── cis-sles15-ansible/             # SLES 15
+├── cis-sles16-ansible/             # SLES 16
+├── cis-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
+├── cis-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
+├── cis-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
+├── cis-win2016-ansible/            # Windows Server 2016
+├── cis-win2019-ansible/            # Windows Server 2019
+├── cis-win2022-ansible/            # Windows Server 2022
+└── cis-win2025-ansible/            # Windows Server 2025
     ├── ansible.cfg
     ├── scan.yml | apply.yml | site.yml
     ├── inventory/  group_vars/

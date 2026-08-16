@@ -43,7 +43,7 @@ pytestmark = pytest.mark.skipif(
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(os.path.dirname(_HERE))
 _CATALOG = os.path.join(
-    _REPO_ROOT, "ohbs-win2022-ansible", "roles", "ohbs-win2022", "files", "rules.json")
+    _REPO_ROOT, "cis-win2022-ansible", "roles", "cis-win2022", "files", "rules.json")
 
 
 def _first_rule(family):

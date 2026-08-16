@@ -139,7 +139,7 @@ Ordered by value/effort.
 | 5 | Real `report.html.j2` template rendering with real data | L2 | Med | Snapshot the rendered HTML for one representative OS; assert key sections |
 | 6 | `--simulate` path (`apply_status == "simulated"`) | L3 | Med | Drive `run_rule` with `ctx.simulate=True` in the matrix |
 | 7 | Known-bug regression tests (§3) — `kv_conf` separator, Windows reg-dword/user-right catalog, user-right pipeline | L3 | **High** | Dedicated tests that fail today, flip green on fix |
-| 8 | Molecule/container L4 for a representative Linux role | L4 | High (post-PoC) | Wire existing `ohbs-ubuntu2204` molecule config into a non-gating CI job |
+| 8 | Molecule/container L4 for a representative Linux role | L4 | High (post-PoC) | Wire existing `cis-ubuntu2204` molecule config into a non-gating CI job |
 | 9 | Per-suite regression (weak vs. hardened container scan-diff) | L4 | High (post-PoC) | On-tag/on-main soak job |
 | 10 | Coverage floor + release checklist doc | L0/L3 | Med | Add `pytest --cov`, write `docs/RELEASE.md` |
 

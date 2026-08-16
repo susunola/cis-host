@@ -22,7 +22,7 @@ from runner import run_already_compliant, run_closed_loop
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _CATALOG = os.path.join(
-    _REPO_ROOT, "ohbs-ubuntu2204-ansible", "roles", "ohbs-ubuntu2204", "files", "rules.json")
+    _REPO_ROOT, "cis-ubuntu2204-ansible", "roles", "cis-ubuntu2204", "files", "rules.json")
 
 TARGET_FAMILIES = ("kmod", "sysctl", "svc_enabled", "svc_disabled", "pkg_present")
 
