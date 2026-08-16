@@ -1,4 +1,4 @@
-"""Engine invocation: run cis_engine.py (Linux) / cis_engine.ps1 (Windows),
+"""Engine invocation: run ohbs_engine.py (Linux) / ohbs_engine.ps1 (Windows),
 plus small helpers for tailoring-argument materialization and host facts
 collection used when rendering reports.
 """
@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 
-import cis_host_diff
+import ohbs_host_diff
 
 
 # ─── Platform detection helpers ───────────────────────────────────────
@@ -84,7 +84,7 @@ def _waiver_catalog_ids(args):
 
 
 def run_engine(args, mode):
-    """Run cis_engine (Python or PowerShell) and return parsed JSON result."""
+    """Run ohbs_engine (Python or PowerShell) and return parsed JSON result."""
     engine = os.path.abspath(args.engine)
     catalog = os.path.abspath(args.catalog)
     engine_dir = os.path.dirname(os.path.abspath(args.engine))
@@ -123,12 +123,12 @@ def run_engine(args, mode):
         except (OSError, json.JSONDecodeError):
             waivers_doc = None
         if waivers_doc is not None:
-            for problem in cis_host_diff.waiver_problems(
+            for problem in ohbs_host_diff.waiver_problems(
                     waivers_doc, _waiver_catalog_ids(args)):
                 print(f"  [waivers] {problem}", file=sys.stderr)
 
     if not _engine_is_windows(args):
-        # Linux: run cis_engine.py with python3
+        # Linux: run ohbs_engine.py with python3
         cmd = [
             "sudo", "python3", engine,
             "--catalog", catalog,
@@ -159,7 +159,7 @@ def run_engine(args, mode):
         if getattr(args, "simulate", False):
             cmd.append("--simulate")
     else:
-        # Windows: run cis_engine.ps1 with powershell
+        # Windows: run ohbs_engine.ps1 with powershell
         cmd = [
             "powershell", "-ExecutionPolicy", "Bypass", "-File", engine,
             "-Catalog", catalog,
@@ -228,7 +228,7 @@ def run_engine(args, mode):
 # ─── Host facts collector ─────────────────────────────────────────────
 
 def collect_host():
-    """Collect host information — mirrors what cis_engine records."""
+    """Collect host information — mirrors what ohbs_engine records."""
     import platform
     import socket
 

@@ -1,4 +1,4 @@
-usage: cis_cli.py fleet scan [-h]
+usage: ohbs_cli.py fleet scan [-h]
                              [--os {rhel10,rhel8,rhel9,sles15,sles16,tencentos3,tencentos4,ubuntu2004,ubuntu2204,ubuntu2404,win2016,win2019,win2022,win2025}]
                              [--engine ENGINE] [--catalog CATALOG]
                              [--guidance GUIDANCE] [--sections SECTIONS]
@@ -22,7 +22,7 @@ options:
                         sles15, sles16, tencentos3, tencentos4, ubuntu2004,
                         ubuntu2204, ubuntu2404, win2016, win2019, win2022,
                         win2025
-  --engine ENGINE       Path to cis_engine.py (Linux) or cis_engine.ps1
+  --engine ENGINE       Path to ohbs_engine.py (Linux) or ohbs_engine.ps1
                         (Windows). Required if --os not used.
   --catalog CATALOG     Path to rules.json. Required if --os not used.
   --guidance GUIDANCE   Path to guidance.json (for report rendering)
@@ -52,7 +52,7 @@ options:
                         <hostname>-<timestamp>-evidence.tar.gz under this
                         directory
   --webhook WEBHOOK     POST a JSON run summary to this URL after the run
-                        (overrides [notify] webhook_url in cis-host.toml)
+                        (overrides [notify] webhook_url in ohbs-host.toml)
   --timeout TIMEOUT     Engine execution timeout in seconds (default: 600)
   --no-prescan          Skip pre-scan baseline in apply mode
   --strict              Exit non-zero when residual failures remain
@@ -62,6 +62,6 @@ options:
                         reasons/objects
   --fleet-hosts FLEET_HOSTS
                         Comma-separated fleet host list (or use [fleet] hosts
-                        in cis-host.toml)
+                        in ohbs-host.toml)
   --fleet-remote        Run engine over SSH on each host (requires [fleet]
                         remote config)

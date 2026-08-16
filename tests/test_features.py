@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for newer cis-host features: evidence snapshot, webhook
+"""Tests for newer ohbs-host features: evidence snapshot, webhook
 notification, remediate mode, and config merging for those options."""
 
 import http.server
@@ -14,11 +14,11 @@ from types import SimpleNamespace
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLI = os.path.join(ROOT, "cis_cli.py")
+CLI = os.path.join(ROOT, "ohbs_cli.py")
 
 sys.path.insert(0, ROOT)
 import notify
-import cis_host_config
+import ohbs_host_config
 import commands_scan
 
 
@@ -96,7 +96,7 @@ def test_collect_evidence(sample_result, tmp_path):
         assert "rules/rule-1.1.1.txt" in names
         assert "rules/rule-5.2.1.txt" in names
         # No config file was used, so none should be archived
-        assert "cis-host.toml" not in names
+        assert "ohbs-host.toml" not in names
 
         rule_txt = tar.extractfile("rules/rule-5.2.1.txt").read().decode("utf-8")
         assert "PermitRootLogin yes" in rule_txt
@@ -108,14 +108,14 @@ def test_collect_evidence(sample_result, tmp_path):
 
 
 def test_collect_evidence_includes_config(sample_result, tmp_path):
-    cfg = tmp_path / "cis-host.toml"
+    cfg = tmp_path / "ohbs-host.toml"
     cfg.write_text("[profile]\nos = \"rhel9\"\n", encoding="utf-8")
     args = SimpleNamespace(evidence_dir=str(tmp_path / "ev"), config=str(cfg))
     data = json.loads(sample_result.read_text(encoding="utf-8"))
 
     tar_path = notify.collect_evidence(args, data, str(sample_result), "scan")
     with tarfile.open(tar_path, "r:gz") as tar:
-        assert "cis-host.toml" in tar.getnames()
+        assert "ohbs-host.toml" in tar.getnames()
 
 
 def test_collect_evidence_disabled(sample_result, tmp_path):
@@ -194,23 +194,23 @@ def test_send_webhook_disabled():
 
 
 def test_webhook_from_config(tmp_path):
-    cfg = tmp_path / "cis-host.toml"
+    cfg = tmp_path / "ohbs-host.toml"
     cfg.write_text('[notify]\nwebhook_url = "http://example.com/hook"\n', encoding="utf-8")
     args = SimpleNamespace(webhook=None)
-    args = cis_host_config.merge(args, str(cfg))
+    args = ohbs_host_config.merge(args, str(cfg))
     assert args.webhook == "http://example.com/hook"
 
     # CLI value wins over config
     args = SimpleNamespace(webhook="http://cli.example.com/hook")
-    args = cis_host_config.merge(args, str(cfg))
+    args = ohbs_host_config.merge(args, str(cfg))
     assert args.webhook == "http://cli.example.com/hook"
 
 
 def test_evidence_dir_from_config(tmp_path):
-    cfg = tmp_path / "cis-host.toml"
+    cfg = tmp_path / "ohbs-host.toml"
     cfg.write_text('[engine]\nevidence_dir = "./evidence"\n', encoding="utf-8")
     args = SimpleNamespace(evidence_dir=None)
-    args = cis_host_config.merge(args, str(cfg))
+    args = ohbs_host_config.merge(args, str(cfg))
     assert args.evidence_dir == "./evidence"
 
 

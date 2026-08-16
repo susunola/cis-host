@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Baseline snapshot tests for cis_cli.py.
+"""Baseline snapshot tests for ohbs_cli.py.
 
 These tests exist purely to freeze the current CLI surface (full --help
 text for every command/subcommand, plus the OS preset list output) *before*
-cis_cli.py is refactored from a single 1730-line module into the cis_cli/
+ohbs_cli.py is refactored from a single 1730-line module into the ohbs_cli/
 package (see PR1-PR8). They intentionally assert byte-for-byte equality
 against recorded snapshots in tests/snapshots/cli/.
 
@@ -20,10 +20,10 @@ import sys
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLI = os.path.join(ROOT, "cis_cli.py")
+CLI = os.path.join(ROOT, "ohbs_cli.py")
 SNAPSHOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "snapshots", "cli")
 
-# name -> argv (relative to cis_cli.py)
+# name -> argv (relative to ohbs_cli.py)
 SNAPSHOT_CASES = {
     "main_help": ["-h"],
     "list_help": ["list", "--help"],

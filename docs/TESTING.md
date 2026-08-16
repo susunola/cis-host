@@ -1,11 +1,11 @@
-# cis-host — QA Test Plan
+# ohbs-host — QA Test Plan
 
-**Status:** Living document · applies to the merged `main` (post PR0–PR9 modularization + M0–M5 rule-verification matrix + `ciscvm → cis-host` rename)
+**Status:** Living document · applies to the merged `main` (post PR0–PR9 modularization + M0–M5 rule-verification matrix + `ohbs → ohbs-host` rename)
 **Last updated:** 2026-08-15
 **Baseline:** 509 passing tests across two suites (see [Test inventory](#2-test-inventory-what-exists-today)).
-**L4 e2e plan:** §10 (modeled on `cis-image/scripts/real_e2e_test.py`) — implemented in `scripts/real_e2e_test.py`; Docker provider validated against ubuntu2204; CI step added (non-blocking).
+**L4 e2e plan:** §10 (modeled on `ohbs-image/scripts/real_e2e_test.py`) — implemented in `scripts/real_e2e_test.py`; Docker provider validated against ubuntu2204; CI step added (non-blocking).
 
-This plan describes the full testing strategy for cis-host: what is tested today, the philosophy behind it, and where coverage is intentionally extended next. It is a *plan*, not an exhaustive how-to — each section names the target, the approach, the mocking boundary, and the current gap. Sections 1–9 cover the unit → rule-matrix stack; [§10](#10-end-to-end-l4-test-plan--real-host-scanapplyrescan) is the real-host end-to-end (L4) plan, modeled on the sister-project's `cis-image/scripts/real_e2e_test.py`.
+This plan describes the full testing strategy for ohbs-host: what is tested today, the philosophy behind it, and where coverage is intentionally extended next. It is a *plan*, not an exhaustive how-to — each section names the target, the approach, the mocking boundary, and the current gap. Sections 1–9 cover the unit → rule-matrix stack; [§10](#10-end-to-end-l4-test-plan--real-host-scanapplyrescan) is the real-host end-to-end (L4) plan, modeled on the sister-project's `ohbs-image/scripts/real_e2e_test.py`.
 
 ---
 
@@ -33,12 +33,12 @@ L4  Behavioral integration           (real engine process, container/VM)  [gap t
 
 | Area | File(s) | Layer | Mocking boundary | Count |
 |------|---------|-------|------------------|-------|
-| CLI snapshot (byte-for-byte help) | `tests/test_cli_baseline.py` | L0/L1 | none (real subprocess `cis_cli.py`) | 13 |
+| CLI snapshot (byte-for-byte help) | `tests/test_cli_baseline.py` | L0/L1 | none (real subprocess `ohbs_cli.py`) | 13 |
 | CLI smoke | `tests/test_cli.py` | L1 | none | 7 |
 | `engine.py` subprocess wiring | `tests/test_cli_engine.py` | L2 | `mock.patch("engine.subprocess.run")` | 18 |
 | `display.py` color/summary/table | `tests/test_cli_display.py` | L1 | `patch.object(sys.stdout,'isatty')`, `capsys` | 8 |
-| `cis_host_config` load/merge | `tests/test_config.py` | L1 | `tmp_path` TOML | 7 |
-| `cis_host_diff` logic + CLI | `tests/test_diff.py` | L1 | `tmp_path`, injected scanners | 31 |
+| `ohbs_host_config` load/merge | `tests/test_config.py` | L1 | `tmp_path` TOML | 7 |
+| `ohbs_host_diff` logic + CLI | `tests/test_diff.py` | L1 | `tmp_path`, injected scanners | 31 |
 | Linux engine boundary helpers | `tests/test_engine.py` | L1 | real engine via `importlib`, `tmp_path` | 22 |
 | Exporters (xccdf/junit) | `tests/test_exporters.py` | L2 | real subprocess + XML parse | 2 |
 | `fleet.py` aggregation/render | `tests/test_fleet.py` | L1 | `tmp_path` | 10 |
@@ -50,11 +50,11 @@ L4  Behavioral integration           (real engine process, container/VM)  [gap t
 | **Fixture matrix (M0–M5)** | `tests/fixtures/test_m*.py` | **L3** | **real engine, faked OS boundary** | **~348** |
 
 **Fixture matrix detail** (`tests/fixtures/`):
-- **Linux** — 10 OS × 10 families (`multi_os.build_matrix()` → 99 combos): loads the real per-OS `cis_engine.py` via `importlib` and monkeypatches its boundary (`sh/read/exists/atomic_write/conf_values/have`, `open`, `globmod`, `os.path`, `os`) to an in-memory `FakeSystem`. Drives `run_rule()` through:
+- **Linux** — 10 OS × 10 families (`multi_os.build_matrix()` → 99 combos): loads the real per-OS `ohbs_engine.py` via `importlib` and monkeypatches its boundary (`sh/read/exists/atomic_write/conf_values/have`, `open`, `globmod`, `os.path`, `os`) to an in-memory `FakeSystem`. Drives `run_rule()` through:
   - `run_closed_loop`: scan→fail, apply→applied→pass, fresh re-scan→pass
   - `run_already_compliant`: scan→pass, apply→"already"
   - `run_idempotency_check` (M5): apply twice; second must be "already" **and** leave `files/services/kmods/sysctls/packages` byte-identical
-- **Windows** — 4 OS × {reg-dword, adv-audit, firewall, user-right}: shells out to `pwsh`, dot-sourcing `win_fake_system.py` (fake `Get-ItemProperty`/`secedit`/`auditpol`/`Get-NetFirewallProfile`) before the real `cis_engine.ps1`. Same three runner checks.
+- **Windows** — 4 OS × {reg-dword, adv-audit, firewall, user-right}: shells out to `pwsh`, dot-sourcing `win_fake_system.py` (fake `Get-ItemProperty`/`secedit`/`auditpol`/`Get-NetFirewallProfile`) before the real `ohbs_engine.ps1`. Same three runner checks.
 
 **CI** (`.github/workflows/ci.yml`, single `lint-and-test` job): py_compile engines → `pytest -v --ignore=tests/fixtures` → **release-gate step** running `pytest tests/fixtures/` + a JUnit-skip detector (fails if any fixture test skipped) → JSON catalog validation → Ansible `--syntax-check` → `pip install -e .` + CLI smoke.
 
@@ -76,7 +76,7 @@ These were *found* by the M0–M5 work. They are real product bugs that a releas
 
 ### L0 — Static & packaging guards (today: partial → good)
 - `py_compile` every engine + CLI module in CI. ✅
-- `tests/test_packaging.py` walks the local-import graph from `cis_cli.py` and asserts it equals `pyproject.toml py-modules`. ✅ (already transitive since PR8)
+- `tests/test_packaging.py` walks the local-import graph from `ohbs_cli.py` and asserts it equals `pyproject.toml py-modules`. ✅ (already transitive since PR8)
 - `scripts/validate_json.py` validates all catalogs in CI. ✅ (runs as a step)
 - **Gap:** `validate_json.py` has no pytest test itself; `scripts/export_sarif.py`, `export_prometheus.py`, `append_history.py` are untested. **Action:** add L1 tests for the remaining exporters mirroring `test_exporters.py`.
 
@@ -95,7 +95,7 @@ This is the highest-value layer and the CI release gate. **Intent:** every OS ×
 
 ### L4 — Behavioral integration (today: none → the biggest structural gap)
 The matrix proves rule *logic* with a faked OS. It does **not** prove that a real engine invocation on a real OS behaves identically (real `subprocess`, real filesystem, real privilege). The README Roadmap already lists "Molecule-based integration tests for every Linux role" and "CI pipeline for per-suite regression testing" as outstanding.
-- **Full plan:** see [§10 End-to-end (L4) test plan](#10-end-to-end-l4-test-plan--real-host-scanapplyrescan) — a `scripts/real_e2e_test.py` modeled on the sister-project's `cis-image` e2e, provisioning a real OS (Docker first, cloud-VM optional), running a real scan → apply → re-scan → idempotent-apply cycle, and always tearing down.
+- **Full plan:** see [§10 End-to-end (L4) test plan](#10-end-to-end-l4-test-plan--real-host-scanapplyrescan) — a `scripts/real_e2e_test.py` modeled on the sister-project's `ohbs-image` e2e, provisioning a real OS (Docker first, cloud-VM optional), running a real scan → apply → re-scan → idempotent-apply cycle, and always tearing down.
 - **Windows L4:** would need real Windows Server VMs (expensive). Recommend deferring; keep Windows at L3 (`pwsh` + faked cmdlets) unless/until a VM fleet is available.
 
 ---
@@ -103,7 +103,7 @@ The matrix proves rule *logic* with a faked OS. It does **not** prove that a rea
 ## 5. Test data & fixtures strategy
 
 - **Unit tests** use `tmp_path` and minimal inline JSON — self-contained, no repo fixtures needed.
-- **Snapshot tests** (`tests/snapshots/cli/*.txt`) freeze CLI help text byte-for-byte. **Discipline required:** never regenerate a snapshot to "fix" a failing test unless the change is a *documented, intentional* CLI change (see the `ciscvm → cis-host` rename already reflected there). A snapshot diff is the canary for accidental CLI drift.
+- **Snapshot tests** (`tests/snapshots/cli/*.txt`) freeze CLI help text byte-for-byte. **Discipline required:** never regenerate a snapshot to "fix" a failing test unless the change is a *documented, intentional* CLI change (see the `ohbs → ohbs-host` rename already reflected there). A snapshot diff is the canary for accidental CLI drift.
 - **Fixture matrix** uses the *real* per-OS `rules.json` and *real* engine code, with only the OS boundary faked. This means the matrix automatically tracks catalog/engine changes. New family generators must mirror exactly what the check function inspects (see `families/core.py` for the pattern).
 - **Synthetic rules** (Windows reg-dword/user-right) exist only because the real catalog params don't match the engine — a temporary stopgap until the catalog/engine mismatch is fixed (§3). Once fixed, the synthetic rules should be deleted and the real rules used.
 
@@ -116,7 +116,7 @@ The matrix proves rule *logic* with a faked OS. It does **not** prove that a rea
 2. **Zero skipped** fixture tests (JUnit-skip detector) — prevents silent Windows-coverage loss.
 3. JSON catalogs validate.
 4. Ansible playbooks pass `--syntax-check`.
-5. `pip install -e .` + `cis-host --help`/`list`/`scan --help`/`apply --help` smoke.
+5. `pip install -e .` + `ohbs-host --help`/`list`/`scan --help`/`apply --help` smoke.
 
 **Proposed additions (phased):**
 - **Coverage gate (phase 1):** add `pytest --cov` reporting for the main suite; set a floor (e.g. ≥80% line on non-fixture code) as a *warning* first, then a hard gate once the number stabilizes.
@@ -139,7 +139,7 @@ Ordered by value/effort.
 | 5 | Real `report.html.j2` template rendering with real data | L2 | Med | Snapshot the rendered HTML for one representative OS; assert key sections |
 | 6 | `--simulate` path (`apply_status == "simulated"`) | L3 | Med | Drive `run_rule` with `ctx.simulate=True` in the matrix |
 | 7 | Known-bug regression tests (§3) — `kv_conf` separator, Windows reg-dword/user-right catalog, user-right pipeline | L3 | **High** | Dedicated tests that fail today, flip green on fix |
-| 8 | Molecule/container L4 for a representative Linux role | L4 | High (post-PoC) | Wire existing `cis_ubuntu2204` molecule config into a non-gating CI job |
+| 8 | Molecule/container L4 for a representative Linux role | L4 | High (post-PoC) | Wire existing `ohbs-ubuntu2204` molecule config into a non-gating CI job |
 | 9 | Per-suite regression (weak vs. hardened container scan-diff) | L4 | High (post-PoC) | On-tag/on-main soak job |
 | 10 | Coverage floor + release checklist doc | L0/L3 | Med | Add `pytest --cov`, write `docs/RELEASE.md` |
 
@@ -173,17 +173,17 @@ A rule/family is considered **fully verified** when, against the *real* engine w
 
 ### 10.1 Why (the gap this fills)
 
-The L3 fixture matrix (M0–M5) exercises the *real* engine logic against a **faked** OS boundary — it proves a rule's check/fix logic is correct, but it cannot answer the questions the sister-project's `cis-image/scripts/real_e2e_test.py` answers for that project:
+The L3 fixture matrix (M0–M5) exercises the *real* engine logic against a **faked** OS boundary — it proves a rule's check/fix logic is correct, but it cannot answer the questions the sister-project's `ohbs-image/scripts/real_e2e_test.py` answers for that project:
 
-- Does `pip install -e .` actually work on a **clean** OS, and does `cis-host scan` run a real subprocess against a real filesystem/kernel?
+- Does `pip install -e .` actually work on a **clean** OS, and does `ohbs-host scan` run a real subprocess against a real filesystem/kernel?
 - Does a real `scan` → `apply` → re-`scan` cycle on a real host produce a valid report, correct exit codes, and genuine remediation (not just faked writes)?
-- Did the per-OS `rules.json` / `cis_engine.py` drift from real-world behavior in a way only a live OS exposes (e.g. a family that shells out to a tool absent from the faked dispatch)?
+- Did the per-OS `rules.json` / `ohbs_engine.py` drift from real-world behavior in a way only a live OS exposes (e.g. a family that shells out to a tool absent from the faked dispatch)?
 
-These only show up against something real. This plan follows the exact shape of `cis-image/scripts/real_e2e_test.py` (provision → confirm cost → run remote suite → **always teardown**), adapted from a cloud-VM image-builder to a **host scanner** whose target is a real OS.
+These only show up against something real. This plan follows the exact shape of `ohbs-image/scripts/real_e2e_test.py` (provision → confirm cost → run remote suite → **always teardown**), adapted from a cloud-VM image-builder to a **host scanner** whose target is a real OS.
 
 ### 10.2 Provisioning target — Docker first, cloud-VM optional
 
-cis-host scans real OS hosts. Two fidelity tiers:
+ohbs-host scans real OS hosts. Two fidelity tiers:
 
 | Tier | Target | Fidelity | Cost | Runs where |
 |------|--------|----------|------|-----------|
@@ -194,7 +194,7 @@ The script must support both via `--provider docker|cloud`, defaulting to `docke
 
 ### 10.3 Script: `scripts/real_e2e_test.py`
 
-Mirrors the reference script's structure and lifecycle discipline, applied to cis-host.
+Mirrors the reference script's structure and lifecycle discipline, applied to ohbs-host.
 
 **CLI / config** (mirrors reference + provider switch):
 ```
@@ -216,15 +216,15 @@ Cloud mode adds `--image-id/--region/--zone/--instance-type/--vpc-id/--subnet-id
    - *Docker:* `docker run -d --privileged --name cis-e2e-<os>-<ts> <image> init` (systemd image) → wait for healthy.
    - *Cloud:* reuse reference's `generate_keypair` → `import_keypair` → `run_instance` → `wait_for_public_ip` → `wait_for_ssh`.
 3. **Save last-target record** — `logs/e2e_last_instance.json` (Docker: container id; Cloud: instance/key/region) so a manual cleanup path always exists.
-4. **Install cis-host + run real cycle over exec/SSH** — `REMOTE_SCRIPT` heredoc piped to `ssh host bash -s` (cloud) or `docker exec -i container bash -s` (docker):
+4. **Install ohbs-host + run real cycle over exec/SSH** — `REMOTE_SCRIPT` heredoc piped to `ssh host bash -s` (cloud) or `docker exec -i container bash -s` (docker):
    ```
    set -euo pipefail
    [1/6] install python + git
    [2/6] pip install -e .[dev]          # proves clean editable install
-   [3/6] cis-host --help; cis-host list # CLI surface alive
-   [4/6] cis-host scan --os X --profile L1 --output /root/e2e   # real subprocess scan
-   [5/6] cis-host apply --os X --profile L1 --allow-disruptive --output /root/e2e   # real remediation
-   [6/6] cis-host scan --os X --profile L1 --output /root/e2e/after  # post-apply re-scan
+   [3/6] ohbs-host --help; ohbs-host list # CLI surface alive
+   [4/6] ohbs-host scan --os X --profile L1 --output /root/e2e   # real subprocess scan
+   [5/6] ohbs-host apply --os X --profile L1 --allow-disruptive --output /root/e2e   # real remediation
+   [6/6] ohbs-host scan --os X --profile L1 --output /root/e2e/after  # post-apply re-scan
    ```
 5. **Assert results** (on the *host* side, after the remote run) — this is where e2e differs from a plain "did it run":
    - scan #1 exit 0, valid result JSON (`summary.all.pass+fail+manual+error == total`), HTML report produced.
@@ -240,7 +240,7 @@ Cloud mode adds `--image-id/--region/--zone/--instance-type/--vpc-id/--subnet-id
 | Assertion | What it proves |
 |-----------|----------------|
 | Clean `pip install -e .[dev]` succeeds | packaging actually works on a real OS |
-| `cis-host --help` / `list` live | CLI entrypoint + dispatch survive a real install |
+| `ohbs-host --help` / `list` live | CLI entrypoint + dispatch survive a real install |
 | scan #1 exits 0, result JSON well-formed | real engine subprocess + catalog load work |
 | HTML report generated | real `report.html.j2` renders with real data |
 | `applied > 0` on apply | real remediation actually changes the host |

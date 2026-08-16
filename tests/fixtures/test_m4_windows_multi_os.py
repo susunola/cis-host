@@ -3,7 +3,7 @@ single OS (win2022, in M3) to all 4 Windows OS presets
 (win2016/2019/2022/2025), and add a user-right generator to cover 4
 target families total: reg-dword, adv-audit, firewall, user-right.
 
-This works unmodified across OSes because all 4 Windows cis_engine.ps1
+This works unmodified across OSes because all 4 Windows ohbs_engine.ps1
 copies are byte-identical (verified via md5) -- only rules.json (the
 catalog) differs per OS, exactly like the Linux M2 milestone.
 

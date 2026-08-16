@@ -1,4 +1,4 @@
-usage: cis_cli.py [-h] [--config CONFIG]
+usage: ohbs_cli.py [-h] [--config CONFIG]
                   {list,list-os,scan,audit,apply,remediate,check,fleet,diff,watch,info} ...
 
 CIS Benchmark local CLI — scan, apply, audit, fleet scan, view rules
@@ -22,37 +22,37 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --config CONFIG       Path to cis-host.toml config file (default: ./cis-
-                        host.toml or $CIS_HOST_CONFIG)
+  --config CONFIG       Path to ohbs-host.toml config file (default: ./cis-
+                        host.toml or $OHBS_HOST_CONFIG)
 
 Examples:
   # Pure scan
-  python3 cis_cli.py scan --os rhel9 --profile L1 --output ./out/
+  python3 ohbs_cli.py scan --os rhel9 --profile L1 --output ./out/
 
   # Apply + auto re-scan (combined)
-  python3 cis_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
+  python3 ohbs_cli.py apply --os ubuntu2204 --profile L2 --allow-disruptive --output ./out/
 
   # Audit / gate mode (exit non-zero on findings)
-  python3 cis_cli.py audit --os rhel9 --profile L1 --output ./out/
+  python3 ohbs_cli.py audit --os rhel9 --profile L1 --output ./out/
 
   # Fleet scan across hosts
-  python3 cis_cli.py fleet scan --os rhel9 --fleet-hosts web1,web2 --output ./out/
+  python3 ohbs_cli.py fleet scan --os rhel9 --fleet-hosts web1,web2 --output ./out/
 
   # Fine-grained: only specific rules
-  python3 cis_cli.py scan --os rhel8 --include "1.1.1.1,1.1.1.2,5.1.1" --output ./out/
+  python3 ohbs_cli.py scan --os rhel8 --include "1.1.1.1,1.1.1.2,5.1.1" --output ./out/
 
   # Tailor rule inputs and waive exceptions
-  python3 cis_cli.py scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
+  python3 ohbs_cli.py scan --os rhel9 --variables '{"min_len": 14}' --waivers '{"1.1.1.1": "legacy app"}'
 
   # Dry-run remediation
-  python3 cis_cli.py apply --os rhel9 --simulate
+  python3 ohbs_cli.py apply --os rhel9 --simulate
 
   # CLI-only output (no HTML)
-  python3 cis_cli.py scan --os rhel9 --format cli
+  python3 ohbs_cli.py scan --os rhel9 --format cli
 
   # View rule detail
-  python3 cis_cli.py info --os rhel9 --id 1.1.1.1
+  python3 ohbs_cli.py info --os rhel9 --id 1.1.1.1
 
   # View rule detail as HTML page
-  python3 cis_cli.py info --os rhel9 --id 1.1.1.1 --format html --output ./out/
+  python3 ohbs_cli.py info --os rhel9 --id 1.1.1.1 --format html --output ./out/
         

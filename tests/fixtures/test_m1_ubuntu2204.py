@@ -20,13 +20,13 @@ audit_immutable (see families/extra.py). Combined with M0's kmod,
 sysctl, svc_enabled, svc_disabled, pkg_present, this reaches the
 Top-10 Linux family generators required by M1.
 
-partition has no registered fix() in cis_engine.py (CIS explicitly
+partition has no registered fix() in ohbs_engine.py (CIS explicitly
 requires manual partition-layout changes), so only the
 already-compliant scan path is exercised for it -- there is no closed
 loop to run.
 
 KNOWN PRE-EXISTING ENGINE BUG (found via this fixture, not fixed here):
-cis_engine.py's _kv_current() tries separator regex r"\s+" before
+ohbs_engine.py's _kv_current() tries separator regex r"\s+" before
 r"\s*=\s*" whenever a kv_conf rule's params omit "sep" (which defaults
 to "="). For a value persisted as "key = value" (exactly what
 f_kv_conf()'s default sep="=" writes), r"\s+" matches first and greedily
@@ -38,7 +38,7 @@ genuine production bug affecting every kv_conf rule that omits an
 explicit "sep" (e.g. 5.3.3.2.2 minlen, 5.3.3.2.3 minclass, 5.3.3.3.1
 remember) -- not an artifact of this fixture's fakes. Fixing it would
 mean patching the shared _kv_current()/_kv_targets() logic across all
-14 per-OS cis_engine.py copies, which is out of scope for "M1: add
+14 per-OS ohbs_engine.py copies, which is out of scope for "M1: add
 fixture generators" and is left for a follow-up bugfix task. To keep
 M1 focused on fixture-framework coverage, this test intentionally
 picks a kv_conf rule whose params explicitly set "sep" (avoiding the
@@ -57,7 +57,7 @@ from runner import run_already_compliant, run_closed_loop
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _CATALOG = os.path.join(
-    _REPO_ROOT, "cis-ubuntu2204-ansible", "roles", "cis_ubuntu2204", "files", "rules.json")
+    _REPO_ROOT, "ohbs-ubuntu2204-ansible", "roles", "ohbs-ubuntu2204", "files", "rules.json")
 
 NEW_FAMILIES = ("mount_opt", "kv_conf", "banner", "partition", "audit_immutable")
 CLOSED_LOOP_FAMILIES = ("mount_opt", "kv_conf", "banner", "audit_immutable")

@@ -19,7 +19,7 @@ if _REPO_ROOT not in sys.path:
 from presets import OS_PRESETS  # noqa: E402
 
 # All non-Windows (Linux) OS presets; Windows OSes use a PowerShell
-# engine (cis_engine.ps1) and are out of scope until M3/M4.
+# engine (ohbs_engine.ps1) and are out of scope until M3/M4.
 LINUX_OS_IDS = tuple(
     os_id for os_id, preset in OS_PRESETS.items()
     if preset["engine"].endswith(".py"))
@@ -29,7 +29,7 @@ TARGET_FAMILIES = (
     "mount_opt", "kv_conf", "banner", "partition", "audit_immutable",
 )
 
-# Families with no registered fix() in cis_engine.py -- only the
+# Families with no registered fix() in ohbs_engine.py -- only the
 # already-compliant scan path is meaningful for these; run_closed_loop()
 # has nothing to apply.
 NO_FIX_FAMILIES = frozenset({"partition"})

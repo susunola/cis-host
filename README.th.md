@@ -1,4 +1,4 @@
-# cis-host
+# ohbs-host
 
 [English](README.md) | [简体中文](README.zh.md) | [日本語](README.ja.md) | **ภาษาไทย**
 
@@ -17,7 +17,7 @@ Ansible playbooks และ CLI แบบローカルที่ใช้ดำเ
 ## สถาปัตยกรรม
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="cis-host architecture" width="800">
+  <img src="docs/architecture.svg" alt="ohbs-host architecture" width="800">
 </p>
 
 Engine เป็นสคริปต์ไฟล์เดียวที่ไม่มีการพึ่งพาไลบรารีภายนอก (Python 3 บน Linux, PowerShell บน Windows) Ansible ทำหน้าที่จัดการเฉพาะการถ่ายโอนไฟล์ การเรียกใช้คำสั่ง และการสร้างรายงาน แต่ละ Engine สร้างทั้ง `result.json` ที่มีโครงสร้าง และ `audit.log` (JSON-lines) ซึ่งเหมาะสำหรับการตรวจสอบด้านการปฏิบัติตามข้อกำหนด และการนำเข้าสู่ระบบ SIEM
@@ -27,7 +27,7 @@ Engine เป็นสคริปต์ไฟล์เดียวที่ไ�
 ### scan (อ่านอย่างเดียว)
 
 1. `preflight` — Ansible ตรวจสอบความถูกต้องของตัวแปร ตรวจสอบ Python 3.6+ บนเครื่องเป้าหมาย (PowerShell 5.1+ บน Windows) และยืนยันสิทธิ์ root / Administrator
-2. `push` — คัดลอก `cis_engine.py`, `rules.json`, `guidance.json` และ `sections.json` ไปยัง `/tmp/cis-scan/` บนเครื่องเป้าหมาย (`C:\Windows\Temp\cis-scan` บน Windows)
+2. `push` — คัดลอก `ohbs_engine.py`, `rules.json`, `guidance.json` และ `sections.json` ไปยัง `/tmp/cis-scan/` บนเครื่องเป้าหมาย (`C:\Windows\Temp\cis-scan` บน Windows)
 3. `run` — Engine เริ่มทำงานใน `--mode scan` วนตรวจสอบแต่ละกฎในแคตตาล็อก เก็บรวบรวมหลักฐาน และเขียน `result.json` โดยไม่มีการแก้ไขใด ๆ บนเครื่องเป้าหมาย
 4. `fetch` — Ansible ดึง `result.json` (และ `audit.log` หากเปิดใช้งาน) กลับมายังเครื่องควบคุม
 5. `report` — เทมเพลต Jinja2 (`report.html.j2`) รวม `result.json` เข้ากับข้อมูลโฮสต์ (hostname, IP, MAC, OS, kernel) เพื่อสร้างรายงาน HTML
@@ -44,20 +44,20 @@ Engine เป็นสคริปต์ไฟล์เดียวที่ไ�
 
 | Suite | Benchmark | Engine | จำนวนกฎ |
 |-------|-----------|--------|-------|
-| `cis-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
-| `cis-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
-| `cis-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
-| `cis-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
-| `cis-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
-| `cis-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
-| `cis-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
-| `cis-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
-| `cis-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
-| `cis-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
-| `cis-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
-| `cis-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
-| `cis-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
-| `cis-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
+| `ohbs-tencentos3-ansible/` | CIS TencentOS Linux 3 v1.0.0 | Python 3 | 322 |
+| `ohbs-tencentos4-ansible/` | CIS TencentOS Linux 4 v1.0.0 | Python 3 | 275 |
+| `ohbs-rhel8-ansible/` | CIS Red Hat Enterprise Linux 8 v4.0.0 | Python 3 | 322 |
+| `ohbs-rhel9-ansible/` | CIS Red Hat Enterprise Linux 9 v2.0.0 | Python 3 | 297 |
+| `ohbs-rhel10-ansible/` | CIS Red Hat Enterprise Linux 10 v1.0.1 | Python 3 | 328 |
+| `ohbs-sles15-ansible/` | CIS SLES 15 v2.0.1 | Python 3 | 286 |
+| `ohbs-sles16-ansible/` | CIS SLES 16 v1.0.0 | Python 3 | 336 |
+| `ohbs-ubuntu2004-ansible/` | CIS Ubuntu 20.04 LTS v3.0.0 | Python 3 | 312 |
+| `ohbs-ubuntu2204-ansible/` | CIS Ubuntu 22.04 LTS v3.0.0 | Python 3 | 306 |
+| `ohbs-ubuntu2404-ansible/` | CIS Ubuntu 24.04 LTS v2.0.0 | Python 3 | 332 |
+| `ohbs-win2016-ansible/` | CIS Microsoft Windows Server 2016 v3.0.0 | PowerShell | 337 |
+| `ohbs-win2019-ansible/` | CIS Microsoft Windows Server 2019 v3.0.0 | PowerShell | 338 |
+| `ohbs-win2022-ansible/` | CIS Microsoft Windows Server 2022 v3.0.0 | PowerShell | 342 |
+| `ohbs-win2025-ansible/` | CIS Microsoft Windows Server 2025 v2.1.0 | PowerShell | 360 |
 
 แต่ละชุดเป็นโปรเจกต์ Ansible แบบพร้อมใช้งานในตัวเอง ประกอบด้วย inventory, group_vars, `scan.yml`, `apply.yml`, โครงสร้าง role และเทมเพลตของตัวเอง
 
@@ -82,7 +82,7 @@ Engine เป็นสคริปต์ไฟล์เดียวที่ไ�
 **ผ่าน CLI:**
 
 ```bash
-python3 cis_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
+python3 ohbs_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
 ```
 
 **ผ่าน Ansible:** เพิ่ม `-e cis_audit_log=/var/log/cis-audit.log` ในการเรียกใช้ playbook
@@ -95,23 +95,23 @@ python3 cis_cli.py scan --os rhel9 --audit-log output/audit-$(hostname).log
 
 ```bash
 # สแกน L1 (อ่านอย่างเดียว)
-python3 cis_cli.py scan --os rhel9 --profile L1 --output output/
+python3 ohbs_cli.py scan --os rhel9 --profile L1 --output output/
 
 # แก้ไข L1
-python3 cis_cli.py apply --os ubuntu2204 --profile L1 --output output/
+python3 ohbs_cli.py apply --os ubuntu2204 --profile L1 --output output/
 
 # สแกนเต็มรูปแบบ L2 + อนุญาตกฎที่มีผลกระทบ + audit log
-python3 cis_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
+python3 ohbs_cli.py apply --os tencentos4 --profile L2 --allow-disruptive \
   --audit-log output/audit.log --output output/
 
 # สแกนเฉพาะกฎที่ระบุ
-python3 cis_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
+python3 ohbs_cli.py scan --os sles15 --include "1.1.1,1.1.2,5.2" --output output/
 
 # ตรวจจับความเบี่ยงเบน (drift): เปรียบเทียบผลสแกน 2 ไฟล์ (CI: ใช้ --exit-code เพื่อให้ fail)
-python3 cis_cli.py diff output/result-before.json output/result-after.json --exit-code
+python3 ohbs_cli.py diff output/result-before.json output/result-after.json --exit-code
 
 # เฝ้าระวังแบบรอบ: สแกนทุก 6 ชม. รายงานเมื่อ config เบี่ยงเบนเท่านั้น
-python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
+python3 ohbs_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS https://hooks.example.com/alert"
 ```
 
 ค่าของ `--os`: `tencentos3` `tencentos4` · `rhel8` `rhel9` `rhel10` · `sles15` `sles16` · `ubuntu2004` `ubuntu2204` `ubuntu2404` · `win2016` `win2019` `win2022` `win2025`
@@ -119,11 +119,11 @@ python3 cis_cli.py watch --os rhel9 --interval 21600 --alert-cmd "curl -fsS http
 ### ผ่าน Ansible
 
 ```bash
-ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
-                 cis-rhel9-ansible/scan.yml
+ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
+                 ohbs-rhel9-ansible/scan.yml
 
-ansible-playbook -i cis-rhel9-ansible/inventory/hosts.ini \
-                 cis-rhel9-ansible/apply.yml \
+ansible-playbook -i ohbs-rhel9-ansible/inventory/hosts.ini \
+                 ohbs-rhel9-ansible/apply.yml \
                  -e cis_profile=L2 -e cis_allow_disruptive=true
 ```
 
@@ -186,12 +186,12 @@ cis-scanner ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
 ## โครงสร้างไดเรกทอรี
 
 ```
-cis-host/
+ohbs-host/
 ├── README.md
 ├── README.zh.md
 ├── README.ja.md
 ├── README.th.md
-├── cis_cli.py                      # จุดเริ่มต้น CLI ในเครื่อง (--os สลับเป้าหมาย)
+├── ohbs_cli.py                      # จุดเริ่มต้น CLI ในเครื่อง (--os สลับเป้าหมาย)
 ├── args.py                         # การประกาศ argparse (ทุกซับคอมมานด์)
 ├── dispatch.py                     # การจัดลำดับรันไทม์และดิสแพตช์คำสั่ง
 ├── defaults.py                     # ค่าเริ่มต้นของ CLI
@@ -204,25 +204,25 @@ cis-host/
 ├── display.py                      # เอาต์พุตตาราง/สีของ CLI
 ├── presets.py                      # รายการ OS_PRESETS
 ├── catalog.py                      # ค้นหาแคตตาล็อกกฎ
-├── cis_host_diff.py                # ตรรกะ drift detection / verify / watch
-├── cis_host_config.py              # โหลดและ merge cis-host.toml
+├── ohbs_host_diff.py                # ตรรกะ drift detection / verify / watch
+├── ohbs_host_config.py              # โหลดและ merge ohbs-host.toml
 ├── scripts/                        # ตัวส่งออก SARIF/XCCDF/JUnit/Prometheus
 ├── tests/                          # ชุดทดสอบ pytest (engine, CLI, drift, exporters)
 ├── docs/architecture.svg           # แผนผังสถาปัตยกรรม
-├── cis-tencentos3-ansible/         # TencentOS 3
-├── cis-tencentos4-ansible/         # TencentOS 4
-├── cis-rhel8-ansible/              # RHEL 8
-├── cis-rhel9-ansible/              # RHEL 9
-├── cis-rhel10-ansible/             # RHEL 10
-├── cis-sles15-ansible/             # SLES 15
-├── cis-sles16-ansible/             # SLES 16
-├── cis-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
-├── cis-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
-├── cis-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
-├── cis-win2016-ansible/            # Windows Server 2016
-├── cis-win2019-ansible/            # Windows Server 2019
-├── cis-win2022-ansible/            # Windows Server 2022
-└── cis-win2025-ansible/            # Windows Server 2025
+├── ohbs-tencentos3-ansible/         # TencentOS 3
+├── ohbs-tencentos4-ansible/         # TencentOS 4
+├── ohbs-rhel8-ansible/              # RHEL 8
+├── ohbs-rhel9-ansible/              # RHEL 9
+├── ohbs-rhel10-ansible/             # RHEL 10
+├── ohbs-sles15-ansible/             # SLES 15
+├── ohbs-sles16-ansible/             # SLES 16
+├── ohbs-ubuntu2004-ansible/         # Ubuntu 20.04 LTS
+├── ohbs-ubuntu2204-ansible/         # Ubuntu 22.04 LTS
+├── ohbs-ubuntu2404-ansible/         # Ubuntu 24.04 LTS
+├── ohbs-win2016-ansible/            # Windows Server 2016
+├── ohbs-win2019-ansible/            # Windows Server 2019
+├── ohbs-win2022-ansible/            # Windows Server 2022
+└── ohbs-win2025-ansible/            # Windows Server 2025
     ├── ansible.cfg
     ├── scan.yml | apply.yml | site.yml
     ├── inventory/  group_vars/
@@ -271,14 +271,14 @@ cis-host/
 
 ## การตรวจจับ drift, การตรวจสอบ & การเฝ้าระวัง
 
-- **`cis-host diff`** — เปรียบเทียบผลสแกน JSON 2 ไฟล์ และจำแนกการเปลี่ยนแปลงของแต่ละกฎ (ใหม่ล้มเหลว = drift, regressed, recovered, การเปลี่ยนแปลง waiver) เป็นสรุป CLI + รายงาน HTML ในตัว ใช้ `--exit-code` ใน CI เพื่อให้ pipeline ล้มเหลวเมื่อมี drift
-- **การตรวจสอบหลัง apply** — หลัง `cis-host apply` เปรียบเทียบสแกนก่อน/หลัง: กฎที่แก้ไขจริง, ยังล้มเหลว, และ **regressed (กฎที่เคยผ่านแล้วพังเพราะการแก้ไข)** พร้อมรายงาน `verify-*.html`
-- **`cis-host watch`** — ลูปสแกนแบบรอบ แจ้งเตือนเฉพาะเมื่อมีการเปลี่ยนแปลง (edge-triggered แบบ Wazuh SCA) `--json` เอาต์พุตเหตุการณ์ 1 บรรทัดต่อ 1 ระเบียนสำหรับ SIEM/อัตโนมัติ
+- **`ohbs-host diff`** — เปรียบเทียบผลสแกน JSON 2 ไฟล์ และจำแนกการเปลี่ยนแปลงของแต่ละกฎ (ใหม่ล้มเหลว = drift, regressed, recovered, การเปลี่ยนแปลง waiver) เป็นสรุป CLI + รายงาน HTML ในตัว ใช้ `--exit-code` ใน CI เพื่อให้ pipeline ล้มเหลวเมื่อมี drift
+- **การตรวจสอบหลัง apply** — หลัง `ohbs-host apply` เปรียบเทียบสแกนก่อน/หลัง: กฎที่แก้ไขจริง, ยังล้มเหลว, และ **regressed (กฎที่เคยผ่านแล้วพังเพราะการแก้ไข)** พร้อมรายงาน `verify-*.html`
+- **`ohbs-host watch`** — ลูปสแกนแบบรอบ แจ้งเตือนเฉพาะเมื่อมีการเปลี่ยนแปลง (edge-triggered แบบ Wazuh SCA) `--json` เอาต์พุตเหตุการณ์ 1 บรรทัดต่อ 1 ระเบียนสำหรับ SIEM/อัตโนมัติ
 - **สุขอนามัยของ waiver** — waiver ระบุ `approved_by` / `expires` ได้; รายการหมดอายุหรือ rule id ที่ไม่มีใน catalog (waiver ที่เงียบไร้ผล) จะถูกเตือนตอนสแกน
 
 ```bash
-python3 cis_cli.py watch --os rhel9 --interval 3600 --json
-python3 cis_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
+python3 ohbs_cli.py watch --os rhel9 --interval 3600 --json
+python3 ohbs_cli.py scan --os rhel9 --waivers '{"1.1.1.1": {"reason": "legacy app", "approved_by": "alice", "expires": "2026-12-31"}}'
 ```
 
 ## หมายเหตุ

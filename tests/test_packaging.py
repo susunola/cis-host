@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Guard against pyproject.toml py-modules drifting from the actual local
-modules reachable (transitively) from cis_cli.py's entrypoint. Regression
-test for a bug where cis_host_diff (and later presets/catalog/engine/display)
+modules reachable (transitively) from ohbs_cli.py's entrypoint. Regression
+test for a bug where ohbs_host_diff (and later presets/catalog/engine/display)
 were importable from a source checkout but missing from the packaged
-distribution, causing `pip install .` + `cis-host` to fail with
+distribution, causing `pip install .` + `ohbs-host` to fail with
 ModuleNotFoundError in a clean environment.
 
-Since PR8, cis_cli.py itself only imports dispatch.py, which in turn
+Since PR8, ohbs_cli.py itself only imports dispatch.py, which in turn
 imports the bulk of the local modules (args, defaults, commands_scan,
 commands_watch, fleet, info, ...). We therefore walk the local-import graph
-transitively starting from cis_cli.py, instead of only checking cis_cli.py's
+transitively starting from ohbs_cli.py, instead of only checking ohbs_cli.py's
 direct imports, so that modules newly required by dispatch.py (or anything
 it imports) are still caught.
 """
@@ -68,12 +68,12 @@ def _transitive_local_imports(entry_path):
 
 def test_py_modules_covers_all_local_imports():
     py_modules = _load_py_modules()
-    cis_cli_path = os.path.join(REPO_ROOT, "cis_cli.py")
-    local_imports = _transitive_local_imports(cis_cli_path)
+    ohbs_cli_path = os.path.join(REPO_ROOT, "ohbs_cli.py")
+    local_imports = _transitive_local_imports(ohbs_cli_path)
 
     missing = local_imports - py_modules
     assert not missing, (
-        f"cis_cli.py transitively imports local module(s) {sorted(missing)} "
+        f"ohbs_cli.py transitively imports local module(s) {sorted(missing)} "
         f"that are not listed in [tool.setuptools] py-modules in "
         f"pyproject.toml. This would cause ModuleNotFoundError after "
         f"`pip install` in a clean environment. py-modules={sorted(py_modules)}"

@@ -1,0 +1,30 @@
+---
+# Site-wide overrides for the CIS TencentOS Linux 4 role.
+# Anything set here beats roles/ohbs-tencentos4/defaults/main.yml and is beaten
+# by -e on the command line.
+
+cis_profile: L1
+cis_mode: scan
+cis_platform: server
+cis_allow_disruptive: false
+
+# Organisation name printed in the report header.
+cis_org_name: ""
+
+# Controls that are commonly waived because they conflict with local
+# operating practice. Delete the ones you do want enforced.
+cis_exclude: []
+# cis_exclude:
+#   - "1.1.2"     # separate partitions for /tmp, /var, /home - decided at build time
+#   - "5.1.22"    # sshd MaxStartups - tuned by the platform team
+#   - "4.1"       # firewalld policy - managed by the network team
+
+# Reporting
+cis_report_html: true
+cis_report_json: true
+cis_report_csv: false
+cis_report_index: true
+
+# CI gate: turn these on to fail the pipeline on residual findings.
+cis_fail_on_findings: false
+cis_min_score: 0

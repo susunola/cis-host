@@ -104,7 +104,7 @@ def test_export_xccdf(sample_result, tmp_path):
     tree = ET.parse(str(output))
     root = tree.getroot()
     assert root.tag == "{%s}Benchmark" % XCCDF_NS
-    assert root.attrib.get("id", "").startswith("xccdf_cis-host_benchmark_")
+    assert root.attrib.get("id", "").startswith("xccdf_ohbs-host_benchmark_")
 
     test_result = root.find("{%s}TestResult" % XCCDF_NS)
     assert test_result is not None
@@ -197,7 +197,7 @@ def test_plot_history(tmp_path):
 
 
 def test_tailoring_round_trip(tmp_path):
-    toml = tmp_path / "cis-host.toml"
+    toml = tmp_path / "ohbs-host.toml"
     toml.write_text("""
 [profile]
 os = "rhel9"
@@ -219,9 +219,9 @@ min_len = 14
     _run(TAILOR_EXPORT, [str(toml), str(xml_out)])
     assert xml_out.exists()
     xml_text = xml_out.read_text(encoding="utf-8")
-    assert "xccdf_cis-host_rule_1.1.1" in xml_text
-    assert "xccdf_cis-host_rule_5.1.1" in xml_text
-    assert "xccdf_cis-host_value_min_len" in xml_text
+    assert "xccdf_ohbs-host_rule_1.1.1" in xml_text
+    assert "xccdf_ohbs-host_rule_5.1.1" in xml_text
+    assert "xccdf_ohbs-host_value_min_len" in xml_text
 
     toml_out = tmp_path / "imported.toml"
     _run(TAILOR_IMPORT, [str(xml_out), str(toml_out)])

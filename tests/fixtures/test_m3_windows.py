@@ -1,7 +1,7 @@
 """M3 acceptance test: build Windows FixtureGenerators for the top-3
 non-manual families (reg-dword, adv-audit, firewall - ranked by rule
 count on win2022: 232/34/23 respectively) and drive win2022's real
-cis_engine.ps1 Invoke-Check/Invoke-Fix through the closed loop /
+ohbs_engine.ps1 Invoke-Check/Invoke-Fix through the closed loop /
 already-compliant checks, via win_harness.WinHarness (shells out to
 `pwsh`, faking the registry/secedit/auditpol/firewall boundary --
 see win_fake_system.py and win_harness.py for the full design).
@@ -43,7 +43,7 @@ pytestmark = pytest.mark.skipif(
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(os.path.dirname(_HERE))
 _CATALOG = os.path.join(
-    _REPO_ROOT, "cis-win2022-ansible", "roles", "cis_win2022", "files", "rules.json")
+    _REPO_ROOT, "ohbs-win2022-ansible", "roles", "ohbs-win2022", "files", "rules.json")
 
 
 def _first_rule(family):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for info.py (extracted from cis_cli.py in PR6).
+"""Unit tests for info.py (extracted from ohbs_cli.py in PR6).
 
 Covers cmd_info()'s not-found exit path, and render_info_html()'s
 templates/rule_info.html.j2 rendering, including the levels_display

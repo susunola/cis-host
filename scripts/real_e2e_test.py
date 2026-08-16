@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real end-to-end test: provision a real OS host, install cis-host on it,
+"""Real end-to-end test: provision a real OS host, install ohbs-host on it,
 and run a genuine scan -> apply -> re-scan -> idempotent-apply cycle,
 then tear the host back down.
 
@@ -7,12 +7,12 @@ This is a *supplement* to the L3 rule-verification matrix in
 tests/fixtures/ (see docs/TESTING.md), not a replacement. The matrix
 fakes the OS/subprocess boundary and proves each rule's check/fix
 *logic*; it can never answer "does `pip install -e .` actually work on a
-clean host", "does a real `cis-host scan` produce a valid report against
+clean host", "does a real `ohbs-host scan` produce a valid report against
 a real kernel/filesystem", or "does real remediation actually change the
 host without regressing other rules". Those only show up against
 something real.
 
-Modeled on the sister project's cis-image/scripts/real_e2e_test.py:
+Modeled on the sister project's ohbs-image/scripts/real_e2e_test.py:
 provision -> confirm cost -> run remote suite over exec/SSH -> ALWAYS
 teardown (success, failure, or Ctrl-C) unless --keep-on-failure.
 
@@ -66,7 +66,7 @@ READY_TIMEOUT_SECONDS = 300
 SSH_READY_TIMEOUT_SECONDS = 180
 
 
-# ---- progress helpers (mirror cis-image's banner/info/ok/warn/fail) ----
+# ---- progress helpers (mirror ohbs-image's banner/info/ok/warn/fail) ----
 def _color(code: str, s: str) -> str:
     return "\033[%sm%s\033[0m" % (code, s) if sys.stdout.isatty() else s
 
@@ -99,9 +99,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--provider", choices=("docker", "cloud"), default="docker")
     p.add_argument("--profile", default="L1", choices=("L1", "L2"))
     p.add_argument("--allow-disruptive", action="store_true",
-                   help="pass --allow-disruptive to cis-host apply")
+                   help="pass --allow-disruptive to ohbs-host apply")
     p.add_argument("--branch", default="main")
-    p.add_argument("--repo-url", default="https://github.com/susunola/cis-host.git")
+    p.add_argument("--repo-url", default="https://github.com/susunola/ohbs-host.git")
     p.add_argument("--keep-on-failure", action="store_true",
                    help="do not teardown if the remote run fails (for debugging)")
     p.add_argument("--yes", "-y", action="store_true",
@@ -157,7 +157,7 @@ def confirm_impact(args: argparse.Namespace) -> None:
     banner("End-to-end test — impact confirmation")
     if args.provider == "docker":
         info("This will pull a systemd Docker image (if needed) and run a real")
-        info("cis-host scan + apply (remediation) inside a throwaway container.")
+        info("ohbs-host scan + apply (remediation) inside a throwaway container.")
         info("The container is destroyed when the run finishes.")
     else:
         info("This will create a REAL, billed cloud VM (image=%s type=%s)" %
@@ -193,18 +193,18 @@ def docker_exec(args: argparse.Namespace, target: dict, script: str,
                 log_path: Path) -> int:
     """Copy the local repo into the container, then run the remote script
     via `docker exec -i <c> bash -s`, streaming output to stdout and a log.
-    Mirrors cis-image's ssh+bash -s runner but via docker exec.
+    Mirrors ohbs-image's ssh+bash -s runner but via docker exec.
     """
     # Copy the local working tree in so the e2e tests THIS checkout
     # (including uncommitted changes) rather than whatever is on the
     # remote branch -- and avoids needing git/apt inside the container.
     subprocess.run(
-        ["docker", "exec", target["container"], "mkdir", "-p", "/root/cis-host"],
+        ["docker", "exec", target["container"], "mkdir", "-p", "/root/ohbs-host"],
         check=True, capture_output=True, text=True)
     # `docker cp <repo>/. <dst>/` copies the *contents* (including
     # dotfiles like .git) into the destination.
     subprocess.run(
-        ["docker", "cp", str(REPO_ROOT) + "/.", "%s:/root/cis-host/" % target["container"]],
+        ["docker", "cp", str(REPO_ROOT) + "/.", "%s:/root/ohbs-host/" % target["container"]],
         check=True, capture_output=True, text=True)
     log_path.parent.mkdir(exist_ok=True)
     with subprocess.Popen(
@@ -244,9 +244,9 @@ def docker_rm(container: str) -> None:
         pass
 
 
-# ---- cloud provider (mirrors cis-image's TC3 flow) ------------------------
+# ---- cloud provider (mirrors ohbs-image's TC3 flow) ------------------------
 def _cloud_api(action: str, payload: dict) -> dict:
-    from cis_image import _tc3_api  # type: ignore  # cis-image must be installed
+    from ohbs_image import _tc3_api  # type: ignore  # ohbs-image must be installed
     sid = os.environ.get("TENCENTCLOUD_SECRET_ID", "")
     skey = os.environ.get("TENCENTCLOUD_SECRET_KEY", "")
     tok = os.environ.get("TENCENTCLOUD_SECURITY_TOKEN") or None
@@ -277,7 +277,7 @@ def cloud_start(args: argparse.Namespace, tmpdir: Path) -> dict:
         raise RuntimeError("ImportKeyPair returned no KeyId")
     resp = _cloud_api("RunInstances", {
         "ImageId": args.image_id, "InstanceType": args.instance_type,
-        "InstanceChargeType": "POSTPAID_BY_HOUR", "InstanceName": "cis-host-e2e-test",
+        "InstanceChargeType": "POSTPAID_BY_HOUR", "InstanceName": "ohbs-host-e2e-test",
         "Placement": {"Zone": args.zone},
         "VirtualPrivateCloud": {"VpcId": args.vpc_id, "SubnetId": args.subnet_id},
         "SecurityGroupIds": [args.security_group_id],
@@ -287,7 +287,7 @@ def cloud_start(args: argparse.Namespace, tmpdir: Path) -> dict:
                                "InternetMaxBandwidthOut": 5},
         "InstanceCount": 1,
         "TagSpecification": [{"ResourceType": "instance",
-                              "Tags": [{"Key": "purpose", "Value": "cis-host-e2e-test"},
+                              "Tags": [{"Key": "purpose", "Value": "ohbs-host-e2e-test"},
                                        {"Key": "ephemeral", "Value": "true"}]}]})
     ids = resp.get("InstanceIdSet") or []
     if not ids:
@@ -369,18 +369,18 @@ PY=python3
 
 echo "[remote 2/5] get repo ($REPO_MODE)"
 if [ "$REPO_MODE" = "local" ]; then
-    # repo already copied to /root/cis-host by the host (docker cp)
-    cd /root/cis-host
+    # repo already copied to /root/ohbs-host by the host (docker cp)
+    cd /root/ohbs-host
 else
     command -v git >/dev/null 2>&1 || { apt-get update -qq >/dev/null 2>&1 || true; apt-get install -y git >/dev/null 2>&1 || dnf install -y git >/dev/null 2>&1 || true; }
-    rm -rf /root/cis-host
-    git clone --branch "$BRANCH" --depth 1 "$REPO_URL" /root/cis-host
-    cd /root/cis-host
+    rm -rf /root/ohbs-host
+    git clone --branch "$BRANCH" --depth 1 "$REPO_URL" /root/ohbs-host
+    cd /root/ohbs-host
 fi
 echo "     commit: $(git rev-parse --short HEAD 2>/dev/null || echo local)"
 
-echo "[remote 3/5] install cis-host (venv preferred, else system)"
-cd /root/cis-host
+echo "[remote 3/5] install ohbs-host (venv preferred, else system)"
+cd /root/ohbs-host
 # Upgrade pip first: slim/distro images ship an old pip (e.g. 22.x) that
 # predates PEP 660 and cannot do `pip install -e .` on a pyproject-only
 # package. A modern pip fixes both editable installs and venv support.
@@ -396,19 +396,19 @@ else
 fi
 
 echo "[remote 4/5] CLI alive"
-cis-host --help >/dev/null
-cis-host list >/dev/null
+ohbs-host --help >/dev/null
+ohbs-host list >/dev/null
 
 echo "[remote 5/5] real scan -> apply -> re-scan -> idempotent apply"
 mkdir -p /root/e2e
 set +e
-cis-host scan --os "$OS" --profile "$PROFILE" --output /root/e2e/scan1 >/root/e2e/scan1.out 2>&1
+ohbs-host scan --os "$OS" --profile "$PROFILE" --output /root/e2e/scan1 >/root/e2e/scan1.out 2>&1
 SCAN1_RC=$?
-cis-host apply --os "$OS" --profile "$PROFILE" $DISRUPTIVE --output /root/e2e/apply >/root/e2e/apply.out 2>&1
+ohbs-host apply --os "$OS" --profile "$PROFILE" $DISRUPTIVE --output /root/e2e/apply >/root/e2e/apply.out 2>&1
 APPLY_RC=$?
-cis-host scan --os "$OS" --profile "$PROFILE" --output /root/e2e/scan2 >/root/e2e/scan2.out 2>&1
+ohbs-host scan --os "$OS" --profile "$PROFILE" --output /root/e2e/scan2 >/root/e2e/scan2.out 2>&1
 SCAN2_RC=$?
-cis-host apply --os "$OS" --profile "$PROFILE" $DISRUPTIVE --output /root/e2e/apply2 >/root/e2e/apply2.out 2>&1
+ohbs-host apply --os "$OS" --profile "$PROFILE" $DISRUPTIVE --output /root/e2e/apply2 >/root/e2e/apply2.out 2>&1
 APPLY2_RC=$?
 set -e
 

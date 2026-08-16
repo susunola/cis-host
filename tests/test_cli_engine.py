@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Unit tests for the top-level engine.py (extracted from cis_cli.py in PR2).
+"""Unit tests for the top-level engine.py (extracted from ohbs_cli.py in PR2).
 
 Not to be confused with tests/test_engine.py, which tests the per-OS
-cis_engine.py rule-checking engines under cis-<os>-ansible/.../files/.
+ohbs_engine.py rule-checking engines under cis-<os>-ansible/.../files/.
 
 Mocks subprocess.run so these tests exercise argv assembly and result-file
-handling without invoking a real cis_engine.py/cis_engine.ps1 or requiring
+handling without invoking a real ohbs_engine.py/ohbs_engine.ps1 or requiring
 root/sudo.
 """
 
@@ -23,7 +23,7 @@ import engine as cli_engine
 
 def _args(output_dir, **overrides):
     defaults = dict(
-        os="", engine="/fake/cis_engine.py", catalog="/fake/rules.json",
+        os="", engine="/fake/ohbs_engine.py", catalog="/fake/rules.json",
         profile="L1", platform="server", name="Test Benchmark",
         include=None, exclude=None, sections_filter=None, families=None,
         allow_disruptive=False, backup_dir="", audit_log="",
@@ -79,12 +79,12 @@ def test_engine_is_windows_by_os_preset():
 
 
 def test_engine_is_windows_by_engine_extension():
-    args = SimpleNamespace(os="", engine="/path/to/cis_engine.ps1")
+    args = SimpleNamespace(os="", engine="/path/to/ohbs_engine.ps1")
     assert cli_engine._engine_is_windows(args) is True
 
 
 def test_engine_is_windows_false_for_linux():
-    args = SimpleNamespace(os="rhel9", engine="/path/to/cis_engine.py")
+    args = SimpleNamespace(os="rhel9", engine="/path/to/ohbs_engine.py")
     assert cli_engine._engine_is_windows(args) is False
 
 
@@ -153,7 +153,7 @@ def test_run_engine_linux_argv_assembly(tmp_path):
 
 
 def test_run_engine_windows_argv_assembly(tmp_path):
-    args = _args(str(tmp_path), os="win2022", engine="/fake/cis_engine.ps1", families="reg-dword")
+    args = _args(str(tmp_path), os="win2022", engine="/fake/ohbs_engine.ps1", families="reg-dword")
     result_payload = {"summary": {"all": {"total": 1}}}
 
     with patch("engine.subprocess.run", side_effect=_write_result_file_side_effect(result_payload)) as mock_run:

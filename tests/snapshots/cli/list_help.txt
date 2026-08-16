@@ -1,4 +1,4 @@
-usage: cis_cli.py list [-h]
+usage: ohbs_cli.py list [-h]
 
 options:
   -h, --help  show this help message and exit

@@ -3,7 +3,7 @@
 `click_style` respects the NO_COLOR convention (https://no-color.org/) and
 auto-disables ANSI codes when stdout is not a TTY (e.g. piped to a file or
 CI log), so redirected output doesn't get polluted with escape sequences.
-This is a deliberate behavior change from the original cis_cli.py, which
+This is a deliberate behavior change from the original ohbs_cli.py, which
 always emitted color codes regardless of TTY/NO_COLOR — see CHANGELOG.
 """
 
